@@ -6,7 +6,7 @@
 #include "http_server.h"
 #include "mpd_client.h"
 
-static struct libwebsocket_protocols protocols[] = {
+struct libwebsocket_protocols protocols[] = {
 	/* first protocol must always be HTTP handler */
 	{
 		"http-only",		/* name */
@@ -40,6 +40,7 @@ int main(int argc, char **argv)
 	const char *iface = NULL;
 	struct lws_context_creation_info info;
 	unsigned int oldus = 0;
+	protocol_array = protocols;
 
 	atexit(bye);
 	memset(&info, 0, sizeof info);

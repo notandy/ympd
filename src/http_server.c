@@ -14,8 +14,13 @@ struct serveable {
 static const struct serveable whitelist[] = {
 	{ "/css/bootstrap.css", "text/css" },
 	{ "/css/starter-template.css", "text/css" },
+	{ "/css/slider.css", "text/css" },
+
 	{ "/js/bootstrap.min.js", "text/javascript" },
 	{ "/js/mpd.js", "text/javascript" },
+	{ "/js/jquery-1.10.2.min.js", "text/javascript" },
+	{ "/js/bootstrap-slider.js", "text/javascript" },
+	
 	{ "/fonts/glyphicons-halflings-regular.woff", "application/x-font-woff"},
 	{ "/fonts/glyphicons-halflings-regular.svg", "image/svg+xml"},
 	{ "/fonts/glyphicons-halflings-regular.ttf", "application/x-font-ttf"},

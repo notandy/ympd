@@ -13,9 +13,12 @@
 
 #include "mpd_client.h"
 
+#define MAX_SIZE 9000*10
+
 struct mpd_connection *conn = NULL;
 enum mpd_conn_states mpd_conn_state = MPD_DISCONNECTED;
 enum mpd_state mpd_play_state = MPD_STATE_UNKNOWN;
+static int global_send;
 
 callback_ympd(struct libwebsocket_context *context,
 	struct libwebsocket *wsi,
@@ -23,47 +26,84 @@ callback_ympd(struct libwebsocket_context *context,
 	void *user, void *in, size_t len)
 {
 	int n, m;
-	/*unsigned char buf[LWS_SEND_BUFFER_PRE_PADDING + 512 +
-		LWS_SEND_BUFFER_POST_PADDING];*/
-	char *buf;
+	char *buf = NULL, *p;
 	struct per_session_data__ympd *pss = (struct per_session_data__ympd *)user;
 
-	//memset(buf, 0, sizeof(buf));
+	//if(global_send || (pss != NULL && pss->do_send))
+	//{
+		buf = (char *)malloc(MAX_SIZE + LWS_SEND_BUFFER_PRE_PADDING + LWS_SEND_BUFFER_POST_PADDING);
+
+		if(buf == NULL)
+			return -1;
+
+		p = &buf[LWS_SEND_BUFFER_PRE_PADDING];
+	//}
 
 	switch (reason) {
 		case LWS_CALLBACK_ESTABLISHED:
-		lwsl_info("callback_dumb_increment: "
-			"LWS_CALLBACK_ESTABLISHED\n");
-		break;
+			lwsl_info("callback_dumb_increment: "
+				"LWS_CALLBACK_ESTABLISHED\n");
+			break;
 
 		case LWS_CALLBACK_SERVER_WRITEABLE:
+			if(pss->do_send & DO_SEND_STATE)
+			{
+				n = mpd_put_state(p);
+				pss->do_send &= ~DO_SEND_STATE;
+			}
+			else if(pss->do_send & DO_SEND_PLAYLIST)
+			{
+				n = mpd_put_playlist(p);
+				pss->do_send &= ~DO_SEND_PLAYLIST;
+			}
+			else if(pss->do_send & DO_SEND_TRACK_INFO)
+				n = mpd_put_current_song(p);
+			else
+			{
+				n = mpd_put_state(p);
+			}
 
-		if(pss->do_send & DO_SEND_STATE)
-			n = mpd_put_state(buf);
-		else if(pss->do_send & DO_SEND_PLAYLIST)
-		{
-			printf("Before buf is %ud\n",buf);
-			n = mpd_put_playlist(&buf);
-			printf("n is %d, buf is %ud\n", n, buf);
-			pss->do_send &= ~DO_SEND_PLAYLIST;
-		}
-		else if(pss->do_send & DO_SEND_TRACK_INFO)
-			n = mpd_put_current_song(buf);
-		else
-			return 0;
-
-		m = libwebsocket_write(wsi, buf, n, LWS_WRITE_TEXT);
-		if (m < n) {
-			lwsl_err("ERROR %d writing to socket\n", n);
-			return -1;
-		}
-		break;
+			m = libwebsocket_write(wsi, p, n, LWS_WRITE_TEXT);
+			if (m < n) {
+				lwsl_err("ERROR %d writing to socket\n", n);
+				return -1;
+			}
+			break;
 
 		case LWS_CALLBACK_RECEIVE:
-		if(!strcmp((const char *)in, MPD_API_GET_STATE))
-			pss->do_send |= DO_SEND_STATE;
-		if(!strcmp((const char *)in, MPD_API_GET_PLAYLIST))
-			pss->do_send |= DO_SEND_PLAYLIST;
+			printf("Got %s\n", (char *)in);
+
+			if(!strcmp((const char *)in, MPD_API_GET_STATE))
+				pss->do_send |= DO_SEND_STATE;
+			else if(!strcmp((const char *)in, MPD_API_GET_PLAYLIST))
+				pss->do_send |= DO_SEND_PLAYLIST;
+			else if(!strcmp((const char *)in, MPD_API_SET_PAUSE))
+			{
+				mpd_send_toggle_pause(conn);
+				mpd_response_finish(conn);
+			}
+			else if(!strcmp((const char *)in, MPD_API_SET_PREV))
+			{
+				mpd_send_previous(conn);
+				mpd_response_finish(conn);
+			}
+			else if(!strcmp((const char *)in, MPD_API_SET_NEXT))
+			{
+				mpd_send_next(conn);
+				mpd_response_finish(conn);
+			}
+			else if(!strncmp((const char *)in, MPD_API_SET_VOLUME, sizeof(MPD_API_SET_VOLUME)-1))
+			{
+				unsigned int volume;
+				if(sscanf(in, "MPD_API_SET_VOLUME,%ud", &volume) && volume < 100)
+				{
+					printf("Setting volume to %d\n", volume);
+					mpd_run_set_volume(conn, volume);
+
+				}
+			}
+
+
 
 		break;
 	/*
@@ -89,7 +129,7 @@ void mpd_loop()
 		case MPD_DISCONNECTED:
 			/* Try to connect */
 
-		conn = mpd_connection_new("127.0.0.1", 6600, 3000);
+		conn = mpd_connection_new("10.23.44.2", 6600, 3000);
 		if (conn == NULL) {
 			lwsl_err("%s", "Out of memory");
 			mpd_conn_state = MPD_FAILURE;
@@ -119,9 +159,19 @@ void mpd_loop()
 
 }
 
+const char* encode_string(const char *str)
+{
+	char *ptr = (char *)str;
+	while(*ptr++ != '\0')
+		if(*ptr=='"')
+			*ptr=' ';
+	return str;
+}
+
 int mpd_put_state(char* buffer)
 {
 	struct mpd_status *status;
+	int len;
 
 	status = mpd_run_status(conn);
 	if (!status) {
@@ -130,11 +180,12 @@ int mpd_put_state(char* buffer)
 		return;
 	}
 
-	sprintf(buffer, 
-		"{\"type\": \"state\", \"data\": {"
+	len = snprintf(buffer, MAX_SIZE,
+		"{\"type\":\"state\", \"data\":{"
 		" \"state\":%d, \"volume\":%d, \"repeat\":%d,"
         " \"single\":%d, \"consume\":%d, \"random\":%d, "
-        " \"songpos\": %d, \"elapsedTime\": %d, \"totalTime\":%d"
+        " \"songpos\": %d, \"elapsedTime\": %d, \"totalTime\":%d, "
+        " \"currentsongid\": %d"
 	    "}}", 
 		mpd_status_get_state(status),
 		mpd_status_get_volume(status), 
@@ -144,10 +195,13 @@ int mpd_put_state(char* buffer)
 		mpd_status_get_random(status),
 		mpd_status_get_song_pos(status),
 		mpd_status_get_elapsed_time(status),
-		mpd_status_get_total_time(status));
+		mpd_status_get_total_time(status),
+		mpd_status_get_song_id(status));
 
+	printf("buffer: %s\n", buffer);
 	mpd_status_free(status);
-	mpd_response_finish(conn);
+	//printf("status: %d\n", mpd_response_finish(conn));
+	return len;
 }
 
 int mpd_put_current_song(char* buffer)
@@ -167,27 +221,37 @@ int mpd_put_current_song(char* buffer)
 	mpd_response_finish(conn);
 }
 
-int mpd_put_playlist(char** buffer)
+int mpd_put_playlist(char* buffer)
 {
-	mpd_send_list_queue_range_meta(conn, 0, 10);
-	int max_size = 1024*200;
-	*buffer = (char **)malloc(max_size + LWS_SEND_BUFFER_PRE_PADDING + LWS_SEND_BUFFER_POST_PADDING);
-	printf("Buffer init: %p %ud\n", *buffer, *buffer);
-
-	char *p = &((*buffer)[LWS_SEND_BUFFER_PRE_PADDING]);
-
+	char *cur = buffer;
+	const char *end = buffer + MAX_SIZE;
 	struct mpd_entity *entity;
+	struct mpd_song const *song;
+
+	mpd_send_list_queue_meta(conn);
+
+	cur += snprintf(cur, end  - cur, "{\"type\": \"playlist\", \"data\": [ ");
+
 	for(entity = mpd_recv_entity(conn); entity; entity = mpd_recv_entity(conn)) {
 
 		if(mpd_entity_get_type(entity) == MPD_ENTITY_TYPE_SONG) {
-			struct mpd_song* song = mpd_entity_get_song(entity);
-			p += snprintf(p, max_size, "ID: %d, Song: %s\n", mpd_song_get_id(song), mpd_song_get_uri(song));
+			song = mpd_entity_get_song(entity);
+			cur += snprintf(cur, end  - cur, 
+				"{\"id\":%d, \"uri\":\"%s\", \"duration\":%d, \"title\":\"%s\"},",
+				mpd_song_get_id(song),
+				mpd_song_get_uri(song),
+				mpd_song_get_duration(song),
+				encode_string(mpd_song_get_tag(song, MPD_TAG_TITLE, 0))
+			);
 		}
 
-		if(entity != NULL)
-			mpd_entity_free(entity);
+		mpd_entity_free(entity);
 	}
+	//printf("status: %d\n", mpd_response_finish(conn));
 
-	printf("strlen is %d\n", strlen(p));
-	return strlen(*buffer + LWS_SEND_BUFFER_PRE_PADDING) +1;
+	/* remove last ',' */
+	cur--;
+	cur += snprintf(cur, end  - cur, "] }");
+	printf("buffer: %s\n", buffer);
+	return cur - buffer;
 }

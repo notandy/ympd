@@ -14,6 +14,7 @@
 
   <!-- Custom styles for this template -->
   <link href="css/starter-template.css" rel="stylesheet">
+  <link href="css/slider.css" rel="stylesheet">
 
   <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
   <!--[if lt IE 9]>
@@ -46,25 +47,26 @@
               <input type="text" class="form-control" placeholder="Search">
             </div>
             <button type="submit" class="btn btn-default">
-                <span class="glyphicon glyphicon-search"></span>
+            <span class="glyphicon glyphicon-search"></span>
             </button>
-          </form>   
+          </form>
 
           <div class="btn-toolbar navbar-btn navbar-right" role="toolbar">
             <div class="btn-group">
               <button type="button" class="btn btn-default">
-                <span class="glyphicon glyphicon-backward"></span>
+                <span class="glyphicon glyphicon-backward" onclick="socket.send('MPD_API_SET_NEXT')"></span>
               </button>
-              <button type="button" class="btn btn-default" data-toggle="button">
-                <span class="glyphicon glyphicon-pause"></span>
+              <button type="button" class="btn btn-default" onclick="socket.send('MPD_API_SET_PAUSE')">
+                <span id="play-icon" class="glyphicon glyphicon-pause"></span>
               </button>
-              <button type="button" class="btn btn-default" onclick="test();">
+              <button type="button" class="btn btn-default" onclick="socket.send('MPD_API_SET_PREV')">
                 <span class="glyphicon glyphicon-forward"></span>
               </button>
             </div>
             <div class="btn-group">
-              <button id="volume" type="button" class="btn btn-default" data-toggle="button">
-                <span id="volume-icon" class="glyphicon glyphicon-volume-off"></span>
+              <button type="button" class="btn btn-toolbar btn-default">
+                <span id="volume-icon" class="glyphicon glyphicon-volume-up"></span>
+                <input type="text" class="span2" value="0" data-slider-min="0" data-slider-max="100" data-slider-step="5" id="volumeslider" data-slider-tooltip="hide">
               </button>
             </div>
           </div>
@@ -74,7 +76,7 @@
     </div>
 
     <div class="progress progress-striped active">
-      <div class="progress-bar"  role="progressbar" aria-valuenow="45" aria-valuemin="0" aria-valuemax="100" style="width: 45%">
+      <div id="progressbar" class="progress-bar"  role="progressbar" aria-valuenow="45" aria-valuemin="0" aria-valuemax="100" style="width: 45%">
         <span class="sr-only">60% Complete</span>
       </div>
     </div>
@@ -86,34 +88,16 @@
           <div class="panel-heading">Playlist</div>
 
           <!-- Table -->
-          <table class="table">
+          <table id="salamisandwich" class="table">
             <thead>
               <tr>
                 <th>#</th>
                 <th>Track</th>
-                <th>Last Name</th>
-                <th>Username</th>
+                <th>Title</th>
+                <th>Duration</th>
               </tr>
             </thead>
             <tbody>
-              <tr>
-                <td>1</td>
-                <td>Mark</td>
-                <td>Otto</td>
-                <td>@mdo</td>
-              </tr>
-              <tr>
-                <td>2</td>
-                <td>Jacob</td>
-                <td>Thornton</td>
-                <td>@fat</td>
-              </tr>
-              <tr>
-                <td>3</td>
-                <td>Larry</td>
-                <td>the Bird</td>
-                <td>@twitter</td>
-              </tr>
             </tbody>
           </table>
         </div>
@@ -125,8 +109,9 @@
     <!-- Bootstrap core JavaScript
     ================================================== -->
     <!-- Placed at the end of the document so the pages load faster -->
-    <script src="https://code.jquery.com/jquery-1.10.2.min.js"></script>
+    <script src="js/jquery-1.10.2.min.js"></script>
     <script src="js/bootstrap.min.js"></script>
+    <script src="js/bootstrap-slider.js"></script>
     <script src="js/mpd.js"></script>
   </body>
   </html>

@@ -4,6 +4,8 @@
 #define DO_SEND_PLAYLIST   (1 << 1)
 #define DO_SEND_TRACK_INFO (1 << 2)
 
+struct libwebsocket_protocols *protocol_array;
+
 struct per_session_data__ympd {
 	int do_send;
 };
@@ -25,6 +27,9 @@ enum mpd_conn_states {
 #define MPD_API_SET_PLAY         "MPD_API_SET_PLAY"
 #define MPD_API_SET_STOP         "MPD_API_SET_STOP"
 #define MPD_API_SET_SEEK         "MPD_API_SET_SEEK"
+#define MPD_API_SET_NEXT         "MPD_API_SET_PREV"
+#define MPD_API_SET_PREV         "MPD_API_SET_NEXT"
+
 
 
 int callback_ympd(struct libwebsocket_context *context,
@@ -35,4 +40,4 @@ int callback_ympd(struct libwebsocket_context *context,
 void mpd_connect();
 int mpd_put_state(char* buffer);
 int mpd_put_current_song(char* buffer);
-int mpd_put_playlist(char** buffer);
+int mpd_put_playlist(char* buffer);
