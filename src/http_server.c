@@ -1,5 +1,6 @@
 #include <libwebsockets.h>
 #include <stdio.h>
+#include <string.h>
 #include "http_server.h"
 
 #define INSTALL_DATADIR "/home/andy/workspace/ympd"
@@ -36,9 +37,7 @@ int callback_http(struct libwebsocket_context *context,
 	void *in, size_t len)
 {
 	char buf[256];
-	char leaf_path[1024];
-	int n, m;
-	unsigned char *p;
+	int n;
 
 	switch (reason) {
 		case LWS_CALLBACK_HTTP:
@@ -56,7 +55,9 @@ int callback_http(struct libwebsocket_context *context,
 
 		case LWS_CALLBACK_HTTP_FILE_COMPLETION:
 			/* kill the connection after we sent one file */
-		return -1;
+			return -1;
+		default:
+			break;
 	}
 
 	return 0;

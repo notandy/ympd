@@ -13,8 +13,7 @@ struct per_session_data__ympd {
 enum mpd_conn_states {
 	MPD_FAILURE,
 	MPD_DISCONNECTED,
-	MPD_CONNECTED,
-	MPD_PLAYING
+	MPD_CONNECTED
 };
 
 #define MPD_API_GET_STATE        "MPD_API_GET_STATE"
@@ -29,6 +28,7 @@ enum mpd_conn_states {
 #define MPD_API_SET_SEEK         "MPD_API_SET_SEEK"
 #define MPD_API_SET_NEXT         "MPD_API_SET_PREV"
 #define MPD_API_SET_PREV         "MPD_API_SET_NEXT"
+#define MPD_API_UPDATE_DB        "MPD_API_UPDATE_DB"
 
 
 
@@ -37,7 +37,7 @@ int callback_ympd(struct libwebsocket_context *context,
 			enum libwebsocket_callback_reasons reason,
 			void *user, void *in, size_t len);
 
-void mpd_connect();
+void mpd_loop();
 int mpd_put_state(char* buffer);
 int mpd_put_current_song(char* buffer);
 int mpd_put_playlist(char* buffer);

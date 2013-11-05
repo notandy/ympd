@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <sys/time.h>
 
 #include "http_server.h"
 #include "mpd_client.h"
@@ -95,7 +96,7 @@ int main(int argc, char **argv)
 		 * as soon as it can take more packets (usually immediately)
 		 */
 
-		if (((unsigned int)tv.tv_usec - oldus) > 500000) {
+		if (((unsigned int)tv.tv_usec - oldus) > 1000 * 500) {
 			mpd_loop();
 			libwebsocket_callback_on_writable_all_protocol(&protocols[1]);
 			oldus = tv.tv_usec;
@@ -105,4 +106,5 @@ int main(int argc, char **argv)
 	}
 
 	libwebsocket_context_destroy(context);
+	return 0;
 }
