@@ -30,14 +30,14 @@ function webSocketConnect() {
 			var obj = JSON.parse(msg.data);
 			switch (obj.type) {
 				case "playlist":
+					$('#salamisandwich').find("tr:gt(0)").remove();
 					for (var song in obj.data) {
 						var minutes = Math.floor(obj.data[song].duration / 60);
 						var seconds = obj.data[song].duration - minutes * 60;
 
 						$('#salamisandwich tr:last').after(
-							"<tr id=\"playlist_" + obj.data[song].id + "\"><td>" + obj.data[song].id + "</td>" +
-							"<td>"+ obj.data[song].uri +"</td>" +
-							"<td>"+ obj.data[song].title.replace(/%07/g, '"') +"</td>" + 
+							"<tr id=\"playlist_" + obj.data[song].id + "\"><td>" + obj.data[song].pos + "</td>" +
+							"<td>"+ obj.data[song].title +"</td>" + 
 							"<td>"+ minutes + ":" + (seconds < 10 ? '0' : '') + seconds +"</td></tr>");
 					}
 					break;

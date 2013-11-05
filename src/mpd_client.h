@@ -8,6 +8,7 @@ struct libwebsocket_protocols *protocol_array;
 
 struct per_session_data__ympd {
 	int do_send;
+	unsigned queue_version;
 };
 
 enum mpd_conn_states {

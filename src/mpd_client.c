@@ -18,6 +18,7 @@
 struct mpd_connection *conn = NULL;
 enum mpd_conn_states mpd_conn_state = MPD_DISCONNECTED;
 enum mpd_state mpd_play_state = MPD_STATE_UNKNOWN;
+unsigned queue_version;
 
 int callback_ympd(struct libwebsocket_context *context,
 	struct libwebsocket *wsi,
@@ -45,6 +46,10 @@ int callback_ympd(struct libwebsocket_context *context,
 
 			if(mpd_conn_state != MPD_CONNECTED) {
 				n = snprintf(p, MAX_SIZE, "{\"type\":\"disconnected\"}");
+			}
+			else if(pss->queue_version != queue_version) {
+				n = mpd_put_playlist(p);
+				pss->queue_version = queue_version;
 			}
 			else if(pss->do_send & DO_SEND_STATE) {
 				n = mpd_put_state(p);
@@ -147,15 +152,22 @@ void mpd_loop()
 	}
 }
 
-const char* encode_string(const char *str)
+char* mpd_get_title(struct mpd_song const *song)
 {
-	char *ptr = (char *)str;
+	char *str, *ptr;
+
+	str = (char *)mpd_song_get_tag(song, MPD_TAG_TITLE, 0);
+	if(str == NULL)
+		str = (char *)mpd_song_get_uri(song);
+
 	if(str == NULL)
 		return NULL;
 
+	ptr = str;
 	while(*ptr++ != '\0')
 		if(*ptr=='"')
 			*ptr=' ';
+
 	return str;
 }
 
@@ -189,6 +201,7 @@ int mpd_put_state(char* buffer)
 		mpd_status_get_total_time(status),
 		mpd_status_get_song_id(status));
 
+	queue_version = mpd_status_get_queue_version(status);
 	printf("buffer: %s\n", buffer);
 	mpd_status_free(status);
 	return len;
@@ -202,11 +215,10 @@ int mpd_put_current_song(char* buffer)
 	song = mpd_run_current_song(conn);
 	if (song != NULL) {
 		len = snprintf(buffer, MAX_SIZE, "{\"type\": \"current_song\", \"data\": {"
-			"{\"id\":%d, \"uri\":\"%s\", \"duration\":%d, \"title\":\"%s\"},",
+			"{\"id\":%d, \"duration\":%d, \"title\":\"%s\"},",
 			mpd_song_get_id(song),
-			mpd_song_get_uri(song),
 			mpd_song_get_duration(song),
-			encode_string(mpd_song_get_tag(song, MPD_TAG_TITLE, 0))
+			mpd_get_title(song)
 		);
 		mpd_song_free(song);
 	}
@@ -231,11 +243,11 @@ int mpd_put_playlist(char* buffer)
 		if(mpd_entity_get_type(entity) == MPD_ENTITY_TYPE_SONG) {
 			song = mpd_entity_get_song(entity);
 			cur += snprintf(cur, end  - cur, 
-				"{\"id\":%d, \"uri\":\"%s\", \"duration\":%d, \"title\":\"%s\"},",
+				"{\"id\":%d, \"pos\":%d, \"duration\":%d, \"title\":\"%s\"},",
 				mpd_song_get_id(song),
-				mpd_song_get_uri(song),
+				mpd_song_get_pos(song),
 				mpd_song_get_duration(song),
-				encode_string(mpd_song_get_tag(song, MPD_TAG_TITLE, 0))
+				mpd_get_title(song)
 			);
 		}
 
