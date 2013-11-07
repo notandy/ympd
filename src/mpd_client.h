@@ -3,12 +3,15 @@
 #define DO_SEND_STATE      (1 << 0)
 #define DO_SEND_PLAYLIST   (1 << 1)
 #define DO_SEND_TRACK_INFO (1 << 2)
+#define DO_SEND_BROWSE     (1 << 3)
+
 
 struct libwebsocket_protocols *protocol_array;
 
 struct per_session_data__ympd {
 	int do_send;
 	unsigned queue_version;
+	char *browse_path;
 };
 
 enum mpd_conn_states {
@@ -17,11 +20,11 @@ enum mpd_conn_states {
 	MPD_CONNECTED
 };
 
-#define MPD_API_GET_STATE        "MPD_API_GET_STATE"
 #define MPD_API_GET_SEEK         "MPD_API_GET_SEEK"
 #define MPD_API_GET_PLAYLIST     "MPD_API_GET_PLAYLIST"
 #define MPD_API_GET_TRACK_INFO   "MPD_API_GET_TRACK_INFO"
-#define MPD_API_ADD_TRACK        "MPD_API_GET_STATE"
+#define MPD_API_GET_BROWSE       "MPD_API_GET_BROWSE"
+#define MPD_API_ADD_TRACK        "MPD_API_ADD_TRACK"
 #define MPD_API_SET_VOLUME       "MPD_API_SET_VOLUME"
 #define MPD_API_SET_PAUSE        "MPD_API_SET_PAUSE"
 #define MPD_API_SET_PLAY         "MPD_API_SET_PLAY"
@@ -30,6 +33,10 @@ enum mpd_conn_states {
 #define MPD_API_SET_NEXT         "MPD_API_SET_PREV"
 #define MPD_API_SET_PREV         "MPD_API_SET_NEXT"
 #define MPD_API_UPDATE_DB        "MPD_API_UPDATE_DB"
+#define MPD_API_TOGGLE_RANDOM    "MPD_API_TOGGLE_RANDOM"
+#define MPD_API_TOGGLE_CONSUME   "MPD_API_TOGGLE_CONSUME"
+#define MPD_API_TOGGLE_SINGLE    "MPD_API_TOGGLE_SINGLE"
+#define MPD_API_TOGGLE_REPEAT    "MPD_API_TOGGLE_REPEAT"
 
 
 
@@ -39,6 +46,7 @@ int callback_ympd(struct libwebsocket_context *context,
 			void *user, void *in, size_t len);
 
 void mpd_loop();
-int mpd_put_state(char* buffer);
-int mpd_put_current_song(char* buffer);
-int mpd_put_playlist(char* buffer);
+int mpd_put_state(char *buffer);
+int mpd_put_current_song(char *buffer);
+int mpd_put_playlist(char *buffer);
+int mpd_put_browse(char *buffer, char *path);

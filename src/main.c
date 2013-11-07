@@ -19,7 +19,7 @@ struct libwebsocket_protocols protocols[] = {
 		"ympd-client",
 		callback_ympd,
 		sizeof(struct per_session_data__ympd),
-		10,
+		255,
 	},
 
 	{ NULL, NULL, 0, 0 } /* terminator */

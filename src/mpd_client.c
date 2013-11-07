@@ -10,6 +10,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <libgen.h>
 
 #include "mpd_client.h"
 
@@ -47,26 +48,29 @@ int callback_ympd(struct libwebsocket_context *context,
 			if(mpd_conn_state != MPD_CONNECTED) {
 				n = snprintf(p, MAX_SIZE, "{\"type\":\"disconnected\"}");
 			}
-			else if(pss->queue_version != queue_version) {
+			else if((pss->queue_version != queue_version) || (pss->do_send & DO_SEND_PLAYLIST)) {
 				n = mpd_put_playlist(p);
 				pss->queue_version = queue_version;
-			}
-			else if(pss->do_send & DO_SEND_STATE) {
-				n = mpd_put_state(p);
-				pss->do_send &= ~DO_SEND_STATE;
-			}
-			else if(pss->do_send & DO_SEND_PLAYLIST) {
-				n = mpd_put_playlist(p);
 				pss->do_send &= ~DO_SEND_PLAYLIST;
 			}
-			else if(pss->do_send & DO_SEND_TRACK_INFO)
+			else if(pss->do_send & DO_SEND_TRACK_INFO) {
 				n = mpd_put_current_song(p);
+				pss->do_send &= ~DO_SEND_TRACK_INFO;
+			}
+			else if(pss->do_send & DO_SEND_BROWSE) {
+				n = mpd_put_browse(p, pss->browse_path);
+				pss->do_send &= ~DO_SEND_BROWSE;
+				free(pss->browse_path);
+			}
 			else {
 				n = mpd_put_state(p);
 			}
 
 			if(n > 0)
-				m = libwebsocket_write(wsi, (unsigned char*)p, n, LWS_WRITE_TEXT);
+				m = libwebsocket_write(wsi, (unsigned char *)p, n, LWS_WRITE_TEXT);
+
+			if(p != NULL)
+				printf("Sending out: %s\n", p);
 
 			if (m < n) {
 				lwsl_err("ERROR %d writing to socket\n", n, m);
@@ -79,9 +83,7 @@ int callback_ympd(struct libwebsocket_context *context,
 		case LWS_CALLBACK_RECEIVE:
 			printf("Got %s\n", (char *)in);
 
-			if(!strcmp((const char *)in, MPD_API_GET_STATE))
-				pss->do_send |= DO_SEND_STATE;
-			else if(!strcmp((const char *)in, MPD_API_GET_PLAYLIST))
+			if(!strcmp((const char *)in, MPD_API_GET_PLAYLIST))
 				pss->do_send |= DO_SEND_PLAYLIST;
 			else if(!strcmp((const char *)in, MPD_API_GET_TRACK_INFO))
 				pss->do_send |= DO_SEND_TRACK_INFO;
@@ -101,11 +103,40 @@ int callback_ympd(struct libwebsocket_context *context,
 				mpd_send_next(conn);
 				mpd_response_finish(conn);
 			}
+			else if(!strncmp((const char *)in, MPD_API_TOGGLE_RANDOM, sizeof(MPD_API_TOGGLE_RANDOM)-1)) {
+				unsigned random;
+				if(sscanf(in, "MPD_API_TOGGLE_RANDOM,%d", &random))
+					mpd_run_random(conn, random);
+			}
+			else if(!strncmp((const char *)in, MPD_API_TOGGLE_REPEAT, sizeof(MPD_API_TOGGLE_REPEAT)-1)) {
+				unsigned repeat;
+				if(sscanf(in, "MPD_API_TOGGLE_REPEAT,%d", &repeat))
+					mpd_run_repeat(conn, repeat);
+			}
+			else if(!strncmp((const char *)in, MPD_API_TOGGLE_CONSUME, sizeof(MPD_API_TOGGLE_CONSUME)-1)) {
+				unsigned consume;
+				if(sscanf(in, "MPD_API_TOGGLE_CONSUME,%d", &consume))
+					mpd_run_consume(conn, consume);
+			}
+			else if(!strncmp((const char *)in, MPD_API_TOGGLE_SINGLE, sizeof(MPD_API_TOGGLE_SINGLE)-1)) {
+				unsigned single;
+				if(sscanf(in, "MPD_API_TOGGLE_SINGLE,%d", &single))
+					mpd_run_single(conn, single);
+			}
 			else if(!strncmp((const char *)in, MPD_API_SET_VOLUME, sizeof(MPD_API_SET_VOLUME)-1)) {
 				unsigned int volume;
 				if(sscanf(in, "MPD_API_SET_VOLUME,%ud", &volume) && volume < 100)
 					mpd_run_set_volume(conn, volume);
 			}
+			else if(!strncmp((const char *)in, MPD_API_GET_BROWSE, sizeof(MPD_API_GET_BROWSE)-1)) {
+				char *dir;
+				if(sscanf(in, "MPD_API_GET_BROWSE,%m[^\t\n]", &dir) && dir != NULL) {
+					printf("sending '%s'\n", dir);
+					pss->do_send |= DO_SEND_BROWSE;
+					pss->browse_path = dir;
+				}
+			}
+
 			break;
 
 		default:
@@ -166,19 +197,19 @@ char* mpd_get_title(struct mpd_song const *song)
 	ptr = str;
 	while(*ptr++ != '\0')
 		if(*ptr=='"')
-			*ptr=' ';
+			*ptr='\'';
 
-	return str;
+	return basename(str);
 }
 
-int mpd_put_state(char* buffer)
+int mpd_put_state(char *buffer)
 {
 	struct mpd_status *status;
 	int len;
 
 	status = mpd_run_status(conn);
 	if (!status) {
-		lwsl_err("MPD status: %s\n", mpd_connection_get_error_message(conn));
+		lwsl_err("MPD mpd_run_status: %s\n", mpd_connection_get_error_message(conn));
 		mpd_conn_state = MPD_FAILURE;
 		return 0;
 	}
@@ -202,43 +233,48 @@ int mpd_put_state(char* buffer)
 		mpd_status_get_song_id(status));
 
 	queue_version = mpd_status_get_queue_version(status);
-	printf("buffer: %s\n", buffer);
 	mpd_status_free(status);
 	return len;
 }
 
-int mpd_put_current_song(char* buffer)
+int mpd_put_current_song(char *buffer)
 {
 	struct mpd_song *song;
     int len;
 
 	song = mpd_run_current_song(conn);
-	if (song != NULL) {
-		len = snprintf(buffer, MAX_SIZE, "{\"type\": \"current_song\", \"data\": {"
-			"{\"id\":%d, \"duration\":%d, \"title\":\"%s\"},",
-			mpd_song_get_id(song),
-			mpd_song_get_duration(song),
-			mpd_get_title(song)
-		);
-		mpd_song_free(song);
-	}
+	if(song == NULL)
+		return 0;
+
+	len = snprintf(buffer, MAX_SIZE, "{\"type\": \"current_song\", \"data\":"
+		"{\"id\":%d, \"pos\":%d, \"duration\":%d, \"title\":\"%s\"}}",
+		mpd_song_get_id(song),
+		mpd_song_get_pos(song),
+		mpd_song_get_duration(song),
+		mpd_get_title(song)
+	);
+	mpd_song_free(song);
 	mpd_response_finish(conn);
 
 	return len;
 }
 
-int mpd_put_playlist(char* buffer)
+int mpd_put_playlist(char *buffer)
 {
 	char *cur = buffer;
 	const char *end = buffer + MAX_SIZE;
 	struct mpd_entity *entity;
-	struct mpd_song const *song;
 
-	mpd_send_list_queue_meta(conn);
+	if (!mpd_send_list_queue_meta(conn)) {
+		lwsl_err("MPD mpd_send_list_queue_meta: %s\n", mpd_connection_get_error_message(conn));
+		mpd_conn_state = MPD_FAILURE;
+		return 0;
+	}
 
 	cur += snprintf(cur, end  - cur, "{\"type\": \"playlist\", \"data\": [ ");
 
-	for(entity = mpd_recv_entity(conn); entity; entity = mpd_recv_entity(conn)) {
+	while((entity = mpd_recv_entity(conn)) != NULL) {
+        const struct mpd_song *song;
 
 		if(mpd_entity_get_type(entity) == MPD_ENTITY_TYPE_SONG) {
 			song = mpd_entity_get_song(entity);
@@ -250,13 +286,74 @@ int mpd_put_playlist(char* buffer)
 				mpd_get_title(song)
 			);
 		}
-
 		mpd_entity_free(entity);
 	}
 
 	/* remove last ',' */
 	cur--;
 	cur += snprintf(cur, end  - cur, "] }");
-	printf("buffer: %s\n", buffer);
+	return cur - buffer;
+}
+
+int mpd_put_browse(char *buffer, char *path)
+{
+	char *cur = buffer;
+	const char *end = buffer + MAX_SIZE;
+	struct mpd_entity *entity;
+    
+    if (!mpd_send_list_meta(conn, path)) {
+		lwsl_err("MPD mpd_send_list_meta: %s\n", mpd_connection_get_error_message(conn));
+		mpd_conn_state = MPD_FAILURE;
+		return 0;
+	}
+	cur += snprintf(cur, end  - cur, "{\"type\":\"browse\",\"data\":[ ");
+
+	while((entity = mpd_recv_entity(conn)) != NULL) {
+        const struct mpd_song *song;
+        const struct mpd_directory *dir;
+        const struct mpd_playlist *pl;
+
+        switch (mpd_entity_get_type(entity)) {
+	        case MPD_ENTITY_TYPE_UNKNOWN:
+	            break;
+
+	        case MPD_ENTITY_TYPE_SONG:
+				song = mpd_entity_get_song(entity);
+				cur += snprintf(cur, end  - cur, 
+					"{\"type\":\"song\",\"uri\":\"%s\",\"duration\":%d,\"title\":\"%s\"},",
+					mpd_song_get_uri(song),
+					mpd_song_get_duration(song),
+					mpd_get_title(song)
+				);
+	            break;
+
+	        case MPD_ENTITY_TYPE_DIRECTORY:
+	            dir = mpd_entity_get_directory(entity);
+	            cur += snprintf(cur, end  - cur, 
+					"{\"type\":\"directory\",\"dir\":\"%s\"},",
+					mpd_directory_get_path(dir)
+				);
+	            break;
+
+	        case MPD_ENTITY_TYPE_PLAYLIST:
+	            pl = mpd_entity_get_playlist(entity);
+	            cur += snprintf(cur, end  - cur, 
+					"{\"type\":\"playlist\",\"plist\":\"%s\"},",
+					mpd_playlist_get_path(pl)
+				);
+	            break;
+        }
+		mpd_entity_free(entity);
+	}
+
+    if (mpd_connection_get_error(conn) != MPD_ERROR_SUCCESS || !mpd_response_finish(conn)) {
+		lwsl_err("MPD mpd_send_list_meta: %s\n", mpd_connection_get_error_message(conn));
+		mpd_conn_state = MPD_FAILURE;
+        return 0;
+    }
+
+	/* remove last ',' */
+	cur--;
+	cur += snprintf(cur, end  - cur, "] }");
 	return cur - buffer;
 }

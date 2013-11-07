@@ -5,7 +5,34 @@ $('#volumeslider').slider().on('slide', function(event) {
 	socket.send("MPD_API_SET_VOLUME,"+event.value);
 });
 
-webSocketConnect();
+$(window).bind('hashchange', function(e) {
+	$('#nav_links > li').each(function(value) {
+		if(window.location.hash === $(this).children().attr('href'))
+			$(this).addClass('active');
+		else
+			$(this).removeClass('active');
+	});		
+
+	switch(window.location.hash) {
+		case "#browse":
+			$('#panel-heading').text("Browse database");
+			socket.send('MPD_API_GET_BROWSE,/');
+			break;
+		case "#about":
+			$('#panel-heading').text("About");
+			break;
+		default:
+			$('#panel-heading').text("Playlist");
+			$('#nav_links > li:first-child').addClass('active');
+			socket.send("MPD_API_GET_PLAYLIST");
+	}
+	socket.send("MPD_API_GET_TRACK_INFO");
+});
+
+$(document).ready(function(){
+	webSocketConnect();
+});
+
 
 function webSocketConnect() {
 
@@ -18,18 +45,19 @@ function webSocketConnect() {
 	try {
 		socket.onopen = function() {
 			console.log("Connected");
-			socket.send("MPD_API_GET_PLAYLIST");
-			socket.send("MPD_API_GET_STATE");
+			$(window).trigger( 'hashchange' );
 		}
 
 		socket.onmessage =function got_packet(msg) {
-			console.log(msg.data);
 			if(msg.data === last_state)
 				return;
 
 			var obj = JSON.parse(msg.data);
 			switch (obj.type) {
 				case "playlist":
+					if(window.location.hash)
+						break;
+
 					$('#salamisandwich').find("tr:gt(0)").remove();
 					for (var song in obj.data) {
 						var minutes = Math.floor(obj.data[song].duration / 60);
@@ -38,17 +66,65 @@ function webSocketConnect() {
 						$('#salamisandwich tr:last').after(
 							"<tr id=\"playlist_" + obj.data[song].id + "\"><td>" + obj.data[song].pos + "</td>" +
 							"<td>"+ obj.data[song].title +"</td>" + 
-							"<td>"+ minutes + ":" + (seconds < 10 ? '0' : '') + seconds +"</td></tr>");
+							"<td>"+ minutes + ":" + (seconds < 10 ? '0' : '') + seconds +
+							"<span class=\"glyphicon glyphicon-trash pull-right hoverhidden\"></span> </td></tr>");
 					}
+					break;
+				case "browse":
+					if(window.location.hash !== '#browse')
+						break;
+					$('#salamisandwich').find("tr:gt(0)").remove();
+
+					for (var item in obj.data) {
+						switch(obj.data[item].type) {
+							case "directory":
+								$('#salamisandwich tr:last').after(
+									"<tr><td><span class=\"glyphicon glyphicon-folder-open\"></span></td>" + 
+									"<td><a href=\"#browse\">" + obj.data[item].dir +"</a></td>" + 
+									"<td></td></tr>");
+								break;
+							case "song":
+								var minutes = Math.floor(obj.data[item].duration / 60);
+								var seconds = obj.data[item].duration - minutes * 60;
+
+								$('#salamisandwich tr:last').after(
+									"<tr><td><span class=\"glyphicon glyphicon-music\"></span></td>" + 
+									"<td><a href=\"#browse\">" + obj.data[item].title +"</a></td>" + 
+									"<td>"+ minutes + ":" + (seconds < 10 ? '0' : '') + seconds +"</td></tr>");
+								break;
+							case "playlist":
+								break;
+						}
+					}
+					$('#salamisandwich td:eq(1)').click(function(){
+						socket.send('MPD_API_GET_BROWSE,'+$(this).text());
+					});
+
 					break;
 				case "state":
 					if(JSON.stringify(obj) === JSON.stringify(last_state))
 						break;
 
+					var total_minutes = Math.floor(obj.data.totalTime / 60);
+					var total_seconds = obj.data.totalTime - total_minutes * 60;
+
+					var elapsed_minutes = Math.floor(obj.data.elapsedTime / 60);
+					var elapsed_seconds = obj.data.elapsedTime - elapsed_minutes * 60;
+
 					$('#volumeslider').slider('setValue', obj.data.volume);
 					var progress = Math.floor(100*obj.data.elapsedTime/obj.data.totalTime) + "%";
 					$('#progressbar').width(progress);
+
+					$('#counter')
+						.text(elapsed_minutes + ":" + 
+						(elapsed_seconds < 10 ? '0' : '') + elapsed_seconds + " / " +
+						total_minutes + ":" + (total_seconds < 10 ? '0' : '') + total_seconds);
+
+					$('#salamisandwich > thead  > tr').each(function(value) {
+						$(this).removeClass('success');
+					}); 
 					$('#playlist_'+obj.data.currentsongid).addClass('success');
+
 					if(obj.data.random)
 						$('#btnrandom').addClass("active")
 					else
@@ -73,11 +149,20 @@ function webSocketConnect() {
 						updatePlayIcon(obj.data.state);
 					if(last_state && (obj.data.volume !== last_state.data.volume))
 						updateVolumeIcon(obj.data.volume);
+
+					if(obj.data.elapsedTime <= 1)
+						socket.send("MPD_API_GET_TRACK_INFO");
+
 					break;
 				case "disconnected":
-					$('#alert').text("Error: Connection to MPD failed.");
-					$('#alert').removeClass("hide alert-info").addclass("alert-danger");
-					break;
+				    $('#alert')
+				    .text("Server lost connection to MPD Host.")
+				    .removeClass("hide alert-info")
+				    .addClass("alert-danger");
+                    break;
+
+				case "current_song":
+					$('#currenttrack').text(" " + obj.data.title);
 
 				default:
 					break;
@@ -188,21 +273,18 @@ function updateDB()
 	}, 5000);
 }
 
-function toggleButton(id) {
-	switch (obj.type) {
-		case "btnrandom":
-			socket.send("MPD_API_TOGGLE_RANDOM");
-			break;
-		case "btnconsume":
-			socket.send("MPD_API_TOGGLE_CONSUME");
-			break;
-		case "btnsingle":
-			socket.send("MPD_API_TOGGLE_SINGLE");
-			break;
-		case "btnrepeat":
-			socket.send("MPD_API_TOGGLE_REPEAT");
-			break;
-		default:
-			break;
-	}
-}
+
+$('#btnrandom').on('click', function (e) {
+	socket.send("MPD_API_TOGGLE_RANDOM," + ($(this).hasClass('active') ? 0 : 1));
+
+});
+$('#btnconsume').on('click', function (e) {
+	socket.send("MPD_API_TOGGLE_CONSUME," + ($(this).hasClass('active') ? 0 : 1));
+
+});
+$('#btnsingle').on('click', function (e) {
+	socket.send("MPD_API_TOGGLE_SINGLE," + ($(this).hasClass('active') ? 0 : 1));
+});
+$('#btnrepeat').on('click', function (e) {
+	socket.send("MPD_API_TOGGLE_REPEAT," + ($(this).hasClass('active') ? 0 : 1));
+});
