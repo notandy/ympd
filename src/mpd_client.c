@@ -103,6 +103,14 @@ int callback_ympd(struct libwebsocket_context *context,
 				mpd_send_next(conn);
 				mpd_response_finish(conn);
 			}
+			else if(!strcmp((const char *)in, MPD_API_RM_ALL)) {
+				mpd_run_clear(conn);
+			}
+			else if(!strncmp((const char *)in, MPD_API_RM_TRACK, sizeof(MPD_API_RM_TRACK)-1)) {
+				unsigned id;
+				if(sscanf(in, "MPD_API_RM_TRACK,%d", &id))
+					mpd_run_delete_id(conn, id);
+			}
 			else if(!strncmp((const char *)in, MPD_API_TOGGLE_RANDOM, sizeof(MPD_API_TOGGLE_RANDOM)-1)) {
 				unsigned random;
 				if(sscanf(in, "MPD_API_TOGGLE_RANDOM,%d", &random))
@@ -134,6 +142,14 @@ int callback_ympd(struct libwebsocket_context *context,
 					printf("sending '%s'\n", dir);
 					pss->do_send |= DO_SEND_BROWSE;
 					pss->browse_path = dir;
+				}
+			}
+			else if(!strncmp((const char *)in, MPD_API_ADD_TRACK, sizeof(MPD_API_ADD_TRACK)-1)) {
+				char *uri;
+				if(sscanf(in, "MPD_API_ADD_TRACK,%m[^\t\n]", &uri) && uri != NULL) {
+					printf("sending '%s'\n", uri);
+					mpd_run_add(conn, uri);
+					free(uri);
 				}
 			}
 
@@ -247,11 +263,11 @@ int mpd_put_current_song(char *buffer)
 		return 0;
 
 	len = snprintf(buffer, MAX_SIZE, "{\"type\": \"current_song\", \"data\":"
-		"{\"id\":%d, \"pos\":%d, \"duration\":%d, \"title\":\"%s\"}}",
-		mpd_song_get_id(song),
+		"{\"pos\":%d, \"title\":\"%s\", \"artist\":\"%s\", \"album\":\"%s\"}}",
 		mpd_song_get_pos(song),
-		mpd_song_get_duration(song),
-		mpd_get_title(song)
+		mpd_get_title(song),
+		mpd_song_get_tag(song, MPD_TAG_ARTIST, 0),
+		mpd_song_get_tag(song, MPD_TAG_ALBUM, 0)
 	);
 	mpd_song_free(song);
 	mpd_response_finish(conn);

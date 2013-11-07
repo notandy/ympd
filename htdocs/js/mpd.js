@@ -6,14 +6,10 @@ $('#volumeslider').slider().on('slide', function(event) {
 	socket.send("MPD_API_SET_VOLUME,"+event.value);
 });
 
-$('#nav_links > li').on('click', function(e) {
-	//$('#nav_links > li:contains(' + History.getState().title + ')').removeClass('active');
-	//History.pushState({state:$(this).attr('id')}, $(this).text(), '?' + $(this).attr('id'));
-});
-
 var app = $.sammy(function() {
 	this.before('/', function(e, data) {
 		socket.send("MPD_API_GET_TRACK_INFO");
+		$('#nav_links > li').removeClass('active');
 	});
 
 	this.get('#/', function() {
@@ -21,7 +17,9 @@ var app = $.sammy(function() {
 		$('#salamisandwich').find("tr:gt(0)").remove();
 		socket.send("MPD_API_GET_PLAYLIST");
 		$('#panel-heading').text("Playlist");
+		$('#playlist').addClass('active');
 	});
+
 	this.get(/\#\/browse\/(.*)/, function() {
 		current_app = 'browse';
 		$('#salamisandwich').find("tr:gt(0)").remove();
@@ -31,50 +29,26 @@ var app = $.sammy(function() {
 
 		socket.send("MPD_API_GET_BROWSE,"+path);
 		$('#panel-heading').text("Browse database: "+path+"");
+		$('#browse').addClass('active');
 	});
-	this.get('#/about', function() {
+
+	this.get('#/about/', function() {
 		current_app = 'about';
 		$('#panel-heading').text("About");
-	}); 
+		$('#about').addClass('active');
+	});
+
 	this.get("/", function(context) {
 		context.redirect("#/");
 	});
 });
 
-
-
-/*
-History.Adapter.bind(window,'statechange',function(){ // Note: We are using statechange instead of popstate
-
-    if(!State.data.state) {
-    	//$('#' + State.data).
-    }
-
-	$('#panel-heading').text(State.title);
-	switch(State.data.state) {
-		case "nav_browse":
-			socket.send('MPD_API_GET_BROWSE,/');
-			break;
-		case "nav_about":
-			break;
-		case "nav_playlist":
-		default:
-			
-	}
-	$(this).addClass('active');
-
-    console.log(" Browser State: ");
-    console.log(State);
-	socket.send("MPD_API_GET_TRACK_INFO");
-});
-*/
 $(document).ready(function(){
 	webSocketConnect();
 });
 
 
 function webSocketConnect() {
-
 	if (typeof MozWebSocket != "undefined") {
 		socket = new MozWebSocket(get_appropriate_ws_url(), "ympd-client");
 	} else {
@@ -99,19 +73,36 @@ function webSocketConnect() {
 				case "playlist":
 					//if(state.data.state !== 'nav_playlist')
 					//	break;
+					console.log("Got Playlist...");
 					if(current_app !== 'playlist')
 						break;
 
+					$('#salamisandwich > tbody').empty();
 					for (var song in obj.data) {
 						var minutes = Math.floor(obj.data[song].duration / 60);
 						var seconds = obj.data[song].duration - minutes * 60;
 
-						$('#salamisandwich tr:last').after(
-							"<tr id=\"playlist_" + obj.data[song].id + "\"><td>" + obj.data[song].pos + "</td>" +
+						$('#salamisandwich > tbody').append(
+							"<tr trackid=\"" + obj.data[song].id + "\"><td>" + obj.data[song].pos + "</td>" +
 							"<td>"+ obj.data[song].title +"</td>" + 
 							"<td>"+ minutes + ":" + (seconds < 10 ? '0' : '') + seconds +
-							"<span class=\"glyphicon glyphicon-trash pull-right hoverhidden\"></span> </td></tr>");
+							"</td></tr>");
 					}
+
+					$('#salamisandwich > tbody > tr').on({
+						mouseover: function(){
+							if($(this).children().last().has("a").length == 0)
+								$(this).children().last().append(
+									"<a class=\"btn btn-xs pull-right btn-group-hover\" href=\"#/\" " +
+									"onclick=\"socket.send('MPD_API_RM_TRACK," + $(this).attr("trackid") +"'); $(this).parents('tr').remove();\">" +
+									"<span class=\"glyphicon glyphicon-trash\"></span></a>")
+								.find('a').fadeTo('fast',1);
+						},
+						mouseleave: function(){
+							$(this).children().last().find("a").stop().remove();
+						}
+					});
+
 					break;
 				case "browse":
 					//if(state.data.state !== 'nav_browse')
@@ -123,8 +114,9 @@ function webSocketConnect() {
 					for (var item in obj.data) {
 						switch(obj.data[item].type) {
 							case "directory":
-								$('#salamisandwich tr:last').after(
-									"<tr><td><span class=\"glyphicon glyphicon-folder-open\"></span></td>" + 
+								$('#salamisandwich > tbody').append(
+									"<tr uri=\"" + obj.data[item].dir + "\">" +
+									"<td><span class=\"glyphicon glyphicon-folder-open\"></span></td>" + 
 									"<td><a href=\"#/browse/"+ obj.data[item].dir +"\">" + obj.data[item].dir +"</a></td>" + 
 									"<td></td></tr>");
 								break;
@@ -132,15 +124,33 @@ function webSocketConnect() {
 								var minutes = Math.floor(obj.data[item].duration / 60);
 								var seconds = obj.data[item].duration - minutes * 60;
 
-								$('#salamisandwich tr:last').after(
-									"<tr><td><span class=\"glyphicon glyphicon-music\"></span></td>" + 
-									"<td><a href=\"#\">" + obj.data[item].title +"</a></td>" + 
+								$('#salamisandwich > tbody').append(
+									"<tr uri=\"" + obj.data[item].uri + "\">" +
+									"<td><span class=\"glyphicon glyphicon-music\"></span></td>" + 
+									"<td>" + obj.data[item].title +"</td>" + 
 									"<td>"+ minutes + ":" + (seconds < 10 ? '0' : '') + seconds +"</td></tr>");
 								break;
+
 							case "playlist":
 								break;
 						}
 					}
+
+					$('#salamisandwich > tbody > tr').on({
+						mouseover: function(){
+							if($(this).children().last().has("a").length == 0)
+								if($(this).attr("uri").length > 0)
+									$(this).children().last().append(
+										"<a class=\"btn btn-xs pull-right btn-group-hover\" " +
+										"onclick=\"socket.send('MPD_API_ADD_TRACK," + $(this).attr("uri") +"'); $(this).parents('tr').addClass('success');\">" +
+										"<span class=\"glyphicon glyphicon-plus\"></span></a>")
+										.find('a').fadeTo('fast',1);
+						},
+						mouseleave: function(){
+							$(this).children().last().find("a").stop().remove();
+						}
+					});
+
 					$('#salamisandwich td:eq(1)').click(function(){
 						console.log($(this).children().attr("path"));
 						//socket.send('MPD_API_GET_BROWSE,'+;
@@ -209,7 +219,10 @@ function webSocketConnect() {
 
 				case "current_song":
 					$('#currenttrack').text(" " + obj.data.title);
-
+					if(obj.data.album)
+						$('#album').text(obj.data.album);
+					if(obj.data.artist)
+						$('#artist').text(obj.data.artist);
 				default:
 					break;
 			}
