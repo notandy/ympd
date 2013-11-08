@@ -98,6 +98,12 @@ function webSocketConnect() {
 									"<span class=\"glyphicon glyphicon-trash\"></span></a>")
 								.find('a').fadeTo('fast',1);
 						},
+						click: function() {
+							console.log($(this));
+							$('#salamisandwich > tbody > tr').removeClass('success');
+							socket.send('MPD_API_PLAY_TRACK,'+$(this).attr('trackid'));
+							$(this).addClass('success');
+						},
 						mouseleave: function(){
 							$(this).children().last().find("a").stop().remove();
 						}
@@ -176,10 +182,8 @@ function webSocketConnect() {
 						(elapsed_seconds < 10 ? '0' : '') + elapsed_seconds + " / " +
 						total_minutes + ":" + (total_seconds < 10 ? '0' : '') + total_seconds);
 
-					$('#salamisandwich > thead  > tr').each(function(value) {
-						$(this).removeClass('success');
-					}); 
-					$('#playlist_'+obj.data.currentsongid).addClass('success');
+					$('#salamisandwich > tbody > tr').removeClass('success').css("font-weight", "");
+					$('#salamisandwich > tbody > tr[trackid='+obj.data.currentsongid+']').addClass('success').css("font-weight", "bold");
 
 					if(obj.data.random)
 						$('#btnrandom').addClass("active")

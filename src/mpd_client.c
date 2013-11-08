@@ -111,6 +111,11 @@ int callback_ympd(struct libwebsocket_context *context,
 				if(sscanf(in, "MPD_API_RM_TRACK,%d", &id))
 					mpd_run_delete_id(conn, id);
 			}
+			else if(!strncmp((const char *)in, MPD_API_PLAY_TRACK, sizeof(MPD_API_PLAY_TRACK)-1)) {
+				unsigned id;
+				if(sscanf(in, "MPD_API_PLAY_TRACK,%d", &id))
+					mpd_run_play_id(conn, id);
+			}
 			else if(!strncmp((const char *)in, MPD_API_TOGGLE_RANDOM, sizeof(MPD_API_TOGGLE_RANDOM)-1)) {
 				unsigned random;
 				if(sscanf(in, "MPD_API_TOGGLE_RANDOM,%d", &random))

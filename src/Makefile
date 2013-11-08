@@ -1,4 +1,4 @@
-CFLAGS = -ggdb -Wall
+CFLAGS = -Wall -Os
 LFLAGS = `pkg-config --libs libwebsockets libmpdclient`
 
 .PHONY: clean

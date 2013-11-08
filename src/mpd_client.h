@@ -25,6 +25,7 @@ enum mpd_conn_states {
 #define MPD_API_GET_TRACK_INFO   "MPD_API_GET_TRACK_INFO"
 #define MPD_API_GET_BROWSE       "MPD_API_GET_BROWSE"
 #define MPD_API_ADD_TRACK        "MPD_API_ADD_TRACK"
+#define MPD_API_PLAY_TRACK       "MPD_API_PLAY_TRACK"
 #define MPD_API_RM_TRACK         "MPD_API_RM_TRACK"
 #define MPD_API_RM_ALL           "MPD_API_RM_ALL"
 #define MPD_API_SET_VOLUME       "MPD_API_SET_VOLUME"
