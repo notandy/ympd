@@ -1,33 +1,35 @@
 # This module tries to find libWebsockets library and include files
 #
+# LIBWEBSOCKETS_FOUND, If false, do not try to use libWebSockets
 # LIBWEBSOCKETS_INCLUDE_DIR, path where to find libwebsockets.h
 # LIBWEBSOCKETS_LIBRARY_DIR, path where to find libwebsockets.so
 # LIBWEBSOCKETS_LIBRARIES, the library to link against
-# LIBWEBSOCKETS_FOUND, If false, do not try to use libWebSockets
 #
 # This currently works probably only for Linux
 
-FIND_PATH ( LIBWEBSOCKETS_INCLUDE_DIR libwebsockets.h
-    /usr/local/include
-    /usr/include
+find_package(PkgConfig)
+pkg_check_modules(PC_LIBWEBSOCKETS QUIET libwebsockets)
+set(LIBWEBSOCKETS_DEFINITIONS ${PC_LIBWEBSOCKETS_CFLAGS_OTHER})
+
+find_path(LIBWEBSOCKETS_INCLUDE_DIR libwebsockets.h
+    HINTS ${PC_LIBWEBSOCKETS_INCLUDEDIR} ${PC_LIBWEBSOCKETS_INCLUDE_DIRS}
 )
 
-FIND_LIBRARY ( LIBWEBSOCKETS_LIBRARIES websockets
-    /usr/local/lib
-    /usr/lib
+find_library(LIBWEBSOCKETS_LIBRARY websockets
+    HINTS ${PC_LIBWEBSOCKETS_LIBDIR} ${PC_LIBWEBSOCKETS_LIBRARY_DIRS}
 )
 
-GET_FILENAME_COMPONENT( LIBWEBSOCKETS_LIBRARY_DIR ${LIBWEBSOCKETS_LIBRARIES} PATH )
+set(LIBWEBSOCKETS_LIBRARIES ${LIBWEBSOCKETS_LIBRARY})
+set(LIBWEBSOCKETS_INCLUDE_DIRS ${LIBWEBSOCKETS_INCLUDE_DIR})
 
-SET ( LIBWEBSOCKETS_FOUND "NO" )
-IF ( LIBWEBSOCKETS_INCLUDE_DIR )
-    IF ( LIBWEBSOCKETS_LIBRARIES )
-        SET ( LIBWEBSOCKETS_FOUND "YES" )
-    ENDIF ( LIBWEBSOCKETS_LIBRARIES )
-ENDIF ( LIBWEBSOCKETS_INCLUDE_DIR )
+include(FindPackageHandleStandardArgs)
+# handle the QUIETLY and REQUIRED arguments and set LIBWEBSOCKETS_FOUND to TRUE
+# if all listed variables are TRUE
+find_package_handle_standard_args(LibWebSockets DEFAULT_MSG
+    LIBWEBSOCKETS_LIBRARY LIBWEBSOCKETS_INCLUDE_DIR
+)
 
-MARK_AS_ADVANCED(
-    LIBWEBSOCKETS_LIBRARY_DIR
+mark_as_advanced(
+    LIBWEBSOCKETS_LIBRARY
     LIBWEBSOCKETS_INCLUDE_DIR
-    LIBWEBSOCKETS_LIBRARIES
 )
