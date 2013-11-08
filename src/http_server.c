@@ -3,8 +3,7 @@
 #include <string.h>
 #include "http_server.h"
 
-#define INSTALL_DATADIR "/home/andy/workspace/ympd"
-#define LOCAL_RESOURCE_PATH INSTALL_DATADIR"/htdocs"
+#define LOCAL_RESOURCE_PATH DATADIR"/htdocs"
 char *resource_path = LOCAL_RESOURCE_PATH;
 
 struct serveable {
@@ -38,7 +37,7 @@ int callback_http(struct libwebsocket_context *context,
 	void *in, size_t len)
 {
 	char buf[256];
-	int n;
+	size_t n;
 
 	switch (reason) {
 		case LWS_CALLBACK_HTTP:
