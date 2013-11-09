@@ -5,21 +5,6 @@
 #define DO_SEND_TRACK_INFO (1 << 2)
 #define DO_SEND_BROWSE     (1 << 3)
 
-
-struct libwebsocket_protocols *protocol_array;
-
-struct per_session_data__ympd {
-	int do_send;
-	unsigned queue_version;
-	char *browse_path;
-};
-
-enum mpd_conn_states {
-	MPD_FAILURE,
-	MPD_DISCONNECTED,
-	MPD_CONNECTED
-};
-
 #define MPD_API_GET_SEEK         "MPD_API_GET_SEEK"
 #define MPD_API_GET_PLAYLIST     "MPD_API_GET_PLAYLIST"
 #define MPD_API_GET_TRACK_INFO   "MPD_API_GET_TRACK_INFO"
@@ -41,13 +26,22 @@ enum mpd_conn_states {
 #define MPD_API_TOGGLE_SINGLE    "MPD_API_TOGGLE_SINGLE"
 #define MPD_API_TOGGLE_REPEAT    "MPD_API_TOGGLE_REPEAT"
 
+struct per_session_data__ympd {
+    int do_send;
+    unsigned queue_version;
+    char *browse_path;
+};
 
+enum mpd_conn_states {
+    MPD_FAILURE,
+    MPD_DISCONNECTED,
+    MPD_CONNECTED
+};
 
 int callback_ympd(struct libwebsocket_context *context,
-			struct libwebsocket *wsi,
-			enum libwebsocket_callback_reasons reason,
-			void *user, void *in, size_t len);
-
+        struct libwebsocket *wsi,
+        enum libwebsocket_callback_reasons reason,
+        void *user, void *in, size_t len);
 void mpd_loop();
 int mpd_put_state(char *buffer);
 int mpd_put_current_song(char *buffer);
