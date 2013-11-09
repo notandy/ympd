@@ -33,8 +33,6 @@ var app = $.sammy(function() {
 	});
 
 	this.get('#/about/', function() {
-		current_app = 'about';
-		$('#panel-heading').text("About");
 		$('#about').addClass('active');
 	});
 
@@ -213,6 +211,7 @@ function webSocketConnect() {
 					if(obj.data.elapsedTime <= 1)
 						socket.send("MPD_API_GET_TRACK_INFO");
 
+					$('#alert').addClass("hide");
 					break;
 				case "disconnected":
 				    $('#alert')

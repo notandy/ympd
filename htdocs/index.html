@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="">
-  <meta name="author" content="">
+  <meta name="description" content="ympd - fast and lightweight MPD webclient">
+  <meta name="author" content="andy@ndyk.de">
 
   <title>ympd</title>
 
@@ -39,7 +39,7 @@
         <ul id="nav_links" class="nav navbar-nav">
           <li id="playlist"><a href="#/">Playlist</a></li>
           <li id="browse"><a href="#/browse/">Browse database</a></li>
-          <li id="about"><a href="#/about/">About</a></li>
+          <li><a href="#" data-toggle="modal" data-target="#about">About</a></li>
         </ul>
 
         <form class="navbar-form navbar-right" role="search">
@@ -85,17 +85,21 @@
           <!-- Default panel contents -->
           <div id="panel-heading" class="panel-heading">Playlist</div>
           <div class="panel-body">
-            <h1><span id="track-icon" class="glyphicon glyphicon-play"></span><span id="currenttrack"></span></h1>
-            <h4></span><span id="album" class="text"></span>
-              <span id="artist" class="text pull-right"></span></h4>
+            <h1>
+              <span id="track-icon" class="glyphicon glyphicon-play"></span>
+              <span id="currenttrack"></span>
+            </h1>
+            <h4>
+              <span id="album" class="text"></span>
+              <span id="artist" class="text pull-right"></span>
+            </h4>
             <p id="counter" class="text pull-right">&nbsp;&nbsp;</p>
 
             <div class="progress progress-striped active">
               <div id="progressbar" class="progress-bar navbar-left"  role="progressbar" aria-valuenow="45" aria-valuemin="0" aria-valuemax="100">
               </div>
             </div>
-
-          </div>
+          </div><!-- /.panel-body -->
 
           <!-- Table -->
           <table id="salamisandwich" class="table table-hover">
@@ -109,8 +113,8 @@
             <tbody>
             </tbody>
           </table>
-        </div>
-      </div>
+        </div><!-- /.panel -->
+      </div><!-- /.col-md-10 -->
 
       <div class="col-md-2" >
         <div data-spy="affix">
@@ -138,10 +142,40 @@
           </ul>
         </div>
       </div><!-- /.col-md-2 -->
-
     </div><!-- /.row -->
   </div><!-- /.container -->
 
+  <!-- Modal -->
+  <div class="modal fade" id="about" tabindex="-1" role="dialog" aria-labelledby="aboutLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+          <h2 class="modal-title" id="aboutLabel">About</h2>
+        </div>
+        <div class="modal-body">
+          <h4>ympd - <small>a lightweight and fast Music Player Daemon web client</small></h4>
+          <br/>
+          ympd is written in pure C and based completely on HTML5 WebSockets with Bootstrap.
+          <h5>ympd uses following excellent software:</h5>
+          <h6><a href="http://libwebsockets.org">libWebSockets</a> <small>LGPL2.1 + static link exception</small></h6>
+          <h6><a href="http://www.musicpd.org/libs/libmpdclient/">libMPDClient</a> <small>BSD License</small></h6>
+          <br/>
+          <h5>ympd was developed by:</h5>
+          <blockquote>
+            <address>
+              <strong>Andrew Karpow</strong><br>
+              <a href="mailto:andy@ndyk.de">andy@ndyk.de</a><br/>
+              <a href="http://www.ympd.de">www.ympd.de</a>
+            </address>
+          </blockquote>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+        </div>
+      </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+  </div><!-- /.modal -->
 
 
   <!-- Bootstrap core JavaScript
