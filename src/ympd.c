@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <getopt.h>
 #include <sys/time.h>
 
 #include "http_server.h"
@@ -41,23 +42,48 @@ void bye()
 int main(int argc, char **argv)
 {
     int n, gid = -1, uid = -1;
+    int option_index = 0;
+    unsigned int oldus = 0;
     struct libwebsocket_context *context;
+    struct lws_context_creation_info info;
     const char *cert_filepath = NULL;
     const char *private_key_filepath = NULL;
     const char *iface = NULL;
-    struct lws_context_creation_info info;
-    unsigned int oldus = 0;
 
     atexit(bye);
     memset(&info, 0, sizeof info);
-    info.port = 80;
+    info.port = 8080;
+    mpd_host = "127.0.0.1";
+    mpd_port = 6600;
+    lws_set_log_level(LLL_ERR | LLL_WARN, NULL);
 
-    while((n = getopt(argc, argv, "i:p:r:c:k:g:u:h")) != -1) {
+    static struct option long_options[] = {
+        {"host",         required_argument, 0, 'h'},
+        {"port",         required_argument, 0, 'p'},
+        {"interface",    required_argument, 0, 'i'},
+        {"webport",      required_argument, 0, 'w'},
+        {"resourcepath", required_argument, 0, 'r'},
+        {"ssl_cert",     required_argument, 0, 'c'},
+        {"ssl_key",      required_argument, 0, 'k'},
+        {"gid",          required_argument, 0, 'g'},
+        {"uid",          required_argument, 0, 'u'},
+        {"verbose",      optional_argument, 0, 'v'},
+        {"help",         no_argument,       0,  0 },
+        {0,              0,                 0,  0 }
+    };
+
+    while((n = getopt_long(argc, argv, "h:p:i:r:c:k:g:uv::W",
+                long_options, &option_index)) != -1) {
         switch (n) {
+            case 'h':
+                mpd_host = optarg;
+                break;
+            case 'p':
+                mpd_port = atoi(optarg);
             case 'i':
                 iface = optarg;
                 break;
-            case 'p':
+            case 'w':
                 info.port = atoi(optarg);
                 break;
             case 'r':
@@ -75,17 +101,26 @@ int main(int argc, char **argv)
             case 'u':
                 uid = atoi(optarg);
                 break;
-            case '?':
-            case 'h':
-                lwsl_err("Usage: %s [OPTION]...\n"
-                        "\t[-p <port>]\n"
-                        "\t[-i <interface>]\n"
-                        "\t[-r <htdocs path>]\n"
-                        "\t[-c <ssl certificate filepath>]\n"
-                        "\t[-k <ssl private key filepath>]\n"
-                        "\t[-g <group id after socket bind>]\n"
-                        "\t[-u <user id after socket bind>]\n"
-                        "\t[-h]\n"
+            case 'v':
+                if(optarg)
+                    lws_set_log_level(strtol(optarg, NULL, 10), NULL);
+                else
+                    lws_set_log_level(LLL_ERR | LLL_WARN | 
+                            LLL_NOTICE | LLL_INFO, NULL);
+                break;
+            default:
+                fprintf(stderr, "Usage: %s [OPTION]...\n\n"
+                        "\t-h, --host <host>\t\tconnect to mpd at host [localhost]\n"
+                        "\t-p, --port <port>\t\tconnect to mpd at port [6600]\n"
+                        "\t-i, --interface <interface>\tlisten interface for webserver [all]\n"
+                        "\t-w, --webport <port>\t\tlisten port for webserver [8080]\n"
+                        "\t-r, --resourcepath <path>\tresourcepath for webserver [" LOCAL_RESOURCE_PATH "]\n"
+                        "\t-c, --ssl_cert <filepath>\tssl certificate ssl_private_key_filepath\n"
+                        "\t-k, --ssl_key <filepath>\tssl private key filepath\n"
+                        "\t-u, --uid <id>\t\t\tuser id after socket bind\n"
+                        "\t-g, --gid <id>\t\t\tgroup id after socket bind\n"
+                        "\t-v, --verbose[<level>]\t\tverbosity level\n"
+                        "\t--help\t\t\t\tthis help\n"
                         , argv[0]);
                 return EXIT_FAILURE;
         }

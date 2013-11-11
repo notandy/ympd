@@ -47,3 +47,6 @@ int mpd_put_state(char *buffer);
 int mpd_put_current_song(char *buffer);
 int mpd_put_playlist(char *buffer);
 int mpd_put_browse(char *buffer, char *path);
+
+int mpd_port;
+const char *mpd_host;

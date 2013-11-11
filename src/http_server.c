@@ -3,7 +3,6 @@
 #include <string.h>
 #include "http_server.h"
 
-#define LOCAL_RESOURCE_PATH DATADIR"/htdocs"
 char *resource_path = LOCAL_RESOURCE_PATH;
 
 struct serveable {

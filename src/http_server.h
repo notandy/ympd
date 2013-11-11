@@ -9,3 +9,4 @@ int callback_http(struct libwebsocket_context *context,
         enum libwebsocket_callback_reasons reason, void *user,
         void *in, size_t len);
 
+#define LOCAL_RESOURCE_PATH DATADIR"/htdocs"
