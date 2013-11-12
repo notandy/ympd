@@ -1,0 +1,6 @@
+# Set this to the user and group the ympd should get after socket opening.
+YMPD_USER=ympd
+YMPD_GROUP=ympd
+
+# See ympd --help for more options
+DAEMON_OPT="--uid $YMPD_USER --gid $YMPD_GROUP"
