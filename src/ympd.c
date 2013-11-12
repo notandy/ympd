@@ -72,7 +72,7 @@ int main(int argc, char **argv)
         {0,              0,                 0,  0 }
     };
 
-    while((n = getopt_long(argc, argv, "h:p:i:r:c:k:g:uv::W",
+    while((n = getopt_long(argc, argv, "h:p:i:w:r:c:k:g:u:v::",
                 long_options, &option_index)) != -1) {
         switch (n) {
             case 'h':
@@ -117,8 +117,8 @@ int main(int argc, char **argv)
                         "\t-r, --resourcepath <path>\tresourcepath for webserver [" LOCAL_RESOURCE_PATH "]\n"
                         "\t-c, --ssl_cert <filepath>\tssl certificate ssl_private_key_filepath\n"
                         "\t-k, --ssl_key <filepath>\tssl private key filepath\n"
-                        "\t-u, --uid <id>\t\t\tuser id after socket bind\n"
-                        "\t-g, --gid <id>\t\t\tgroup id after socket bind\n"
+                        "\t-u, --uid <id>\t\t\tuser-id after socket bind\n"
+                        "\t-g, --gid <id>\t\t\tgroup-id after socket bind\n"
                         "\t-v, --verbose[<level>]\t\tverbosity level\n"
                         "\t--help\t\t\t\tthis help\n"
                         , argv[0]);
