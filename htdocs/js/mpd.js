@@ -14,6 +14,7 @@ var app = $.sammy(function() {
 
 	this.get('#/', function() {
 		current_app = 'playlist';
+		$('#breadcrump').addClass('hide');
 		$('#salamisandwich').find("tr:gt(0)").remove();
 		socket.send("MPD_API_GET_PLAYLIST");
 		$('#panel-heading').text("Playlist");
@@ -22,6 +23,7 @@ var app = $.sammy(function() {
 
 	this.get(/\#\/browse\/(.*)/, function() {
 		current_app = 'browse';
+		$('#breadcrump').removeClass('hide').empty();
 		$('#salamisandwich').find("tr:gt(0)").remove();
 		var path = this.params['splat'];
 		if(path == '')
@@ -29,11 +31,19 @@ var app = $.sammy(function() {
 
 		socket.send("MPD_API_GET_BROWSE,"+path);
 		$('#panel-heading').text("Browse database: "+path+"");
-		$('#browse').addClass('active');
-	});
+		var path_array = path[0].split('/');
+		var full_path = "";
+		$.each(path_array, function(index, chunk) {
+			if(path_array.length - 1 == index) {
+				$('#breadcrump').append("<li class=\"active\">"+ chunk + "</li>");
+				return;
+			}
 
-	this.get('#/about/', function() {
-		$('#about').addClass('active');
+			full_path = full_path + chunk;
+			$('#breadcrump').append("<li><a href=\"#/browse/" + full_path + "\">"+chunk+"</a></li>");
+			full_path += "/";
+		});
+		$('#browse').addClass('active');
 	});
 
 	this.get("/", function(context) {
@@ -91,13 +101,12 @@ function webSocketConnect() {
 						mouseover: function(){
 							if($(this).children().last().has("a").length == 0)
 								$(this).children().last().append(
-									"<a class=\"btn btn-xs pull-right btn-group-hover\" href=\"#/\" " +
+									"<a class=\"pull-right btn-group-hover\" href=\"#/\" " +
 									"onclick=\"socket.send('MPD_API_RM_TRACK," + $(this).attr("trackid") +"'); $(this).parents('tr').remove();\">" +
 									"<span class=\"glyphicon glyphicon-trash\"></span></a>")
 								.find('a').fadeTo('fast',1);
 						},
 						click: function() {
-							console.log($(this));
 							$('#salamisandwich > tbody > tr').removeClass('success');
 							socket.send('MPD_API_PLAY_TRACK,'+$(this).attr('trackid'));
 							$(this).addClass('success');
@@ -113,7 +122,6 @@ function webSocketConnect() {
 					//	break;
 					if(current_app !== 'browse')
 						break;
-					console.log(app);
 
 					for (var item in obj.data) {
 						switch(obj.data[item].type) {
@@ -121,7 +129,7 @@ function webSocketConnect() {
 								$('#salamisandwich > tbody').append(
 									"<tr uri=\"" + obj.data[item].dir + "\">" +
 									"<td><span class=\"glyphicon glyphicon-folder-open\"></span></td>" + 
-									"<td><a href=\"#/browse/"+ obj.data[item].dir +"\">" + obj.data[item].dir +"</a></td>" + 
+									"<td><a href=\"#/browse/"+ obj.data[item].dir +"\">" + basename(obj.data[item].dir) +"</a></td>" + 
 									"<td></td></tr>");
 								break;
 							case "song":
@@ -145,7 +153,7 @@ function webSocketConnect() {
 							if($(this).children().last().has("a").length == 0)
 								if($(this).attr("uri").length > 0)
 									$(this).children().last().append(
-										"<a class=\"btn btn-xs pull-right btn-group-hover\" " +
+										"<a role=\"button\" class=\"pull-right btn-group-hover\" " +
 										"onclick=\"socket.send('MPD_API_ADD_TRACK," + $(this).attr("uri") +"'); $(this).parents('tr').addClass('success');\">" +
 										"<span class=\"glyphicon glyphicon-plus\"></span></a>")
 										.find('a').fadeTo('fast',1);
@@ -153,11 +161,6 @@ function webSocketConnect() {
 						mouseleave: function(){
 							$(this).children().last().find("a").stop().remove();
 						}
-					});
-
-					$('#salamisandwich td:eq(1)').click(function(){
-						console.log($(this).children().attr("path"));
-						//socket.send('MPD_API_GET_BROWSE,'+;
 					});
 
 					break;
@@ -335,6 +338,9 @@ function updateDB()
 	}, 5000);
 }
 
+function basename(path) {
+   return path.split('/').reverse()[0];
+}
 
 $('#btnrandom').on('click', function (e) {
 	socket.send("MPD_API_TOGGLE_RANDOM," + ($(this).hasClass('active') ? 0 : 1));
