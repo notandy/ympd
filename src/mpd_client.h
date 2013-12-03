@@ -38,6 +38,7 @@ enum mpd_conn_states {
     MPD_CONNECTED
 };
 
+void *mpd_idle_connection(void *_data);
 int callback_ympd(struct libwebsocket_context *context,
         struct libwebsocket *wsi,
         enum libwebsocket_callback_reasons reason,

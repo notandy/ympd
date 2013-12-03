@@ -8,7 +8,7 @@ set(CPACK_PACKAGE_VENDOR "Andrew Karpow <andy@ndyk.de>")
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "andy@ndyk.de")
 set(CPACK_PACKAGE_VERSION_MAJOR "0")
 set(CPACK_PACKAGE_VERSION_MINOR "1")
-set(CPACK_PACKAGE_VERSION_PATCH "0")
+set(CPACK_PACKAGE_VERSION_PATCH "2")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmake/")
 
 find_package(LibWebSockets REQUIRED)
@@ -16,7 +16,8 @@ find_package(LibMPDClient REQUIRED)
 include(CheckCSourceCompiles)
 include(CPack)
 
-set(CMAKE_C_FLAGS_DEBRELEASE "-O2 -DNDEBUG -pipe")
+set(CMAKE_C_FLAGS_DEBRELEASE "-Wall -O2 -DNDEBUG -pipe")
+set(CMAKE_C_FLAGS_DEBUG "-Wall -ggdb")
 
 set(SOURCES
     src/ympd.c

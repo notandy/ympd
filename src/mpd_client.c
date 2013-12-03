@@ -21,6 +21,11 @@ enum mpd_conn_states mpd_conn_state = MPD_DISCONNECTED;
 enum mpd_state mpd_play_state = MPD_STATE_UNKNOWN;
 unsigned queue_version;
 
+void *mpd_idle_connection(void *_data)
+{
+
+}
+
 int callback_ympd(struct libwebsocket_context *context,
         struct libwebsocket *wsi,
         enum libwebsocket_callback_reasons reason,
@@ -251,24 +256,30 @@ int mpd_put_state(char *buffer)
 
 int mpd_put_current_song(char *buffer)
 {
+    char *cur = buffer;
+    const char *end = buffer + MAX_SIZE;
     struct mpd_song *song;
-    int len;
 
     song = mpd_run_current_song(conn);
     if(song == NULL)
         return 0;
 
-    len = snprintf(buffer, MAX_SIZE, "{\"type\": \"current_song\", \"data\":"
-            "{\"pos\":%d, \"title\":\"%s\", \"artist\":\"%s\", \"album\":\"%s\"}}",
+    cur += snprintf(cur, end - cur, "{\"type\": \"current_song\", \"data\":"
+            "{\"pos\":%d, \"title\":\"%s\"",
             mpd_song_get_pos(song),
-            mpd_get_title(song),
-            mpd_song_get_tag(song, MPD_TAG_ARTIST, 0),
-            mpd_song_get_tag(song, MPD_TAG_ALBUM, 0)
-            );
+            mpd_get_title(song));
+    if(mpd_song_get_tag(song, MPD_TAG_ARTIST, 0) != NULL)
+        cur += snprintf(cur, end - cur, ", \"artist\":\"%s\"",
+            mpd_song_get_tag(song, MPD_TAG_ARTIST, 0));
+    if(mpd_song_get_tag(song, MPD_TAG_ALBUM, 0) != NULL)
+        cur += snprintf(cur, end - cur, ", \"album\":\"%s\"",
+            mpd_song_get_tag(song, MPD_TAG_ALBUM, 0));
+
+    cur += snprintf(cur, end - cur, "}}");
     mpd_song_free(song);
     mpd_response_finish(conn);
 
-    return len;
+    return cur - buffer;
 }
 
 int mpd_put_playlist(char *buffer)
@@ -342,8 +353,9 @@ int mpd_put_browse(char *buffer, char *path)
             case MPD_ENTITY_TYPE_DIRECTORY:
                 dir = mpd_entity_get_directory(entity);
                 cur += snprintf(cur, end  - cur, 
-                        "{\"type\":\"directory\",\"dir\":\"%s\"},",
-                        mpd_directory_get_path(dir)
+                        "{\"type\":\"directory\",\"dir\":\"%s\", \"basename\":\"%s\"},",
+                        mpd_directory_get_path(dir), 
+                        basename((char *)mpd_directory_get_path(dir))
                         );
                 break;
 

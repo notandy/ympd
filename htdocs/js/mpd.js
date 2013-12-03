@@ -1,6 +1,7 @@
 var socket;
 var last_state;
 var current_app;
+var is_firefox;
 
 $('#volumeslider').slider().on('slide', function(event) {
 	socket.send("MPD_API_SET_VOLUME,"+event.value);
@@ -16,7 +17,11 @@ var app = $.sammy(function() {
 		current_app = 'playlist';
 		$('#breadcrump').addClass('hide');
 		$('#salamisandwich').find("tr:gt(0)").remove();
-		socket.send("MPD_API_GET_PLAYLIST");
+		if(is_firefox)
+			$.get( "/api/get_playlist", socket.onmessage);
+		else
+			socket.send("MPD_API_GET_PLAYLIST");
+
 		$('#panel-heading').text("Playlist");
 		$('#playlist').addClass('active');
 	});
@@ -29,7 +34,11 @@ var app = $.sammy(function() {
 		if(path == '')
 			path = "/";
 
-		socket.send("MPD_API_GET_BROWSE,"+path);
+		if(is_firefox)
+			$.get( "/api/get_browse/" + encodeURIComponent(path), socket.onmessage);
+		else
+			socket.send("MPD_API_GET_BROWSE,"+path);
+		
 		$('#panel-heading').text("Browse database: "+path+"");
 		var path_array = path[0].split('/');
 		var full_path = "";
@@ -52,6 +61,7 @@ var app = $.sammy(function() {
 });
 
 $(document).ready(function(){
+	is_firefox = true;
 	webSocketConnect();
 });
 
@@ -73,10 +83,16 @@ function webSocketConnect() {
 		}
 
 		socket.onmessage =function got_packet(msg) {
-			if(msg.data === last_state)
-				return;
+			console.log(typeof msg);
+			if(msg instanceof MessageEvent) {
+				if(msg.data === last_state)
+					return;
 
-			var obj = JSON.parse(msg.data);
+				var obj = JSON.parse(msg.data);
+			} else {
+				var obj = msg;
+			}
+
 			switch (obj.type) {
 				case "playlist":
 					if(current_app !== 'playlist')
