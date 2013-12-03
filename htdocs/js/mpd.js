@@ -79,9 +79,6 @@ function webSocketConnect() {
 			var obj = JSON.parse(msg.data);
 			switch (obj.type) {
 				case "playlist":
-					//if(state.data.state !== 'nav_playlist')
-					//	break;
-					console.log("Got Playlist...");
 					if(current_app !== 'playlist')
 						break;
 
@@ -107,9 +104,9 @@ function webSocketConnect() {
 								.find('a').fadeTo('fast',1);
 						},
 						click: function() {
-							$('#salamisandwich > tbody > tr').removeClass('success');
+							$('#salamisandwich > tbody > tr').removeClass('active');
 							socket.send('MPD_API_PLAY_TRACK,'+$(this).attr('trackid'));
-							$(this).addClass('success');
+							$(this).addClass('active');
 						},
 						mouseleave: function(){
 							$(this).children().last().find("a").stop().remove();
@@ -154,7 +151,7 @@ function webSocketConnect() {
 								if($(this).attr("uri").length > 0)
 									$(this).children().last().append(
 										"<a role=\"button\" class=\"pull-right btn-group-hover\" " +
-										"onclick=\"socket.send('MPD_API_ADD_TRACK," + $(this).attr("uri") +"'); $(this).parents('tr').addClass('success');\">" +
+										"onclick=\"socket.send('MPD_API_ADD_TRACK," + $(this).attr("uri") +"'); $(this).parents('tr').addClass('active');\">" +
 										"<span class=\"glyphicon glyphicon-plus\"></span></a>")
 										.find('a').fadeTo('fast',1);
 						},
@@ -183,8 +180,8 @@ function webSocketConnect() {
 						(elapsed_seconds < 10 ? '0' : '') + elapsed_seconds + " / " +
 						total_minutes + ":" + (total_seconds < 10 ? '0' : '') + total_seconds);
 
-					$('#salamisandwich > tbody > tr').removeClass('success').css("font-weight", "");
-					$('#salamisandwich > tbody > tr[trackid='+obj.data.currentsongid+']').addClass('success').css("font-weight", "bold");
+					$('#salamisandwich > tbody > tr').removeClass('active').css("font-weight", "");
+					$('#salamisandwich > tbody > tr[trackid='+obj.data.currentsongid+']').addClass('active').css("font-weight", "bold");
 
 					if(obj.data.random)
 						$('#btnrandom').addClass("active")
