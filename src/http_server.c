@@ -32,7 +32,7 @@ static const struct serveable whitelist[] = {
     { "/fonts/glyphicons-halflings-regular.ttf", "application/x-font-ttf"},
     { "/fonts/glyphicons-halflings-regular.eot", "application/vnd.ms-fontobject"},
 
-    { "assets/favicon.ico", "image/vnd.microsoft.icon" },
+    { "/assets/favicon.ico", "image/vnd.microsoft.icon" },
 
     /* last one is the default served if no match */
     { "/index.html", "text/html" },
@@ -40,34 +40,28 @@ static const struct serveable whitelist[] = {
 
 /* Converts a hex character to its integer value */
 char from_hex(char ch) {
-  return isdigit(ch) ? ch - '0' : tolower(ch) - 'a' + 10;
-}
-
-/* Converts an integer value to its hex character*/
-char to_hex(char code) {
-  static char hex[] = "0123456789abcdef";
-  return hex[code & 15];
+    return isdigit(ch) ? ch - '0' : tolower(ch) - 'a' + 10;
 }
 
 /* Returns a url-decoded version of str */
 /* IMPORTANT: be sure to free() the returned string after use */
 char *url_decode(char *str) {
-  char *pstr = str, *buf = malloc(strlen(str) + 1), *pbuf = buf;
-  while (*pstr) {
-    if (*pstr == '%') {
-      if (pstr[1] && pstr[2]) {
-        *pbuf++ = from_hex(pstr[1]) << 4 | from_hex(pstr[2]);
-        pstr += 2;
-      }
-    } else if (*pstr == '+') {
-      *pbuf++ = ' ';
-    } else {
-      *pbuf++ = *pstr;
+    char *pstr = str, *buf = malloc(strlen(str) + 1), *pbuf = buf;
+    while (*pstr) {
+        if (*pstr == '%') {
+            if (pstr[1] && pstr[2]) {
+                *pbuf++ = from_hex(pstr[1]) << 4 | from_hex(pstr[2]);
+                pstr += 2;
+            }
+        } else if (*pstr == '+') {
+            *pbuf++ = ' ';
+        } else {
+            *pbuf++ = *pstr;
+        }
+        pstr++;
     }
-    pstr++;
-  }
-  *pbuf = '\0';
-  return buf;
+    *pbuf = '\0';
+    return buf;
 }
 
 int callback_http(struct libwebsocket_context *context,
@@ -75,7 +69,7 @@ int callback_http(struct libwebsocket_context *context,
         enum libwebsocket_callback_reasons reason, void *user,
         void *in, size_t len)
 {
-    char buf[256], *response_buffer, *p;
+    char *response_buffer, *p;
     size_t n, response_size;
 
     switch (reason) {
@@ -89,7 +83,7 @@ int callback_http(struct libwebsocket_context *context,
                 if(strncmp((const char *)in, "/api/get_browse", 15) == 0)
                 {
                     char *url;
-                    if(sscanf(in, "/api/get_browse/%m[^\t\n]", &url) && url)
+                    if(sscanf(in, "/api/get_browse/%m[^\t\n]", &url))
                     {
                         char *url_decoded = url_decode(url);
                         printf("searching for %s", url_decoded);
@@ -119,15 +113,15 @@ int callback_http(struct libwebsocket_context *context,
                     return -1;
                 }
                 p += response_size + sprintf(p, "HTTP/1.0 200 OK\x0d\x0a"
-                                "Server: libwebsockets\x0d\x0a"
-                                "Content-Type: application/json\x0d\x0a"
-                                "Content-Length: %6lu\x0d\x0a\x0d\x0a", 
-                                response_size
-                );
+                        "Server: libwebsockets\x0d\x0a"
+                        "Content-Type: application/json\x0d\x0a"
+                        "Content-Length: %6lu\x0d\x0a\x0d\x0a", 
+                        response_size
+                        );
                 response_buffer[98] = '{';
-                
+
                 n = libwebsocket_write(wsi, (unsigned char *)response_buffer,
-                    p - response_buffer, LWS_WRITE_HTTP);
+                        p - response_buffer, LWS_WRITE_HTTP);
 
                 free(response_buffer);
                 /*
@@ -139,10 +133,9 @@ int callback_http(struct libwebsocket_context *context,
             else
             {            
                 for (n = 0; n < (sizeof(whitelist) / sizeof(whitelist[0]) - 1); n++)
-                {
                     if (in && strcmp((const char *)in, whitelist[n].urlpath) == 0)
                         break;
-                }
+
                 sprintf(buf, "%s%s", resource_path, whitelist[n].urlpath);
 
                 if (libwebsockets_serve_http_file(context, wsi, buf, whitelist[n].mimetype, NULL))
