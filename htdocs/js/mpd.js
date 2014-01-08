@@ -17,10 +17,10 @@ var app = $.sammy(function() {
 		current_app = 'playlist';
 		$('#breadcrump').addClass('hide');
 		$('#salamisandwich').find("tr:gt(0)").remove();
-		if(is_firefox)
+		//if(is_firefox)
 			$.get( "/api/get_playlist", socket.onmessage);
-		else
-			socket.send("MPD_API_GET_PLAYLIST");
+		//else
+		//	socket.send("MPD_API_GET_PLAYLIST");
 
 		$('#panel-heading').text("Playlist");
 		$('#playlist').addClass('active');
@@ -34,10 +34,10 @@ var app = $.sammy(function() {
 		if(path == '')
 			path = "/";
 
-		if(is_firefox)
+		//if(is_firefox)
 			$.get( "/api/get_browse/" + encodeURIComponent(path), socket.onmessage);
-		else
-			socket.send("MPD_API_GET_BROWSE,"+path);
+		//else
+		//	socket.send("MPD_API_GET_BROWSE,"+path);
 		
 		$('#panel-heading').text("Browse database: "+path+"");
 		var path_array = path[0].split('/');
@@ -228,6 +228,7 @@ function webSocketConnect() {
 						socket.send("MPD_API_GET_TRACK_INFO");
 
 					$('#alert').addClass("hide");
+			        last_state = obj;
 					break;
 				case "disconnected":
 				    $('#alert')
@@ -246,7 +247,6 @@ function webSocketConnect() {
 					break;
 			}
 
-			last_state = obj;
 
 		}
 		socket.onclose = function(){

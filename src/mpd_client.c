@@ -1,3 +1,8 @@
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <libgen.h>
 
 #include <mpd/client.h>
 #include <mpd/status.h>
@@ -6,33 +11,19 @@
 #include <mpd/search.h>
 #include <mpd/tag.h>
 
-#include <stdio.h>
-#include <string.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <libgen.h>
-
 #include "mpd_client.h"
-
-#define MAX_SIZE 1024 * 100
 
 struct mpd_connection *conn = NULL;
 enum mpd_conn_states mpd_conn_state = MPD_DISCONNECTED;
 enum mpd_state mpd_play_state = MPD_STATE_UNKNOWN;
 unsigned queue_version;
 
-void *mpd_idle_connection(void *_data)
-{
-
-}
-
 int callback_ympd(struct libwebsocket_context *context,
         struct libwebsocket *wsi,
         enum libwebsocket_callback_reasons reason,
         void *user, void *in, size_t len)
 {
-    size_t n;
-    int m;
+    size_t n,  m = -1;
     char *buf = NULL, *p;
     struct per_session_data__ympd *pss = (struct per_session_data__ympd *)user;
 
@@ -53,7 +44,8 @@ int callback_ympd(struct libwebsocket_context *context,
             if(mpd_conn_state != MPD_CONNECTED) {
                 n = snprintf(p, MAX_SIZE, "{\"type\":\"disconnected\"}");
             }
-            else if((pss->queue_version != queue_version) || (pss->do_send & DO_SEND_PLAYLIST)) {
+            //else if((pss->queue_version != queue_version) || (pss->do_send & DO_SEND_PLAYLIST)) {
+            else if(pss->do_send & DO_SEND_PLAYLIST) {
                 n = mpd_put_playlist(p);
                 pss->queue_version = queue_version;
                 pss->do_send &= ~DO_SEND_PLAYLIST;
@@ -107,32 +99,32 @@ int callback_ympd(struct libwebsocket_context *context,
             }
             else if(!strncmp((const char *)in, MPD_API_RM_TRACK, sizeof(MPD_API_RM_TRACK)-1)) {
                 unsigned id;
-                if(sscanf(in, "MPD_API_RM_TRACK,%d", &id))
+                if(sscanf(in, "MPD_API_RM_TRACK,%u", &id))
                     mpd_run_delete_id(conn, id);
             }
             else if(!strncmp((const char *)in, MPD_API_PLAY_TRACK, sizeof(MPD_API_PLAY_TRACK)-1)) {
                 unsigned id;
-                if(sscanf(in, "MPD_API_PLAY_TRACK,%d", &id))
+                if(sscanf(in, "MPD_API_PLAY_TRACK,%u", &id))
                     mpd_run_play_id(conn, id);
             }
             else if(!strncmp((const char *)in, MPD_API_TOGGLE_RANDOM, sizeof(MPD_API_TOGGLE_RANDOM)-1)) {
                 unsigned random;
-                if(sscanf(in, "MPD_API_TOGGLE_RANDOM,%d", &random))
+                if(sscanf(in, "MPD_API_TOGGLE_RANDOM,%u", &random))
                     mpd_run_random(conn, random);
             }
             else if(!strncmp((const char *)in, MPD_API_TOGGLE_REPEAT, sizeof(MPD_API_TOGGLE_REPEAT)-1)) {
                 unsigned repeat;
-                if(sscanf(in, "MPD_API_TOGGLE_REPEAT,%d", &repeat))
+                if(sscanf(in, "MPD_API_TOGGLE_REPEAT,%u", &repeat))
                     mpd_run_repeat(conn, repeat);
             }
             else if(!strncmp((const char *)in, MPD_API_TOGGLE_CONSUME, sizeof(MPD_API_TOGGLE_CONSUME)-1)) {
                 unsigned consume;
-                if(sscanf(in, "MPD_API_TOGGLE_CONSUME,%d", &consume))
+                if(sscanf(in, "MPD_API_TOGGLE_CONSUME,%u", &consume))
                     mpd_run_consume(conn, consume);
             }
             else if(!strncmp((const char *)in, MPD_API_TOGGLE_SINGLE, sizeof(MPD_API_TOGGLE_SINGLE)-1)) {
                 unsigned single;
-                if(sscanf(in, "MPD_API_TOGGLE_SINGLE,%d", &single))
+                if(sscanf(in, "MPD_API_TOGGLE_SINGLE,%u", &single))
                     mpd_run_single(conn, single);
             }
             else if(!strncmp((const char *)in, MPD_API_SET_VOLUME, sizeof(MPD_API_SET_VOLUME)-1)) {
@@ -168,7 +160,8 @@ void mpd_loop()
     switch (mpd_conn_state) {
         case MPD_DISCONNECTED:
             /* Try to connect */
-            conn = mpd_connection_new("127.0.0.1", 6600, 3000);
+            lwsl_notice("MPD Connecting to %s:%d\n", mpd_host, mpd_port);
+            conn = mpd_connection_new(mpd_host, mpd_port, 3000);
             if (conn == NULL) {
                 lwsl_err("Out of memory.");
                 mpd_conn_state = MPD_FAILURE;
@@ -176,7 +169,7 @@ void mpd_loop()
             }
 
             if (mpd_connection_get_error(conn) != MPD_ERROR_SUCCESS) {
-                lwsl_notice("MPD connection: %s\n", mpd_connection_get_error_message(conn));
+                lwsl_err("MPD connection: %s\n", mpd_connection_get_error_message(conn));
                 mpd_conn_state = MPD_FAILURE;
                 return;
             }
@@ -186,7 +179,7 @@ void mpd_loop()
             break;
 
         case MPD_FAILURE:
-            lwsl_notice("MPD connection failed.\n");
+            lwsl_err("MPD connection failed.\n");
 
             if(conn != NULL)
                 mpd_connection_free(conn);

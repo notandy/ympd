@@ -1,4 +1,9 @@
+#ifndef __MPD_CLIENT_H__
+#define __MPD_CLIENT_H__
+
 #include <libwebsockets.h>
+
+#define MAX_SIZE 1024 * 100
 
 #define DO_SEND_STATE      (1 << 0)
 #define DO_SEND_PLAYLIST   (1 << 1)
@@ -51,3 +56,6 @@ int mpd_put_browse(char *buffer, char *path);
 
 int mpd_port;
 const char *mpd_host;
+
+#endif
+

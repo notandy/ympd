@@ -3,9 +3,11 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <mpd/client.h>
 
 #include "http_server.h"
 #include "mpd_client.h"
+#include "config.h"
 
 char *resource_path = LOCAL_RESOURCE_PATH;
 
@@ -80,14 +82,14 @@ int callback_http(struct libwebsocket_context *context,
         case LWS_CALLBACK_HTTP:
             if(in && strncmp((const char *)in, "/api/", 5) == 0)
             {
-                response_buffer = (char *)malloc(100 * 1024 + 100);
+                response_buffer = (char *)malloc(MAX_SIZE + 100);
                 p = response_buffer;
 
                 /* put content length and payload to buffer */
                 if(strncmp((const char *)in, "/api/get_browse", 15) == 0)
                 {
                     char *url;
-                    if(sscanf(in, "/api/get_browse/%m[^\t\n]", &url))
+                    if(sscanf(in, "/api/get_browse/%m[^\t\n]", &url) && url)
                     {
                         char *url_decoded = url_decode(url);
                         printf("searching for %s", url_decoded);
@@ -101,6 +103,15 @@ int callback_http(struct libwebsocket_context *context,
                 }
                 else if(strncmp((const char *)in, "/api/get_playlist", 17)  == 0)
                     response_size = mpd_put_playlist(response_buffer + 98);
+                else if(strncmp((const char *)in, "/api/version", 17)  == 0)
+                    response_size = snprintf(response_buffer, MAX_SIZE,
+                            "{\"type\":\"version\",\"data\":{"
+                            "\"ympd_version\":\"%d.%d.%d\","
+                            "\"mpd_version\":\"%d.%d.%d\""
+                            "}}",
+                            YMPD_VERSION_MAJOR, YMPD_VERSION_MINOR, YMPD_VERSION_PATCH,
+                            LIBMPDCLIENT_MAJOR_VERSION, LIBMPDCLIENT_MINOR_VERSION,
+                            LIBMPDCLIENT_PATCH_VERSION);
                 else
                 {
                     /* invalid request, close connection */
@@ -114,7 +125,7 @@ int callback_http(struct libwebsocket_context *context,
                                 response_size
                 );
                 response_buffer[98] = '{';
-
+                
                 n = libwebsocket_write(wsi, (unsigned char *)response_buffer,
                     p - response_buffer, LWS_WRITE_HTTP);
 
@@ -125,10 +136,6 @@ int callback_http(struct libwebsocket_context *context,
                 libwebsocket_callback_on_writable(context, wsi);
 
             }
-            else if(in && strcmp((const char *)in, "getPlaylist") == 0)
-            {
-                
-            }
             else
             {            
                 for (n = 0; n < (sizeof(whitelist) / sizeof(whitelist[0]) - 1); n++)
@@ -138,7 +145,7 @@ int callback_http(struct libwebsocket_context *context,
                 }
                 sprintf(buf, "%s%s", resource_path, whitelist[n].urlpath);
 
-                if (libwebsockets_serve_http_file(context, wsi, buf, whitelist[n].mimetype))
+                if (libwebsockets_serve_http_file(context, wsi, buf, whitelist[n].mimetype, NULL))
                     return -1; /* through completion or error, close the socket */
             }
             break;

@@ -8,6 +8,7 @@
 
 #include "http_server.h"
 #include "mpd_client.h"
+#include "config.h"
 
 extern char *optarg;
 extern char *resource_path;
@@ -19,7 +20,6 @@ struct libwebsocket_protocols protocols[] = {
         callback_http,		/* callback */
         sizeof (struct per_session_data__http),	/* per_session_data_size */
         0,			/* max frame size / rx buffer */
-        0,          /* no_buffer_all_partial_tx */
     },
     {
         "ympd-client",
@@ -68,11 +68,12 @@ int main(int argc, char **argv)
         {"gid",          required_argument, 0, 'g'},
         {"uid",          required_argument, 0, 'u'},
         {"verbose",      optional_argument, 0, 'v'},
+        {"version",      no_argument,       0, 'V'},
         {"help",         no_argument,       0,  0 },
         {0,              0,                 0,  0 }
     };
 
-    while((n = getopt_long(argc, argv, "h:p:i:w:r:c:k:g:u:v::",
+    while((n = getopt_long(argc, argv, "h:p:i:w:r:c:k:g:u:v::V",
                 long_options, &option_index)) != -1) {
         switch (n) {
             case 'h':
@@ -108,6 +109,14 @@ int main(int argc, char **argv)
                     lws_set_log_level(LLL_ERR | LLL_WARN | 
                             LLL_NOTICE | LLL_INFO, NULL);
                 break;
+            case 'V':
+                fprintf(stdout, "ympd  %d.%d.%d\n"
+                        "Copyright (C) 2014 Andrew Karpow <andy@ympd.org>\n"
+                        "Resource Path: "LOCAL_RESOURCE_PATH"\n"
+                        "built " __DATE__ " "__TIME__ " ("__VERSION__")\n",
+                        YMPD_VERSION_MAJOR, YMPD_VERSION_MINOR, YMPD_VERSION_PATCH);
+                return EXIT_SUCCESS;
+                break;
             default:
                 fprintf(stderr, "Usage: %s [OPTION]...\n\n"
                         "\t-h, --host <host>\t\tconnect to mpd at host [localhost]\n"
@@ -119,7 +128,8 @@ int main(int argc, char **argv)
                         "\t-k, --ssl_key <filepath>\tssl private key filepath\n"
                         "\t-u, --uid <id>\t\t\tuser-id after socket bind\n"
                         "\t-g, --gid <id>\t\t\tgroup-id after socket bind\n"
-                        "\t-v, --verbose[<level>]\t\tverbosity level\n"
+                        "\t-v, --verbose[<level>]\t\tverbosity level\n" 
+                        "\t-V, --version\t\t\tget version\n"
                         "\t--help\t\t\t\tthis help\n"
                         , argv[0]);
                 return EXIT_FAILURE;
