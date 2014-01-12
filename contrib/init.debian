@@ -10,6 +10,8 @@
 ### END INIT INFO
 #Author: Andrew Karpow <andy@ndyk.de>
 
+. /lib/lsb/init-functions
+
 PATH=/sbin:/usr/sbin:/bin:/usr/bin
 DESC="ympd Daemon"
 NAME=ympd
@@ -36,14 +38,14 @@ do_start()
     start-stop-daemon --start --background --quiet --pidfile $PIDFILE --make-pidfile \
         --exec $DAEMON --test > /dev/null || return 1
     start-stop-daemon --start --background --quiet --pidfile $PIDFILE --make-pidfile \
-        --exec $DAEMON --stdout $LOG_OUT --stderr $LOG_ERR -- $DAEMON_OPT || return 2
+        --exec $DAEMON -- $DAEMON_OPT || return 2
 }
 
 do_stop()
 {
     start-stop-daemon --stop --quiet --retry=TERM/30/KILL/5 --pidfile $PIDFILE --name $NAME
     RETVAL="$?"
-    
+
     [ "$RETVAL" = 2 ] && return 2
     rm -f $PIDFILE
     return "$RETVAL"
