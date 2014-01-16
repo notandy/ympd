@@ -9,6 +9,8 @@
 #define DO_SEND_PLAYLIST   (1 << 1)
 #define DO_SEND_TRACK_INFO (1 << 2)
 #define DO_SEND_BROWSE     (1 << 3)
+#define DO_SEND_ERROR      (1 << 4)
+
 
 #define MPD_API_GET_SEEK         "MPD_API_GET_SEEK"
 #define MPD_API_GET_PLAYLIST     "MPD_API_GET_PLAYLIST"

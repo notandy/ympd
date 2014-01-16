@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <errno.h>
 #include <ctype.h>
 #include <mpd/client.h>
 
@@ -10,6 +11,7 @@
 #include "config.h"
 
 char *resource_path = LOCAL_RESOURCE_PATH;
+extern enum mpd_conn_states mpd_conn_state;
 
 struct serveable {
     const char *urlpath;
@@ -25,6 +27,7 @@ static const struct serveable whitelist[] = {
     { "/js/mpd.js", "text/javascript" },
     { "/js/jquery-1.10.2.min.js", "text/javascript" },
     { "/js/bootstrap-slider.js", "text/javascript" },
+    { "/js/bootstrap-notify.js", "text/javascript" },
     { "/js/sammy.js", "text/javascript" },
 
     { "/fonts/glyphicons-halflings-regular.woff", "application/x-font-woff"},
@@ -37,6 +40,11 @@ static const struct serveable whitelist[] = {
     /* last one is the default served if no match */
     { "/index.html", "text/html" },
 };
+
+static const char http_header[] = "HTTP/1.0 200 OK\x0d\x0a"
+                                  "Server: libwebsockets\x0d\x0a"
+                                  "Content-Type: application/json\x0d\x0a"
+                                  "Content-Length: 000000\x0d\x0a\x0d\x0a";
 
 /* Converts a hex character to its integer value */
 char from_hex(char ch) {
@@ -70,34 +78,37 @@ int callback_http(struct libwebsocket_context *context,
         void *in, size_t len)
 {
     char *response_buffer, *p;
-    size_t n, response_size;
+    char buf[64];
+    size_t n, response_size = 0;
 
     switch (reason) {
         case LWS_CALLBACK_HTTP:
             if(in && strncmp((const char *)in, "/api/", 5) == 0)
             {
-                response_buffer = (char *)malloc(MAX_SIZE + 100);
-                p = response_buffer;
+
+                p = (char *)malloc(MAX_SIZE + 100);
+                memcpy(p, http_header, sizeof(http_header) - 1);
+                response_buffer = p + sizeof(http_header) - 1;
 
                 /* put content length and payload to buffer */
-                if(strncmp((const char *)in, "/api/get_browse", 15) == 0)
+                if(mpd_conn_state != MPD_CONNECTED) {}
+                else if(strncmp((const char *)in, "/api/get_browse", 15) == 0)
                 {
                     char *url;
-                    if(sscanf(in, "/api/get_browse/%m[^\t\n]", &url))
+                    if(sscanf(in, "/api/get_browse/%m[^\t\n]", &url) == 1)
                     {
                         char *url_decoded = url_decode(url);
-                        printf("searching for %s", url_decoded);
-                        response_size = mpd_put_browse(response_buffer + 98, url_decoded);
+                        response_size = mpd_put_browse(response_buffer, url_decoded);
                         free(url_decoded);
                         free(url);
                     }
                     else
-                        response_size = mpd_put_browse(response_buffer + 98, "/");
+                        response_size = mpd_put_browse(response_buffer, "/");
 
                 }
                 else if(strncmp((const char *)in, "/api/get_playlist", 17)  == 0)
-                    response_size = mpd_put_playlist(response_buffer + 98);
-                else if(strncmp((const char *)in, "/api/version", 17)  == 0)
+                    response_size = mpd_put_playlist(response_buffer);
+                else if(strncmp((const char *)in, "/api/get_version", 16)  == 0)
                     response_size = snprintf(response_buffer, MAX_SIZE,
                             "{\"type\":\"version\",\"data\":{"
                             "\"ympd_version\":\"%d.%d.%d\","
@@ -106,24 +117,15 @@ int callback_http(struct libwebsocket_context *context,
                             YMPD_VERSION_MAJOR, YMPD_VERSION_MINOR, YMPD_VERSION_PATCH,
                             LIBMPDCLIENT_MAJOR_VERSION, LIBMPDCLIENT_MINOR_VERSION,
                             LIBMPDCLIENT_PATCH_VERSION);
-                else
-                {
-                    /* invalid request, close connection */
-                    free(response_buffer);
-                    return -1;
-                }
-                p += response_size + sprintf(p, "HTTP/1.0 200 OK\x0d\x0a"
-                        "Server: libwebsockets\x0d\x0a"
-                        "Content-Type: application/json\x0d\x0a"
-                        "Content-Length: %6lu\x0d\x0a\x0d\x0a", 
-                        response_size
-                        );
-                response_buffer[98] = '{';
 
-                n = libwebsocket_write(wsi, (unsigned char *)response_buffer,
-                        p - response_buffer, LWS_WRITE_HTTP);
+                /* Copy size to content-length field */
+                sprintf(buf, "%6lu", response_size);
+                memcpy(p + sizeof(http_header) - 11, buf, 6);
 
-                free(response_buffer);
+                n = libwebsocket_write(wsi, (unsigned char *)p,
+                        sizeof(http_header) - 1 + response_size, LWS_WRITE_HTTP);
+
+                free(p);
                 /*
                  * book us a LWS_CALLBACK_HTTP_WRITEABLE callback
                  */

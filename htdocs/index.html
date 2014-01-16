@@ -13,7 +13,6 @@
   <link href="css/bootstrap.css" rel="stylesheet">
 
   <!-- Custom styles for this template -->
-  <link href="css/slider.css" rel="stylesheet">
   <link href="css/mpd.css" rel="stylesheet">
   <link href="assets/favicon.ico" rel="shortcut icon" type="image/vnd.microsoft.icon">
 
@@ -40,13 +39,16 @@
         <ul id="nav_links" class="nav navbar-nav">
           <li id="playlist"><a href="#/">Playlist</a></li>
           <li id="browse"><a href="#/browse/">Browse database</a></li>
-          <li><a href="#" data-toggle="modal" data-target="#about">About</a></li>
+          <li><a href="#" data-toggle="modal" data-target="#about" onclick="getVersion();">About</a></li>
         </ul>
 
         <div class="btn-toolbar navbar-btn navbar-right" role="toolbar">
           <div class="btn-group">
             <button type="button" class="btn btn-default" onclick="socket.send('MPD_API_SET_NEXT');">
               <span class="glyphicon glyphicon-backward"></span>
+            </button>
+            <button type="button" class="btn btn-default" onclick="socket.send('MPD_API_SET_STOP');">
+              <span id="stop-icon" class="glyphicon glyphicon-stop"></span>
             </button>
             <button type="button" class="btn btn-default" onclick="socket.send('MPD_API_SET_PAUSE');">
               <span id="play-icon" class="glyphicon glyphicon-pause"></span>
@@ -58,8 +60,7 @@
           <div class="btn-group">
             <div class="btn btn-toolbar btn-default">
               <span id="volume-icon" class="glyphicon glyphicon-volume-up"></span>
-              &nbsp;&nbsp;
-              <input type="text" class="span2" value="0" data-slider-min="0" data-slider-max="100" data-slider-step="5" id="volumeslider" data-slider-tooltip="hide">
+              <div id="volumeslider"></div>
             </div>
           </div>
         </div>
@@ -71,7 +72,7 @@
     <div class="row">
 
       <div class="col-md-10 col-xs-12">
-        <div id="alert" class="alert hide"></div>
+        <div class="notifications top-right"></div>
         
         <div class="panel panel-primary">
           <!-- Default panel contents -->
@@ -87,10 +88,9 @@
             </h4>
             <p id="counter" class="text pull-right">&nbsp;&nbsp;</p>
 
-            <div class="progress progress-striped active">
-              <div id="progressbar" class="progress-bar navbar-left"  role="progressbar" aria-valuenow="45" aria-valuemin="0" aria-valuemax="100">
-              </div>
-            </div>
+            <div id="progressbar"></div>
+
+
           </div><!-- /.panel-body -->
 
           <ol id="breadcrump" class="breadcrumb">
@@ -112,7 +112,7 @@
       </div><!-- /.col-md-10 -->
 
       <div class="col-md-2 col-xs-12" >
-        <div data-spy="affix" data-offset-bottom="10">
+        <div class="btn-toolbar">
           <div class="btn-group-vertical btn-block btn-group-lg" data-toggle="buttons">
             <button id="btnrandom" type="button" class="btn btn-default">
               <span class="glyphicon glyphicon-random"></span> Random
@@ -128,13 +128,15 @@
             </button>
           </div>
 
-          <button type="button" class="btn btn-block btn-default btn-lg dropdown-toggle" data-toggle="dropdown">
-            <span class="glyphicon glyphicon-wrench"></span> Options <span class="caret"></span>
-          </button>
-          <ul class="dropdown-menu">
-            <li><a href="#/" onclick="updateDB();"><span class="glyphicon glyphicon-refresh"></span> Update Database</a></li>
-            <li><a href="#/" onclick="socket.send('MPD_API_RM_ALL');"><span class="glyphicon glyphicon-trash"></span> Clear queue</a></li>
-          </ul>
+          <div class="btn-group-vertical btn-block btn-group-lg">
+            <button type="button" class="btn btn-default" onclick="updateDB();">
+              <span class="glyphicon glyphicon-refresh"></span> Update DB
+            </button>
+            <button type="button" class="btn btn-default" onclick="socket.send('MPD_API_RM_ALL');">
+              <span class="glyphicon glyphicon-trash"></span> Clear queue
+            </button>
+          </div>
+
         </div>
       </div><!-- /.col-md-2 -->
     </div><!-- /.row -->
@@ -150,9 +152,13 @@
         </div>
         <div class="modal-body">
           <h4><span class="glyphicon glyphicon-play-circle"></span> ympd&nbsp;&nbsp;&nbsp;<small>MPD Web GUI - written in C, utilizing Websockets and Bootstrap/JS</small></h4>
-          <br/>
-          <span class="glyphicon glyphicon-play-circle"></span> ympd is a lightweight MPD (Music Player Daemon) web client that runs without a dedicated werbserver or interpreters like PHP, NodeJS or Ruby. It's tuned for minimal resource usage and requires only very litte dependencies.
-          <h5><span class="glyphicon glyphicon-play-circle"></span> ympd uses following excellent software:</h5>
+          <p>
+          ympd is a lightweight MPD (Music Player Daemon) web client that runs without a dedicated werbserver or interpreters like PHP, NodeJS or Ruby. It's tuned for minimal resource usage and requires only very litte dependencies.</p>
+          <p class="text-muted">
+          ympd <span id="ympd_version"></span><br/>
+          libmpdclient <span id="mpd_version"></span><br/>
+          </p>
+          <h5>ympd uses following excellent software:</h5>
           <h6><a href="http://libwebsockets.org">libWebSockets</a> <small>LGPL2.1 + static link exception</small></h6>
           <h6><a href="http://www.musicpd.org/libs/libmpdclient/">libMPDClient</a> <small>BSD License</small></h6>
           <br/>
@@ -162,7 +168,7 @@
               <strong>Andrew Karpow</strong><br>
               <a href="mailto:andy@ympd.org">andy@ympd.org</a><br/>
               <a href="http://www.ympd.org">www.ympd.org</a><br/>
-              XMPP: <a href="xmpp:andy@jabber.ccc.de?subscribe">andy_@jabber.ccc.de</a>
+              XMPP: <a href="xmpp:andy_@jabber.ccc.de?subscribe">andy_@jabber.ccc.de</a>
             </address>
           </blockquote>
         </div>
@@ -179,7 +185,8 @@
   <!-- Placed at the end of the document so the pages load faster -->
   <script src="js/jquery-1.10.2.min.js"></script>
   <script src="js/bootstrap.min.js"></script>
-  <script src="js/bootstrap-slider.js"></script>
+  <script src="js/bootstrap-notify.js"></script>
+  <script src="js/boostrap-slider.js"></script>
   <script src="js/sammy.js"></script>
   <script src="js/mpd.js"></script>
 </body>

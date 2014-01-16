@@ -41,12 +41,21 @@ int callback_ympd(struct libwebsocket_context *context,
             }
             p = &buf[LWS_SEND_BUFFER_PRE_PADDING];
 
-            if(mpd_conn_state != MPD_CONNECTED) {
+            if(pss->do_send & DO_SEND_ERROR) {
+                n = snprintf(p, MAX_SIZE, "{\"type\":\"error\", \"data\": \"%s\"}", 
+                    mpd_connection_get_error_message(conn));
+                pss->do_send &= ~DO_SEND_ERROR;
+
+                /* Try to recover error */
+                if (!mpd_connection_clear_error(conn))
+                    mpd_conn_state = MPD_FAILURE;
+            }
+            else if(mpd_conn_state != MPD_CONNECTED) {
                 n = snprintf(p, MAX_SIZE, "{\"type\":\"disconnected\"}");
             }
-            //else if((pss->queue_version != queue_version) || (pss->do_send & DO_SEND_PLAYLIST)) {
-            else if(pss->do_send & DO_SEND_PLAYLIST) {
-                n = mpd_put_playlist(p);
+            else if((pss->queue_version != queue_version) || (pss->do_send & DO_SEND_PLAYLIST)) {
+                /*n = mpd_put_playlist(p);*/
+                n = snprintf(p, MAX_SIZE, "{\"type\":\"update_playlist\"}");
                 pss->queue_version = queue_version;
                 pss->do_send &= ~DO_SEND_PLAYLIST;
             }
@@ -78,25 +87,20 @@ int callback_ympd(struct libwebsocket_context *context,
                 pss->do_send |= DO_SEND_PLAYLIST;
             else if(!strcmp((const char *)in, MPD_API_GET_TRACK_INFO))
                 pss->do_send |= DO_SEND_TRACK_INFO;
-            else if(!strcmp((const char *)in, MPD_API_UPDATE_DB)) {
-                mpd_send_update(conn, NULL);
-                mpd_response_finish(conn);
-            }
-            else if(!strcmp((const char *)in, MPD_API_SET_PAUSE)) {
-                mpd_send_toggle_pause(conn);
-                mpd_response_finish(conn);
-            }
-            else if(!strcmp((const char *)in, MPD_API_SET_PREV)) {
-                mpd_send_previous(conn);
-                mpd_response_finish(conn);
-            }
-            else if(!strcmp((const char *)in, MPD_API_SET_NEXT)) {
-                mpd_send_next(conn);
-                mpd_response_finish(conn);
-            }
-            else if(!strcmp((const char *)in, MPD_API_RM_ALL)) {
+            else if(!strcmp((const char *)in, MPD_API_UPDATE_DB))
+                mpd_run_update(conn, NULL);
+            else if(!strcmp((const char *)in, MPD_API_SET_PAUSE))
+                mpd_run_toggle_pause(conn);
+            else if(!strcmp((const char *)in, MPD_API_SET_PREV))
+                mpd_run_previous(conn);
+            else if(!strcmp((const char *)in, MPD_API_SET_NEXT))
+                mpd_run_next(conn);
+            else if(!strcmp((const char *)in, MPD_API_SET_PLAY))
+                mpd_run_play(conn);
+            else if(!strcmp((const char *)in, MPD_API_SET_STOP))
+                mpd_run_stop(conn);
+            else if(!strcmp((const char *)in, MPD_API_RM_ALL))
                 mpd_run_clear(conn);
-            }
             else if(!strncmp((const char *)in, MPD_API_RM_TRACK, sizeof(MPD_API_RM_TRACK)-1)) {
                 unsigned id;
                 if(sscanf(in, "MPD_API_RM_TRACK,%u", &id))
@@ -129,8 +133,14 @@ int callback_ympd(struct libwebsocket_context *context,
             }
             else if(!strncmp((const char *)in, MPD_API_SET_VOLUME, sizeof(MPD_API_SET_VOLUME)-1)) {
                 unsigned int volume;
-                if(sscanf(in, "MPD_API_SET_VOLUME,%ud", &volume) && volume < 100)
+                if(sscanf(in, "MPD_API_SET_VOLUME,%ud", &volume) && volume <= 100)
                     mpd_run_set_volume(conn, volume);
+            }
+            else if(!strncmp((const char *)in, MPD_API_SET_SEEK, sizeof(MPD_API_SET_SEEK)-1)) {
+                unsigned int seek, songid;
+                if(sscanf(in, "MPD_API_SET_SEEK,%u,%u", &songid, &seek)) {
+                    mpd_run_seek_id(conn, songid, seek);
+                }
             }
             else if(!strncmp((const char *)in, MPD_API_GET_BROWSE, sizeof(MPD_API_GET_BROWSE)-1)) {
                 char *dir;
@@ -146,6 +156,10 @@ int callback_ympd(struct libwebsocket_context *context,
                     free(uri);
                 }
             }
+
+            if(mpd_connection_get_error(conn) != MPD_ERROR_SUCCESS)
+                pss->do_send |= DO_SEND_ERROR;
+
             break;
 
         default:
@@ -283,8 +297,12 @@ int mpd_put_playlist(char *buffer)
 
     if (!mpd_send_list_queue_meta(conn)) {
         lwsl_err("MPD mpd_send_list_queue_meta: %s\n", mpd_connection_get_error_message(conn));
-        mpd_conn_state = MPD_FAILURE;
-        return 0;
+        cur += snprintf(cur, end  - cur, "{\"type\":\"error\",\"data\":\"%s\"}", 
+            mpd_connection_get_error_message(conn));
+
+        if (!mpd_connection_clear_error(conn))
+            mpd_conn_state = MPD_FAILURE;
+        return cur - buffer;
     }
 
     cur += snprintf(cur, end  - cur, "{\"type\": \"playlist\", \"data\": [ ");
@@ -319,8 +337,12 @@ int mpd_put_browse(char *buffer, char *path)
 
     if (!mpd_send_list_meta(conn, path)) {
         lwsl_err("MPD mpd_send_list_meta: %s\n", mpd_connection_get_error_message(conn));
-        mpd_conn_state = MPD_FAILURE;
-        return 0;
+        cur += snprintf(cur, end  - cur, "{\"type\":\"error\",\"data\":\"%s\"}", 
+            mpd_connection_get_error_message(conn));
+
+        if (!mpd_connection_clear_error(conn))
+            mpd_conn_state = MPD_FAILURE;
+        return cur - buffer;
     }
     cur += snprintf(cur, end  - cur, "{\"type\":\"browse\",\"data\":[ ");
 

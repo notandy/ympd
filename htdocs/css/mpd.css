@@ -7,18 +7,18 @@ body {
   padding: 40px 15px;
 }
 
-.slider.slider-horizontal {
-  height: 15px;
+#volumeslider {
+  width: 150px;
 }
 
-.slider.slider-horizontal .slider-track {
-  height: 10px;
-  margin-top: -6px;
+#volumeslider .progress {
+  margin-bottom: 0;
 }
 
-.progress {
-  margin-top: 0px;
-  margin-bottom: 0px;
+#volume-icon {
+  float: left;
+  margin-right: 10px;
+  margin-top: 2px;
 }
 
 #counter {
@@ -29,5 +29,44 @@ body {
 }
 
 .btn-group-hover {
-    opacity: 0;
+    opacity: 20%;
+}
+
+.btn:active,
+.btn.active {
+  background-image: none;
+  outline: 0;
+  -webkit-box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.125);
+          box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.125);
+  color: #428bca;
+  background-color: #fdfdfd;
+  border-color: #adadad;
+}
+
+
+
+#salamisandwich td:nth-child(3), th:nth-child(3) {
+  text-align: right;
+}
+
+tbody {
+  cursor: pointer;
+}
+
+.notifications {
+  position: fixed;
+  z-index: 9999;
+}
+
+/* Positioning */ 
+.notifications.top-right {
+  right: 10px;
+  top: 60px;
+}
+
+/* Notification Element */
+.notifications > div {
+  position: relative;
+  z-index: 9999;
+  margin: 5px 0px;
 }
