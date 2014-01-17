@@ -55,7 +55,7 @@ $(document).ready(function(){
     });
     $('#progressbar').slider(0);
     $("#progressbar").on('slider.newValue', function(evt,data){
-        if(current_song) {
+        if(current_song && current_song.currentSongId >= 0) {
             var seekVal = Math.ceil(current_song.totalTime*(data.val/100));
             socket.send("MPD_API_SET_SEEK,"+current_song.currentSongId+","+seekVal);
         }
