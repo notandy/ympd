@@ -20,9 +20,9 @@ PIDFILE=/var/run/$NAME.pid
 SCRIPTNAME=/etcinit.d/$NAME
 LOG_OUT=/var/log/$NAME.out
 LOG_ERR=/var/log/$NAME.err
-YMPD_USER=ympd
-YMPD_GROUP=ympd
-DAEMON_OPT="--uid $YMPD_USER --gid $YMPD_GROUP"
+YMPD_USER=mpd
+YMPD_GROUP=mpd
+DAEMON_OPT="--uid $YMPD_USER --gid $YMPD_GROUP --webport 80"
 
 # Exit if the package is not installed
 [ -x "$DAEMON" ] || exit 0

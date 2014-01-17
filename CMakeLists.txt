@@ -52,10 +52,8 @@ endif()
 
 
 install(TARGETS ympd DESTINATION bin)
+install(FILES ympd.1 DESTINATION man)
 install(DIRECTORY htdocs DESTINATION share/${PROJECT_NAME})
 install(FILES contrib/init.debian DESTINATION /etc/init.d
     PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE
     WORLD_READ WORLD_EXECUTE RENAME ${PROJECT_NAME})
-install(FILES contrib/default.debian DESTINATION /etc/default/${PROJECT_NAME}
-    RENAME ${PROJECT_NAME})
-
