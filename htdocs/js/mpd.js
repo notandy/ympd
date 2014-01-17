@@ -440,7 +440,7 @@ function songNotify(artist, title) {
 	   notification.show();
 	   setTimeout(function(notification) {
 		  notification.cancel();
-	   }, 2000, notification);
+	   }, 3000, notification);
     } else {
 	   window.webkitNotifications.requestPermission();
     }
