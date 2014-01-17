@@ -1,0 +1,54 @@
+.\" Manpage for ympd.
+.\" Contact andy@ympd.org to correct errors or typos.
+.TH man 8 "17 Jan 2014" "1.0" "ympd man page"
+.SH NAME
+ympd \- Standalone MPD Web GUI written in C, utilizing Websockets and Bootstrap/JS
+.SH SYNOPSIS
+ympd [OPTION]...
+.SH DESCRIPTION
+ympd is a lightweight MPD (Music Player Daemon) web client that runs without a dedicated werbserver or interpreters like PHP, NodeJS or Ruby. It's tuned for minimal resource usage and requires only very litte dependencies.
+
+ympd is based in part on the work of the libwebsockets project (http://libwebsockets.org)
+.SH OPTIONS
+.TP
+\fB\-h\fR, \fB\-\-host HOST\fR
+connect to mpd at host, defaults to localhost
+.TP
+\fB\-p\fR, \fB\-\-port PORT\fR
+connect to mpd at port, defaults to 6600
+.TP
+\fB\-i\fR, \fB\-\-interface INTERFACE\fR
+specifies the interface to listen to
+.TP
+\fB\-w\fR, \fB\-\-webport PORT\fR
+specifies the port for the webserver to listen to, defaults to 8080
+.TP
+\fB\-r\fR, \fB\-\-resourcepath PATH\fR
+resource path to htdocs directory, defaults to the supplied htdocs directory
+.TP
+\fB\-c\fR, \fB\-\-ssl_cert PATH\fR
+path the the ssl certificate
+.TP
+\fB\-k\fR, \fB\-\-ssl_key PATH\fR
+path the the private ssl key
+.TP
+\fB\-u\fR, \fB\-\-uid UID\fR
+drop privileges to the provided uid after socket binding
+.TP
+\fB\-g\fR, \fB\-\-gid GID\fR
+drop privileges to the provided gid after socket binding
+.TP
+\fB\-v\fR, \fB\-\-verbose [LEVEL]\fR
+sets the verbository level
+.TP
+\fB\-V\fR, \fB\-\-version\fR
+print version and exit
+.TP
+\fB\-\-help\fR
+print all valid options and exits
+.SH BUGS
+No known bugs.
+.SH AUTHOR
+Andrew Karpow (andy@ympd.org)
+
+http://ympd.org
