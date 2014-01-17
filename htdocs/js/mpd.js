@@ -1,7 +1,9 @@
 var socket;
 var last_state;
 var current_app;
+var lastSongTitle = "";
 var current_song = new Object();
+var desktopNotification;
 
 var app = $.sammy(function() {
     this.before('/', function(e, data) {
@@ -60,6 +62,12 @@ $(document).ready(function(){
             socket.send("MPD_API_SET_SEEK,"+current_song.currentSongId+","+seekVal);
         }
     });
+
+    if(!notificationsSupported())
+        $('#btnnotify').addClass("disabled");
+    else
+        if ($.cookie("notification") === "true")
+            $('#btnnotify').addClass("active")
 });
 
 
@@ -125,7 +133,6 @@ function webSocketConnect() {
                             $(this).children().last().find("a").stop().remove();
                         }
                     });
-
                     break;
                 case "browse":
                     if(current_app !== 'browse')
@@ -269,10 +276,14 @@ function webSocketConnect() {
                         notification += obj.data.artist + "<br />";
                     }
 
-                    $('.top-right').notify({
-                        message:{html: notification},
-                        type: "info",
-                    }).show();
+                    if ($.cookie("notification") === "true")
+                        songNotify(obj.data.title, obj.data.artist + " " + obj.data.album );
+                    else
+                        $('.top-right').notify({
+                            message:{html: notification},
+                            type: "info",
+                        }).show();
+                        
                     break;
                 case "error":
                     $('.top-right').notify({
@@ -394,10 +405,43 @@ $('#btnrepeat').on('click', function (e) {
     socket.send("MPD_API_TOGGLE_REPEAT," + ($(this).hasClass('active') ? 0 : 1));
 });
 
+$('#btnnotify').on('click', function (e) {
+    console.log("setting this");
+    if($.cookie("notification") === "true")
+        $.cookie("notification", false);
+    else {
+        window.webkitNotifications.requestPermission();
+        if (window.webkitNotifications.checkPermission() == 0)
+        {
+            $.cookie("notification", true);
+            $('btnnotify').addClass("active");
+        }
+    }
+});
+
 function getVersion()
 {
     $.get( "/api/get_version", function(response) {
         $('#ympd_version').text(response.data.ympd_version);
         $('#mpd_version').text(response.data.mpd_version);
     });
+}
+
+function notificationsSupported() {
+    return "webkitNotifications" in window;
+}
+
+function songNotify(artist, title) {
+    if (!notificationsSupported())
+	   return;
+
+    if (window.webkitNotifications.checkPermission() == 0) {
+	   var notification = window.webkitNotifications.createNotification("assets/favicon.ico", artist, title);
+	   notification.show();
+	   setTimeout(function(notification) {
+		  notification.cancel();
+	   }, 2000, notification);
+    } else {
+	   window.webkitNotifications.requestPermission();
+    }
 }

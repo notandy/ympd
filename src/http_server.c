@@ -25,6 +25,7 @@ static const struct serveable whitelist[] = {
     { "/js/bootstrap.min.js", "text/javascript" },
     { "/js/mpd.js", "text/javascript" },
     { "/js/jquery-1.10.2.min.js", "text/javascript" },
+    { "/js/jquery.cookie.js", "text/javascript" },
     { "/js/bootstrap-slider.js", "text/javascript" },
     { "/js/bootstrap-notify.js", "text/javascript" },
     { "/js/sammy.js", "text/javascript" },
