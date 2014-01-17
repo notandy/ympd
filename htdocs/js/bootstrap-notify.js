@@ -46,7 +46,7 @@
         this.$note.html(this.options.message);
 
     if(this.options.closable)
-      var link = $('<a class="close pull-right" href="#">&times;</a>');
+      var link = $('<a class="close pull-right" href="#">&nbsp;&times;</a>');
       $(link).on('click', $.proxy(onClose, this));
       this.$note.prepend(link);
 

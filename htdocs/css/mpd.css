@@ -43,14 +43,16 @@ body {
   border-color: #adadad;
 }
 
-
-
 #salamisandwich td:nth-child(3), th:nth-child(3) {
   text-align: right;
 }
 
 tbody {
   cursor: pointer;
+}
+
+td:last-child, td:first-child {
+  width: 30px;
 }
 
 .notifications {

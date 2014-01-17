@@ -17,6 +17,7 @@
 #define MPD_API_GET_TRACK_INFO   "MPD_API_GET_TRACK_INFO"
 #define MPD_API_GET_BROWSE       "MPD_API_GET_BROWSE"
 #define MPD_API_ADD_TRACK        "MPD_API_ADD_TRACK"
+#define MPD_API_ADD_PLAY_TRACK   "MPD_API_ADD_PLAY_TRACK"
 #define MPD_API_PLAY_TRACK       "MPD_API_PLAY_TRACK"
 #define MPD_API_RM_TRACK         "MPD_API_RM_TRACK"
 #define MPD_API_RM_ALL           "MPD_API_RM_ALL"
@@ -36,6 +37,7 @@
 struct per_session_data__ympd {
     int do_send;
     unsigned queue_version;
+    int current_song_id;
     char *browse_path;
 };
 
@@ -51,7 +53,7 @@ int callback_ympd(struct libwebsocket_context *context,
         enum libwebsocket_callback_reasons reason,
         void *user, void *in, size_t len);
 void mpd_loop();
-int mpd_put_state(char *buffer);
+int mpd_put_state(char *buffer, int *current_song_id, unsigned *queue_version);
 int mpd_put_current_song(char *buffer);
 int mpd_put_playlist(char *buffer);
 int mpd_put_browse(char *buffer, char *path);

@@ -20,7 +20,6 @@ struct serveable {
 
 static const struct serveable whitelist[] = {
     { "/css/bootstrap.css", "text/css" },
-    { "/css/slider.css", "text/css" },
     { "/css/mpd.css", "text/css" },
 
     { "/js/bootstrap.min.js", "text/javascript" },

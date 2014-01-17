@@ -5,7 +5,6 @@ var current_song = new Object();
 
 var app = $.sammy(function() {
     this.before('/', function(e, data) {
-        socket.send("MPD_API_GET_TRACK_INFO");
         $('#nav_links > li').removeClass('active');
     });
 
@@ -74,8 +73,8 @@ function webSocketConnect() {
     try {
         socket.onopen = function() {
             $('.top-right').notify({
-                message:{text:"Connected"},
-                fadeOut: { enabled: true, delay: 1000 }
+                message:{text:"Connected to ympd"},
+                fadeOut: { enabled: true, delay: 500 }
             }).show();
 
             app.run();
@@ -102,10 +101,10 @@ function webSocketConnect() {
                         var seconds = obj.data[song].duration - minutes * 60;
 
                         $('#salamisandwich > tbody').append(
-                            "<tr trackid=\"" + obj.data[song].id + "\"><td>" + obj.data[song].pos + "</td>" +
+                            "<tr trackid=\"" + obj.data[song].id + "\"><td>" + (obj.data[song].pos + 1) + "</td>" +
                                 "<td>"+ obj.data[song].title +"</td>" + 
                                 "<td>"+ minutes + ":" + (seconds < 10 ? '0' : '') + seconds +
-                        "</td></tr>");
+                        "</td><td></td></tr>");
                     }
 
                     $('#salamisandwich > tbody > tr').on({
@@ -139,7 +138,7 @@ function webSocketConnect() {
                                     "<tr uri=\"" + obj.data[item].dir + "\" class=\"dir\">" +
                                         "<td><span class=\"glyphicon glyphicon-folder-open\"></span></td>" + 
                                         "<td><a>" + basename(obj.data[item].dir) + "</a></td>" + 
-                                "<td></td></tr>");
+                                "<td></td><td></td></tr>");
                             break;
                         case "song":
                             var minutes = Math.floor(obj.data[item].duration / 60);
@@ -149,7 +148,7 @@ function webSocketConnect() {
                                 "<tr uri=\"" + obj.data[item].uri + "\" class=\"song\">" +
                                     "<td><span class=\"glyphicon glyphicon-music\"></span></td>" + 
                                     "<td>" + obj.data[item].title +"</td>" + 
-                                    "<td>"+ minutes + ":" + (seconds < 10 ? '0' : '') + seconds +"</td></tr>");
+                                    "<td>"+ minutes + ":" + (seconds < 10 ? '0' : '') + seconds +"</td><td></td></tr>");
                                 break;
 
                             case "playlist":
@@ -157,29 +156,33 @@ function webSocketConnect() {
                         }
                     }
 
+                    function appendClickableIcon(appendTo, onClickAction, glyphicon) {
+                        $(appendTo).children().last().append(
+                            "<a role=\"button\" class=\"pull-right btn-group-hover\">" +
+                            "<span class=\"glyphicon glyphicon-" + glyphicon + "\"></span></a>")
+                            .find('a').click(function(e) {
+                                e.stopPropagation();
+                                socket.send(onClickAction + "," + $(this).parents("tr").attr("uri"));
+                            $('.top-right').notify({
+                                message:{
+                                    text: $('td:nth-child(2)', $(this).parents("tr")).text() + " added"
+                                } }).show();
+                            }).fadeTo('fast',1);
+                    }
+
                     $('#salamisandwich > tbody > tr').on({
-                        mouseenter: function(){
-                            if($(this).is(".dir")) {
-                                    $(this).children().last().append(
-                                        "<a role=\"button\" class=\"pull-right btn-group-hover\">" +
-                                        "Add Directory <span class=\"glyphicon glyphicon-plus\"></span></a>")
-                                .find('a').click(function(e) {
-                                    e.stopPropagation();
-                                    socket.send("MPD_API_ADD_TRACK," + $(this).parents("tr").attr("uri"));
-                                    $('.top-right').notify({
-                                        message:{
-                                            text:"Added " + $('td:nth-child(2)', $(this).parents("tr")).text() + " to playlist "
-                                        }
-                                    }).show();
-                                }).fadeTo('fast',1);
-                            }
+                        mouseenter: function() {
+                            if($(this).is(".dir")) 
+                                appendClickableIcon($(this), 'MPD_API_ADD_TRACK', 'plus');
+                            else if($(this).is(".song"))
+                                appendClickableIcon($(this), 'MPD_API_ADD_PLAY_TRACK', 'play');
                         },
                         click: function() {
                             if($(this).is(".song")) {
                                 socket.send("MPD_API_ADD_TRACK," + $(this).attr("uri"));
                                 $('.top-right').notify({
                                     message:{
-                                        text:"Added " + $('td:nth-child(2)', this).text() + " to playlist "
+                                        text: $('td:nth-child(2)', this).text() + " added"
                                     }
                                 }).show();
 
@@ -239,9 +242,6 @@ function webSocketConnect() {
                     else
                         $('#btnrepeat').removeClass("active");
 
-                    if(obj.data.elapsedTime <= 1)
-                        socket.send("MPD_API_GET_TRACK_INFO");
-
                     last_state = obj;
                     break;
                 case "disconnected":
@@ -256,12 +256,23 @@ function webSocketConnect() {
                     if(current_app === 'playlist')
                         $.get( "/api/get_playlist", socket.onmessage);
                     break;
-                case "current_song":
+                case "song_change":
                     $('#currenttrack').text(" " + obj.data.title);
-                    if(obj.data.album)
+                    var notification = "<strong><h4>" + obj.data.title + "</h4></strong>";
+
+                    if(obj.data.album) {
                         $('#album').text(obj.data.album);
-                    if(obj.data.artist)
+                        notification += obj.data.album + "<br />";
+                    }
+                    if(obj.data.artist) {
                         $('#artist').text(obj.data.artist);
+                        notification += obj.data.artist + "<br />";
+                    }
+
+                    $('.top-right').notify({
+                        message:{html: notification},
+                        type: "info",
+                    }).show();
                     break;
                 case "error":
                     $('.top-right').notify({
@@ -350,12 +361,18 @@ var updatePlayIcon = function(state)
     }
 }
 
-function updateDB()
-{
+function updateDB() {
     socket.send('MPD_API_UPDATE_DB');
     $('.top-right').notify({
         message:{text:"Updating MPD Database... "}
     }).show();
+}
+
+function clickPlay() {
+    if($('#track-icon').hasClass('glyphicon-stop'))
+        socket.send('MPD_API_SET_PLAY');
+    else
+        socket.send('MPD_API_SET_PAUSE');
 }
 
 function basename(path) {

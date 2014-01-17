@@ -16,7 +16,6 @@
 struct mpd_connection *conn = NULL;
 enum mpd_conn_states mpd_conn_state = MPD_DISCONNECTED;
 enum mpd_state mpd_play_state = MPD_STATE_UNKNOWN;
-unsigned queue_version;
 
 int callback_ympd(struct libwebsocket_context *context,
         struct libwebsocket *wsi,
@@ -53,10 +52,9 @@ int callback_ympd(struct libwebsocket_context *context,
             else if(mpd_conn_state != MPD_CONNECTED) {
                 n = snprintf(p, MAX_SIZE, "{\"type\":\"disconnected\"}");
             }
-            else if((pss->queue_version != queue_version) || (pss->do_send & DO_SEND_PLAYLIST)) {
+            else if(pss->do_send & DO_SEND_PLAYLIST) {
                 /*n = mpd_put_playlist(p);*/
                 n = snprintf(p, MAX_SIZE, "{\"type\":\"update_playlist\"}");
-                pss->queue_version = queue_version;
                 pss->do_send &= ~DO_SEND_PLAYLIST;
             }
             else if(pss->do_send & DO_SEND_TRACK_INFO) {
@@ -68,8 +66,24 @@ int callback_ympd(struct libwebsocket_context *context,
                 pss->do_send &= ~DO_SEND_BROWSE;
                 free(pss->browse_path);
             }
-            else
-                n = mpd_put_state(p);
+            else {
+                /* Default Action */
+                int current_song_id;
+                unsigned queue_version;
+
+                n = mpd_put_state(p, &current_song_id, &queue_version);
+                if(current_song_id != pss->current_song_id)
+                {
+                    pss->current_song_id = current_song_id;
+                    pss->do_send |= DO_SEND_TRACK_INFO;
+                    libwebsocket_callback_on_writable(context, wsi);
+                }
+                else if(pss->queue_version != queue_version) {
+                    pss->queue_version = queue_version;
+                    pss->do_send |= DO_SEND_PLAYLIST;
+                    libwebsocket_callback_on_writable(context, wsi);
+                }
+            }
 
             if(n > 0)
                 m = libwebsocket_write(wsi, (unsigned char *)p, n, LWS_WRITE_TEXT);
@@ -105,6 +119,8 @@ int callback_ympd(struct libwebsocket_context *context,
                 unsigned id;
                 if(sscanf(in, "MPD_API_RM_TRACK,%u", &id))
                     mpd_run_delete_id(conn, id);
+
+                libwebsocket_callback_on_writable(context, wsi);
             }
             else if(!strncmp((const char *)in, MPD_API_PLAY_TRACK, sizeof(MPD_API_PLAY_TRACK)-1)) {
                 unsigned id;
@@ -156,6 +172,16 @@ int callback_ympd(struct libwebsocket_context *context,
                     free(uri);
                 }
             }
+            else if(!strncmp((const char *)in, MPD_API_ADD_PLAY_TRACK, sizeof(MPD_API_ADD_PLAY_TRACK)-1)) {
+                char *uri;
+                if(sscanf(in, "MPD_API_ADD_PLAY_TRACK,%m[^\t\n]", &uri) && uri != NULL) {
+                    int added_song = mpd_run_add_id(conn, uri);
+                    if(added_song != -1)
+                        mpd_run_play_id(conn, added_song);
+                    free(uri);
+                }
+            }
+            
 
             if(mpd_connection_get_error(conn) != MPD_ERROR_SUCCESS)
                 pss->do_send |= DO_SEND_ERROR;
@@ -226,7 +252,7 @@ char* mpd_get_title(struct mpd_song const *song)
     return basename(str);
 }
 
-int mpd_put_state(char *buffer)
+int mpd_put_state(char *buffer, int *current_song_id, unsigned *queue_version)
 {
     struct mpd_status *status;
     int len;
@@ -256,7 +282,8 @@ int mpd_put_state(char *buffer)
             mpd_status_get_total_time(status),
             mpd_status_get_song_id(status));
 
-    queue_version = mpd_status_get_queue_version(status);
+    *current_song_id = mpd_status_get_song_id(status);
+    *queue_version = mpd_status_get_queue_version(status);
     mpd_status_free(status);
     return len;
 }
@@ -271,7 +298,7 @@ int mpd_put_current_song(char *buffer)
     if(song == NULL)
         return 0;
 
-    cur += snprintf(cur, end - cur, "{\"type\": \"current_song\", \"data\":"
+    cur += snprintf(cur, end - cur, "{\"type\": \"song_change\", \"data\":"
             "{\"pos\":%d, \"title\":\"%s\"",
             mpd_song_get_pos(song),
             mpd_get_title(song));

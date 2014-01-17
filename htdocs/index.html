@@ -50,7 +50,7 @@
             <button type="button" class="btn btn-default" onclick="socket.send('MPD_API_SET_STOP');">
               <span id="stop-icon" class="glyphicon glyphicon-stop"></span>
             </button>
-            <button type="button" class="btn btn-default" onclick="socket.send('MPD_API_SET_PAUSE');">
+            <button type="button" class="btn btn-default" onclick="clickPlay();">
               <span id="play-icon" class="glyphicon glyphicon-pause"></span>
             </button>
             <button type="button" class="btn btn-default" onclick="socket.send('MPD_API_SET_PREV');">
@@ -103,6 +103,7 @@
                 <th>#</th>
                 <th>Title</th>
                 <th>Duration</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
