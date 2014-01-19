@@ -31,7 +31,6 @@ var last_state;
 var current_app;
 var lastSongTitle = "";
 var current_song = new Object();
-var desktopNotification;
 
 var app = $.sammy(function() {
     this.before('/', function(e, data) {
@@ -325,7 +324,6 @@ function webSocketConnect() {
 
         }
         socket.onclose = function(){
-            console.log("Disconnected");
             $('.top-right').notify({
                 message:{text:"Connection to ympd lost, retrying in 3 seconds "},
                 type: "danger", 
@@ -434,7 +432,6 @@ $('#btnrepeat').on('click', function (e) {
 });
 
 $('#btnnotify').on('click', function (e) {
-    console.log("setting this");
     if($.cookie("notification") === "true")
         $.cookie("notification", false);
     else {
