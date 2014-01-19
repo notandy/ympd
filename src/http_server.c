@@ -147,7 +147,7 @@ int callback_http(struct libwebsocket_context *context,
                             LIBMPDCLIENT_PATCH_VERSION);
 
                 /* Copy size to content-length field */
-                sprintf(buf, "%6lu", response_size);
+                sprintf(buf, "%6zu", response_size);
                 memcpy(p + sizeof(http_header) - 11, buf, 6);
 
                 n = libwebsocket_write(wsi, (unsigned char *)p,

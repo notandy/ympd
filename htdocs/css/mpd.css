@@ -43,6 +43,14 @@ body {
   border-color: #adadad;
 }
 
+@media (max-width: 1199px) {
+#btn-responsive-block > .btn {
+  padding: 6px 12px;
+  font-size: 14px;
+  border-radius: 4px;
+  }
+}
+
 #salamisandwich td:nth-child(3), th:nth-child(3) {
   text-align: right;
 }
