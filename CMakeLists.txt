@@ -24,7 +24,7 @@ endif()
 
 configure_file(${PROJECT_SOURCE_DIR}/src/config.h.in
     ${PROJECT_BINARY_DIR}/config.h)
-include_directories(${PROJECT_BINARY_DIR})
+include_directories(${PROJECT_BINARY_DIR} ${LIBWEBSOCKETS_INCLUDE_DIR})
 
 include(CheckCSourceCompiles)
 include(CPack)
