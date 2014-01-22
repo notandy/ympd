@@ -1,0 +1,10 @@
+[Unit]
+Description=ympd server daemon
+Requires=network.target local-fs.target
+
+[Service]
+ExecStart=/usr/bin/ympd
+Type=simple
+
+[Install]
+WantedBy=multi-user.target
