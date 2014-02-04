@@ -158,7 +158,7 @@
           <h2 class="modal-title" id="aboutLabel">About</h2>
         </div>
         <div class="modal-body">
-          <h4><span class="glyphicon glyphicon-play-circle"></span> ympd&nbsp;&nbsp;&nbsp;<small>MPD Web GUI - written in C, utilizing Websockets and Bootstrap/JS</small></h4>
+          <h4><a href="http://www.ympd.org"><span class="glyphicon glyphicon-play-circle"></span> ympd</a>&nbsp;&nbsp;&nbsp;<small>MPD Web GUI - written in C, utilizing Websockets and Bootstrap/JS</small></h4>
           <p>
           ympd is a lightweight MPD (Music Player Daemon) web client that runs without a dedicated werbserver or interpreters like PHP, NodeJS or Ruby. It's tuned for minimal resource usage and requires only very litte dependencies.</p>
           <p class="text-muted">
@@ -169,15 +169,6 @@
           <h6><a href="http://libwebsockets.org">libWebSockets</a> <small>LGPL2.1 + static link exception</small></h6>
           <h6><a href="http://www.musicpd.org/libs/libmpdclient/">libMPDClient</a> <small>BSD License</small></h6>
           <br/>
-          <h5>ympd was developed by:</h5>
-          <blockquote>
-            <address>
-              <strong>Andrew Karpow</strong><br>
-              <a href="mailto:andy@ympd.org">andy@ympd.org</a><br/>
-              <a href="http://www.ympd.org">www.ympd.org</a><br/>
-              XMPP: <a href="xmpp:andy_@jabber.ccc.de?subscribe">andy_@jabber.ccc.de</a>
-            </address>
-          </blockquote>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
@@ -186,7 +177,7 @@
     </div><!-- /.modal-dialog -->
   </div><!-- /.modal -->
 
-    <!-- Modal -->
+  <!-- Modal -->
   <div class="modal fade" id="settings" tabindex="-1" role="dialog" aria-labelledby="settingsLabel" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">
@@ -195,15 +186,15 @@
           <h2 class="modal-title" id="settingsLabel"><span class="glyphicon glyphicon-wrench"></span> Settings</h2>
         </div>
         <div class="modal-body">
-          <form class="form-inline" role="form">
-            <div class="form-group row">
-              <div class="col-xs-9">
-                <label class="control-label" for="mpdhost">MPD Host / IP</label>
-                <input type="text" class="form-control" id="mpdhost">
-               </div>
-              <div class="col-xs-3">
+          <form role="form">
+            <div class="row">
+              <div class="form-group col-md-9">
+                <label class="control-label" for="mpdhost">MPD Host/IP</label>
+                <input type="text" class="form-control" id="mpdhost" />
+              </div>
+              <div class="form-group col-md-3">
                 <label class="control-label" for="mpdport">MPD Port</label>
-                <input type="text" class="form-control" id="mpdport">
+                <input type="text" class="form-control" id="mpdport" />
               </div>
             </div>
           </form>
