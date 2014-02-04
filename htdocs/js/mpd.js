@@ -312,6 +312,10 @@ function webSocketConnect() {
                         }).show();
                         
                     break;
+                case "mpdhost":
+                    $('#mpdhost').val(obj.data.host);
+                    $('#mpdport').val(obj.data.port);
+                    break;
                 case "error":
                     $('.top-right').notify({
                         message:{text: obj.data},
@@ -450,6 +454,23 @@ function getVersion()
         $('#ympd_version').text(response.data.ympd_version);
         $('#mpd_version').text(response.data.mpd_version);
     });
+}
+
+function getHost() {
+    socket.send('MPD_API_GET_MPDHOST');
+
+    function onEnter(event) {
+      if ( event.which == 13 )
+        setHost();
+        $('#settings').modal('hide');
+    }
+
+    $('#mpdhost').keypress(onEnter);
+    $('#mpdport').keypress(onEnter);
+}
+
+function setHost() {
+    socket.send('MPD_API_SET_MPDHOST,'+$('#mpdport').val()+','+$('#mpdhost').val());
 }
 
 function notificationsSupported() {

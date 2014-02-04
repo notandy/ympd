@@ -81,7 +81,7 @@ int main(int argc, char **argv)
     atexit(bye);
     memset(&info, 0, sizeof info);
     info.port = 8080;
-    mpd_host = "127.0.0.1";
+    strcpy(mpd_host, "127.0.0.1");
     mpd_port = 6600;
     lws_set_log_level(LLL_ERR | LLL_WARN, NULL);
 
@@ -105,7 +105,7 @@ int main(int argc, char **argv)
                 long_options, &option_index)) != -1) {
         switch (n) {
             case 'h':
-                mpd_host = optarg;
+                strncpy(mpd_host, optarg, sizeof(mpd_host));
                 break;
             case 'p':
                 mpd_port = atoi(optarg);

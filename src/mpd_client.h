@@ -38,12 +38,13 @@
 #define DO_SEND_TRACK_INFO (1 << 2)
 #define DO_SEND_BROWSE     (1 << 3)
 #define DO_SEND_ERROR      (1 << 4)
-
+#define DO_SEND_MPDHOST    (1 << 5)
 
 #define MPD_API_GET_SEEK         "MPD_API_GET_SEEK"
 #define MPD_API_GET_PLAYLIST     "MPD_API_GET_PLAYLIST"
 #define MPD_API_GET_TRACK_INFO   "MPD_API_GET_TRACK_INFO"
 #define MPD_API_GET_BROWSE       "MPD_API_GET_BROWSE"
+#define MPD_API_GET_MPDHOST      "MPD_API_GET_MPDHOST"
 #define MPD_API_ADD_TRACK        "MPD_API_ADD_TRACK"
 #define MPD_API_ADD_PLAY_TRACK   "MPD_API_ADD_PLAY_TRACK"
 #define MPD_API_PLAY_TRACK       "MPD_API_PLAY_TRACK"
@@ -56,6 +57,7 @@
 #define MPD_API_SET_SEEK         "MPD_API_SET_SEEK"
 #define MPD_API_SET_NEXT         "MPD_API_SET_PREV"
 #define MPD_API_SET_PREV         "MPD_API_SET_NEXT"
+#define MPD_API_SET_MPDHOST      "MPD_API_SET_MPDHOST"
 #define MPD_API_UPDATE_DB        "MPD_API_UPDATE_DB"
 #define MPD_API_TOGGLE_RANDOM    "MPD_API_TOGGLE_RANDOM"
 #define MPD_API_TOGGLE_CONSUME   "MPD_API_TOGGLE_CONSUME"
@@ -72,7 +74,8 @@ struct per_session_data__ympd {
 enum mpd_conn_states {
     MPD_FAILURE,
     MPD_DISCONNECTED,
-    MPD_CONNECTED
+    MPD_CONNECTED,
+    MPD_RECONNECT
 };
 
 void *mpd_idle_connection(void *_data);
@@ -87,7 +90,7 @@ int mpd_put_playlist(char *buffer);
 int mpd_put_browse(char *buffer, char *path);
 
 int mpd_port;
-const char *mpd_host;
+char mpd_host[255];
 
 #endif
 
