@@ -460,9 +460,10 @@ function getHost() {
     socket.send('MPD_API_GET_MPDHOST');
 
     function onEnter(event) {
-      if ( event.which == 13 )
+      if ( event.which == 13 ) {
         setHost();
         $('#settings').modal('hide');
+      }
     }
 
     $('#mpdhost').keypress(onEnter);
