@@ -40,6 +40,7 @@
 #include <mpd/tag.h>
 
 #include "mpd_client.h"
+#include "config.h"
 
 struct mpd_connection *conn = NULL;
 enum mpd_conn_states mpd_conn_state = MPD_DISCONNECTED;
@@ -93,6 +94,12 @@ int callback_ympd(struct libwebsocket_context *context,
                 n = mpd_put_browse(p, pss->browse_path);
                 pss->do_send &= ~DO_SEND_BROWSE;
                 free(pss->browse_path);
+            }
+            else if(pss->do_send & DO_SEND_MPDHOST) {
+                n = snprintf(p, MAX_SIZE, "{\"type\":\"mpdhost\", \"data\": "
+                    "{\"host\" : \"%s\", \"port\": \"%d\"}"
+                    "}", mpd_host, mpd_port);
+                pss->do_send &= ~DO_SEND_MPDHOST;
             }
             else {
                 /* Default Action */
@@ -209,11 +216,25 @@ int callback_ympd(struct libwebsocket_context *context,
                     free(uri);
                 }
             }
-            
+#ifdef WITH_MPD_HOST_CHANGE
+            else if(!strncmp((const char *)in, MPD_API_SET_MPDHOST, sizeof(MPD_API_SET_MPDHOST)-1)) {
+                char *host;
+                int port = 0;
+                if(sscanf(in, "MPD_API_SET_MPDHOST,%d,%m[^\t\n ]", &port, &host) && host != NULL && port > 0) {
+                    strncpy(mpd_host, host, sizeof(mpd_host));
+                    free(host);
+                    mpd_port = port;
+                    mpd_conn_state = MPD_RECONNECT;
+                    break;
+                }
+            }
+            else if(!strncmp((const char *)in, MPD_API_GET_MPDHOST, sizeof(MPD_API_GET_MPDHOST)-1)) {
+                pss->do_send |= DO_SEND_MPDHOST;
+            }
+#endif
 
-            if(mpd_connection_get_error(conn) != MPD_ERROR_SUCCESS)
+            if(mpd_conn_state == MPD_CONNECTED && mpd_connection_get_error(conn) != MPD_ERROR_SUCCESS)
                 pss->do_send |= DO_SEND_ERROR;
-
             break;
 
         default:
@@ -249,6 +270,7 @@ void mpd_loop()
         case MPD_FAILURE:
             lwsl_err("MPD connection failed.\n");
 
+        case MPD_RECONNECT:
             if(conn != NULL)
                 mpd_connection_free(conn);
             conn = NULL;

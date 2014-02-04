@@ -14,6 +14,7 @@ set(CPACK_DEBIAN_PACKAGE_MAINTAINER "andy@ndyk.de")
 set(CPACK_DEBIAN_PACKAGE_DEPENDS "libssl1.0.0,libmpdclient2")
 
 option(WITH_STATIC_WEBSOCKETS "Build with static libwebsockets library" ON)
+option(WITH_MPD_HOST_CHANGE "Let users of the web frontend change the MPD Host" ON)
 
 find_package(LibMPDClient REQUIRED)
 find_package(LibWebSockets REQUIRED)
