@@ -39,7 +39,7 @@
         <ul id="nav_links" class="nav navbar-nav">
           <li id="playlist"><a href="#/">Playlist</a></li>
           <li id="browse"><a href="#/browse/">Browse database</a></li>
-          <li><a href="#" data-toggle="modal" data-target="#about" onclick="getVersion();">About</a></li>
+          <li><a href="#" data-toggle="modal" data-target="#about">About</a></li>
           <li><a href="#" data-toggle="modal" data-target="#settings" onclick="getHost();">Settings</a></li>
         </ul>
 
@@ -197,11 +197,23 @@
                 <input type="text" class="form-control" id="mpdport" />
               </div>
             </div>
+            <div class="row">
+              <div class="form-group col-md-6">
+                <label class="control-label" for="mpd_pw">MPD Password</label>
+                <input type="password" class="form-control" id="mpd_pw" placeholder="Password"/>
+              </div>
+              <div class="form-group col-md-6">
+                <label class="control-label" for="mpd_pw_con">MPD Password (Confirmation)</label>
+                <input type="password" class="form-control" id="mpd_pw_con"  placeholder="Password confirmation"
+                data-placement="right" data-toggle="popover" data-content="Password does not match!"
+                data-trigger="manual" />
+              </div>
+            </div>
           </form>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-          <button type="button" class="btn btn-default" data-dismiss="modal" onclick="setHost();">Save</button>
+          <button type="button" class="btn btn-default" onclick="confirmSettings();">Save</button>
         </div>
       </div><!-- /.modal-content -->
     </div><!-- /.modal-dialog -->

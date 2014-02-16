@@ -41,7 +41,8 @@ var app = $.sammy(function() {
         current_app = 'playlist';
         $('#breadcrump').addClass('hide');
         $('#salamisandwich').find("tr:gt(0)").remove();
-        $.get( "/api/get_playlist", socket.onmessage);
+        // $.get( "/api/get_playlist", socket.onmessage);
+        socket.send('MPD_API_GET_PLAYLIST');
 
         $('#panel-heading').text("Playlist");
         $('#playlist').addClass('active');
@@ -53,7 +54,8 @@ var app = $.sammy(function() {
         $('#salamisandwich').find("tr:gt(0)").remove();
         var path = this.params['splat'][0];
 
-        $.get( "/api/get_browse/" + encodeURIComponent(path), socket.onmessage);
+        // $.get( "/api/get_browse/" + encodeURIComponent(path), socket.onmessage);
+        socket.send('MPD_API_GET_BROWSE,' + path);
 
         $('#panel-heading').text("Browse database: "+path+"");
         var path_array = path.split('/');
@@ -100,13 +102,14 @@ $(document).ready(function(){
 
 function webSocketConnect() {
     if (typeof MozWebSocket != "undefined") {
-        socket = new MozWebSocket(get_appropriate_ws_url(), "ympd-client");
+        socket = new MozWebSocket(get_appropriate_ws_url());
     } else {
-        socket = new WebSocket(get_appropriate_ws_url(), "ympd-client");
+        socket = new WebSocket(get_appropriate_ws_url());
     }
 
     try {
         socket.onopen = function() {
+            console.log("connected");
             $('.top-right').notify({
                 message:{text:"Connected to ympd"},
                 fadeOut: { enabled: true, delay: 500 }
@@ -288,7 +291,7 @@ function webSocketConnect() {
                     break;
                 case "update_playlist":
                     if(current_app === 'playlist')
-                        $.get( "/api/get_playlist", socket.onmessage);
+                        socket.send('MPD_API_GET_PLAYLIST');
                     break;
                 case "song_change":
                     $('#currenttrack').text(" " + obj.data.title);
@@ -315,6 +318,10 @@ function webSocketConnect() {
                 case "mpdhost":
                     $('#mpdhost').val(obj.data.host);
                     $('#mpdport').val(obj.data.port);
+                    if(obj.data.passwort_set) {
+                        $('#mpd_pw').attr('placeholder', '*******');
+                        $('#mpd_pw_con').attr('placeholder', '*******');
+                    }
                     break;
                 case "error":
                     $('.top-right').notify({
@@ -328,6 +335,7 @@ function webSocketConnect() {
 
         }
         socket.onclose = function(){
+            console.log("disconnected");
             $('.top-right').notify({
                 message:{text:"Connection to ympd lost, retrying in 3 seconds "},
                 type: "danger", 
@@ -448,30 +456,36 @@ $('#btnnotify').on('click', function (e) {
     }
 });
 
-function getVersion()
-{
-    $.get( "/api/get_version", function(response) {
-        $('#ympd_version').text(response.data.ympd_version);
-        $('#mpd_version').text(response.data.mpd_version);
-    });
-}
-
 function getHost() {
     socket.send('MPD_API_GET_MPDHOST');
 
     function onEnter(event) {
       if ( event.which == 13 ) {
-        setHost();
-        $('#settings').modal('hide');
+        confirmSettings();
       }
     }
 
     $('#mpdhost').keypress(onEnter);
     $('#mpdport').keypress(onEnter);
+    $('#mpd_pw').keypress(onEnter);
+    $('#mpd_pw_con').keypress(onEnter);
+
 }
 
-function setHost() {
+function confirmSettings() {
+    if($('#mpd_pw').val().length + $('#mpd_pw_con').val().length > 0) {
+        if ($('#mpd_pw').val() !== $('#mpd_pw_con').val())
+        {
+            $('#mpd_pw_con').popover('show');
+            setTimeout(function() {
+                $('#mpd_pw_con').popover('hide');
+            }, 2000);
+            return;
+        } else
+            socket.send('MPD_API_SET_MPDPASS,'+$('#mpd_pw').val());
+    }
     socket.send('MPD_API_SET_MPDHOST,'+$('#mpdport').val()+','+$('#mpdhost').val());
+    $('#settings').modal('hide');
 }
 
 function notificationsSupported() {

@@ -29,68 +29,75 @@
 #ifndef __MPD_CLIENT_H__
 #define __MPD_CLIENT_H__
 
-#include <libwebsockets.h>
+#include "mongoose.h"
 
 #define MAX_SIZE 1024 * 100
+#define GEN_ENUM(X) X,
+#define GEN_STR(X) #X,
+#define MPD_CMDS(X) \
+    X(MPD_API_GET_PLAYLIST) \
+    X(MPD_API_GET_BROWSE) \
+    X(MPD_API_GET_MPDHOST) \
+    X(MPD_API_ADD_TRACK) \
+    X(MPD_API_ADD_PLAY_TRACK) \
+    X(MPD_API_PLAY_TRACK) \
+    X(MPD_API_RM_TRACK) \
+    X(MPD_API_RM_ALL) \
+    X(MPD_API_SET_VOLUME) \
+    X(MPD_API_SET_PAUSE) \
+    X(MPD_API_SET_PLAY) \
+    X(MPD_API_SET_STOP) \
+    X(MPD_API_SET_SEEK) \
+    X(MPD_API_SET_NEXT) \
+    X(MPD_API_SET_PREV) \
+    X(MPD_API_SET_MPDHOST) \
+    X(MPD_API_SET_MPDPASS) \
+    X(MPD_API_UPDATE_DB) \
+    X(MPD_API_TOGGLE_RANDOM) \
+    X(MPD_API_TOGGLE_CONSUME) \
+    X(MPD_API_TOGGLE_SINGLE) \
+    X(MPD_API_TOGGLE_REPEAT)
 
-#define DO_SEND_STATE      (1 << 0)
-#define DO_SEND_PLAYLIST   (1 << 1)
-#define DO_SEND_TRACK_INFO (1 << 2)
-#define DO_SEND_BROWSE     (1 << 3)
-#define DO_SEND_ERROR      (1 << 4)
-#define DO_SEND_MPDHOST    (1 << 5)
-
-#define MPD_API_GET_SEEK         "MPD_API_GET_SEEK"
-#define MPD_API_GET_PLAYLIST     "MPD_API_GET_PLAYLIST"
-#define MPD_API_GET_TRACK_INFO   "MPD_API_GET_TRACK_INFO"
-#define MPD_API_GET_BROWSE       "MPD_API_GET_BROWSE"
-#define MPD_API_GET_MPDHOST      "MPD_API_GET_MPDHOST"
-#define MPD_API_ADD_TRACK        "MPD_API_ADD_TRACK"
-#define MPD_API_ADD_PLAY_TRACK   "MPD_API_ADD_PLAY_TRACK"
-#define MPD_API_PLAY_TRACK       "MPD_API_PLAY_TRACK"
-#define MPD_API_RM_TRACK         "MPD_API_RM_TRACK"
-#define MPD_API_RM_ALL           "MPD_API_RM_ALL"
-#define MPD_API_SET_VOLUME       "MPD_API_SET_VOLUME"
-#define MPD_API_SET_PAUSE        "MPD_API_SET_PAUSE"
-#define MPD_API_SET_PLAY         "MPD_API_SET_PLAY"
-#define MPD_API_SET_STOP         "MPD_API_SET_STOP"
-#define MPD_API_SET_SEEK         "MPD_API_SET_SEEK"
-#define MPD_API_SET_NEXT         "MPD_API_SET_PREV"
-#define MPD_API_SET_PREV         "MPD_API_SET_NEXT"
-#define MPD_API_SET_MPDHOST      "MPD_API_SET_MPDHOST"
-#define MPD_API_UPDATE_DB        "MPD_API_UPDATE_DB"
-#define MPD_API_TOGGLE_RANDOM    "MPD_API_TOGGLE_RANDOM"
-#define MPD_API_TOGGLE_CONSUME   "MPD_API_TOGGLE_CONSUME"
-#define MPD_API_TOGGLE_SINGLE    "MPD_API_TOGGLE_SINGLE"
-#define MPD_API_TOGGLE_REPEAT    "MPD_API_TOGGLE_REPEAT"
-
-struct per_session_data__ympd {
-    int do_send;
-    unsigned queue_version;
-    int current_song_id;
-    char *browse_path;
+enum mpd_cmd_ids {
+    MPD_CMDS(GEN_ENUM)
 };
 
 enum mpd_conn_states {
-    MPD_FAILURE,
     MPD_DISCONNECTED,
+    MPD_FAILURE,
     MPD_CONNECTED,
-    MPD_RECONNECT
+    MPD_RECONNECT,
+    MPD_DISCONNECT
 };
 
-void *mpd_idle_connection(void *_data);
-int callback_ympd(struct libwebsocket_context *context,
-        struct libwebsocket *wsi,
-        enum libwebsocket_callback_reasons reason,
-        void *user, void *in, size_t len);
-void mpd_loop();
+struct t_mpd {
+    int port;
+    char host[128];
+    char *password;
+
+    struct mpd_connection *conn;
+    enum mpd_conn_states conn_state;
+
+    /* Reponse Buffer */
+    char buf[MAX_SIZE];
+    size_t buf_size;
+
+    int song_id;
+    unsigned queue_version;
+} mpd;
+
+struct t_mpd_client_session {
+    int song_id;
+    unsigned queue_version;
+};
+
+void mpd_poll(struct mg_server *s);
+int callback_mpd(struct mg_connection *c);
+int mpd_close_handler(struct mg_connection *c);
 int mpd_put_state(char *buffer, int *current_song_id, unsigned *queue_version);
 int mpd_put_current_song(char *buffer);
 int mpd_put_playlist(char *buffer);
 int mpd_put_browse(char *buffer, char *path);
-
-int mpd_port;
-char mpd_host[255];
-
+void mpd_disconnect();
 #endif
 
