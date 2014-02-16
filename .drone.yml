@@ -1,0 +1,10 @@
+image: gcc4.8
+script:
+  - sudo apt-get install -y libmpdclient-dev &> /dev/null
+  - cmake . -DCMAKE_INSTALL_PREFIX:PATH=/usr
+  - make
+  - cpack -D CPACK_DEBIAN_PACKAGE_MAINTAINER="ympd Team" -G DEB
+notify:
+  email:
+    recipients:
+      - andy@ndyk.de
