@@ -1,29 +1,19 @@
 /* ympd
-   (c) 2013-2014 Andrew Karpow <andy@ympd.org>
+   (c) 2013-2014 Andrew Karpow <andy@ndyk.de>
    This project's homepage is: http://www.ympd.org
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; version 2 of the License.
 
-   Redistribution and use in source and binary forms, with or without
-   modification, are permitted provided that the following conditions
-   are met:
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
 
-   - Redistributions of source code must retain the above copyright
-   notice, this list of conditions and the following disclaimer.
-
-   - Redistributions in binary form must reproduce the above copyright
-   notice, this list of conditions and the following disclaimer in the
-   documentation and/or other materials provided with the distribution.
-
-   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-   ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-   A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR
-   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-   EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-   PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-   PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-   LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-   NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+   You should have received a copy of the GNU General Public License along
+   with this program; if not, write to the Free Software Foundation, Inc.,
+   Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
    
 #ifndef __MPD_CLIENT_H__
@@ -31,18 +21,30 @@
 
 #include "mongoose.h"
 
+#define RETURN_ERROR_AND_RECOVER(X) do { \
+    fprintf(stderr, "MPD X: %s\n", mpd_connection_get_error_message(mpd.conn)); \
+    cur += snprintf(cur, end  - cur, "{\"type\":\"error\",\"data\":\"%s\"}", \
+    mpd_connection_get_error_message(mpd.conn)); \
+    if (!mpd_connection_clear_error(mpd.conn)) \
+        mpd.conn_state = MPD_FAILURE; \
+    return cur - buffer; \
+} while(0)
+
+
 #define MAX_SIZE 1024 * 100
 #define GEN_ENUM(X) X,
 #define GEN_STR(X) #X,
 #define MPD_CMDS(X) \
-    X(MPD_API_GET_PLAYLIST) \
+    X(MPD_API_GET_QUEUE) \
     X(MPD_API_GET_BROWSE) \
     X(MPD_API_GET_MPDHOST) \
     X(MPD_API_ADD_TRACK) \
     X(MPD_API_ADD_PLAY_TRACK) \
+    X(MPD_API_ADD_PLAYLIST) \
     X(MPD_API_PLAY_TRACK) \
     X(MPD_API_RM_TRACK) \
     X(MPD_API_RM_ALL) \
+    X(MPD_API_SEARCH) \
     X(MPD_API_SET_VOLUME) \
     X(MPD_API_SET_PAUSE) \
     X(MPD_API_SET_PLAY) \
@@ -96,8 +98,9 @@ int callback_mpd(struct mg_connection *c);
 int mpd_close_handler(struct mg_connection *c);
 int mpd_put_state(char *buffer, int *current_song_id, unsigned *queue_version);
 int mpd_put_current_song(char *buffer);
-int mpd_put_playlist(char *buffer);
+int mpd_put_queue(char *buffer);
 int mpd_put_browse(char *buffer, char *path);
+int mpd_search(char *buffer, char *searchstr);
 void mpd_disconnect();
 #endif
 

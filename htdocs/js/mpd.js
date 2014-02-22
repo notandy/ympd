@@ -1,29 +1,19 @@
-/* libmpdclient
-   (c) 2013-2014 Andrew Karpow <andy@ympd.org>
+/* ympd
+   (c) 2013-2014 Andrew Karpow <andy@ndyk.de>
    This project's homepage is: http://www.ympd.org
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; version 2 of the License.
 
-   Redistribution and use in source and binary forms, with or without
-   modification, are permitted provided that the following conditions
-   are met:
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
 
-   - Redistributions of source code must retain the above copyright
-   notice, this list of conditions and the following disclaimer.
-
-   - Redistributions in binary form must reproduce the above copyright
-   notice, this list of conditions and the following disclaimer in the
-   documentation and/or other materials provided with the distribution.
-
-   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-   ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-   A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR
-   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-   EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-   PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-   PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-   LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-   NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+   You should have received a copy of the GNU General Public License along
+   with this program; if not, write to the Free Software Foundation, Inc.,
+   Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
 var socket;
@@ -38,14 +28,13 @@ var app = $.sammy(function() {
     });
 
     this.get('#/', function() {
-        current_app = 'playlist';
+        current_app = 'queue';
         $('#breadcrump').addClass('hide');
         $('#salamisandwich').find("tr:gt(0)").remove();
-        // $.get( "/api/get_playlist", socket.onmessage);
-        socket.send('MPD_API_GET_PLAYLIST');
+        socket.send('MPD_API_GET_QUEUE');
 
-        $('#panel-heading').text("Playlist");
-        $('#playlist').addClass('active');
+        $('#panel-heading').text("Queue");
+        $('#queue').addClass('active');
     });
 
     this.get(/\#\/browse\/(.*)/, function() {
@@ -54,10 +43,9 @@ var app = $.sammy(function() {
         $('#salamisandwich').find("tr:gt(0)").remove();
         var path = this.params['splat'][0];
 
-        // $.get( "/api/get_browse/" + encodeURIComponent(path), socket.onmessage);
         socket.send('MPD_API_GET_BROWSE,' + path);
 
-        $('#panel-heading').text("Browse database: "+path+"");
+        $('#panel-heading').text("Browse database: "+path);
         var path_array = path.split('/');
         var full_path = "";
         $.each(path_array, function(index, chunk) {
@@ -71,6 +59,17 @@ var app = $.sammy(function() {
             full_path += "/";
         });
         $('#browse').addClass('active');
+    });
+
+    this.get(/\#\/search\/(.*)/, function() {
+        current_app = 'search';
+        $('#salamisandwich').find("tr:gt(0)").remove();
+        var searchstr = this.params['splat'][0];
+
+        $('#search > div > input').val(searchstr);
+        socket.send('MPD_API_SEARCH,' + searchstr);
+
+        $('#panel-heading').text("Search: "+searchstr);
     });
 
     this.get("/", function(context) {
@@ -119,18 +118,14 @@ function webSocketConnect() {
         }
 
         socket.onmessage =function got_packet(msg) {
-            if(msg instanceof MessageEvent) {
-                if(msg.data === last_state)
-                    return;
+            if(msg.data === last_state)
+                return;
 
-                var obj = JSON.parse(msg.data);
-            } else {
-                var obj = msg;
-            }
+            var obj = JSON.parse(msg.data);
 
             switch (obj.type) {
-                case "playlist":
-                    if(current_app !== 'playlist')
+                case "queue":
+                    if(current_app !== 'queue')
                         break;
 
                     $('#salamisandwich > tbody').empty();
@@ -164,8 +159,9 @@ function webSocketConnect() {
                         }
                     });
                     break;
+                case "search":
                 case "browse":
-                    if(current_app !== 'browse')
+                    if(current_app !== 'browse' && current_app !== 'search')
                         break;
 
                     for (var item in obj.data) {
@@ -173,22 +169,30 @@ function webSocketConnect() {
                             case "directory":
                                 $('#salamisandwich > tbody').append(
                                     "<tr uri=\"" + obj.data[item].dir + "\" class=\"dir\">" +
-                                        "<td><span class=\"glyphicon glyphicon-folder-open\"></span></td>" + 
-                                        "<td><a>" + basename(obj.data[item].dir) + "</a></td>" + 
-                                "<td></td><td></td></tr>");
-                            break;
-                        case "song":
-                            var minutes = Math.floor(obj.data[item].duration / 60);
-                            var seconds = obj.data[item].duration - minutes * 60;
+                                    "<td><span class=\"glyphicon glyphicon-folder-open\"></span></td>" + 
+                                    "<td><a>" + basename(obj.data[item].dir) + "</a></td>" + 
+                                    "<td></td><td></td></tr>"
+                                );
+                                break;
+                            case "playlist":
+                                $('#salamisandwich > tbody').append(
+                                    "<tr uri=\"" + obj.data[item].plist + "\" class=\"plist\">" +
+                                    "<td><span class=\"glyphicon glyphicon-list\"></span></td>" + 
+                                    "<td><a>" + basename(obj.data[item].plist) + "</a></td>" + 
+                                    "<td></td><td></td></tr>"
+                                );
+                                break;
+                            case "song":
+                                var minutes = Math.floor(obj.data[item].duration / 60);
+                                var seconds = obj.data[item].duration - minutes * 60;
 
-                            $('#salamisandwich > tbody').append(
-                                "<tr uri=\"" + obj.data[item].uri + "\" class=\"song\">" +
+                                $('#salamisandwich > tbody').append(
+                                    "<tr uri=\"" + obj.data[item].uri + "\" class=\"song\">" +
                                     "<td><span class=\"glyphicon glyphicon-music\"></span></td>" + 
                                     "<td>" + obj.data[item].title +"</td>" + 
-                                    "<td>"+ minutes + ":" + (seconds < 10 ? '0' : '') + seconds +"</td><td></td></tr>");
-                                break;
-
-                            case "playlist":
+                                    "<td>"+ minutes + ":" + (seconds < 10 ? '0' : '') + seconds +
+                                    "</td><td></td></tr>"
+                                );
                                 break;
                         }
                     }
@@ -215,16 +219,21 @@ function webSocketConnect() {
                                 appendClickableIcon($(this), 'MPD_API_ADD_PLAY_TRACK', 'play');
                         },
                         click: function() {
-                            if($(this).is(".song")) {
-                                socket.send("MPD_API_ADD_TRACK," + $(this).attr("uri"));
+                            if($(this).is(".dir"))
+                                app.setLocation("#/browse/"+$(this).attr("uri"));
+                            else {
+                                if($(this).is(".song"))
+                                    socket.send("MPD_API_ADD_TRACK," + $(this).attr("uri"));
+                                else 
+                                    socket.send("MPD_API_ADD_PLAYLIST," + $(this).attr("uri"));
+
                                 $('.top-right').notify({
                                     message:{
                                         text: $('td:nth-child(2)', this).text() + " added"
                                     }
                                 }).show();
+                            }
 
-                            } else
-                                app.setLocation("#/browse/"+$(this).attr("uri"));
                         },
                         mouseleave: function(){
                             $(this).children().last().find("a").stop().remove();
@@ -289,9 +298,9 @@ function webSocketConnect() {
                             fadeOut: { enabled: true, delay: 1000 },
                         }).show();
                     break;
-                case "update_playlist":
-                    if(current_app === 'playlist')
-                        socket.send('MPD_API_GET_PLAYLIST');
+                case "update_queue":
+                    if(current_app === 'queue')
+                        socket.send('MPD_API_GET_QUEUE');
                     break;
                 case "song_change":
                     $('#currenttrack').text(" " + obj.data.title);
@@ -469,8 +478,13 @@ function getHost() {
     $('#mpdport').keypress(onEnter);
     $('#mpd_pw').keypress(onEnter);
     $('#mpd_pw_con').keypress(onEnter);
-
 }
+
+$('#search').submit(function () {
+
+    app.setLocation("#/search/"+$('#search > div > input').val());
+    return false;
+});
 
 function confirmSettings() {
     if($('#mpd_pw').val().length + $('#mpd_pw_con').val().length > 0) {

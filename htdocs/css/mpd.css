@@ -28,6 +28,10 @@ body {
 	min-width: 50px;
 }
 
+#search {
+  margin-right: -10px;
+}
+
 .btn-group-hover {
     opacity: 20%;
 }

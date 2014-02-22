@@ -1,29 +1,19 @@
 /* ympd
-   (c) 2013-2014 Andrew Karpow <andy@ympd.org>
+   (c) 2013-2014 Andrew Karpow <andy@ndyk.de>
    This project's homepage is: http://www.ympd.org
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; version 2 of the License.
 
-   Redistribution and use in source and binary forms, with or without
-   modification, are permitted provided that the following conditions
-   are met:
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
 
-   - Redistributions of source code must retain the above copyright
-   notice, this list of conditions and the following disclaimer.
-
-   - Redistributions in binary form must reproduce the above copyright
-   notice, this list of conditions and the following disclaimer in the
-   documentation and/or other materials provided with the distribution.
-
-   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-   ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-   A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR
-   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-   EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-   PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-   PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-   LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-   NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+   You should have received a copy of the GNU General Public License along
+   with this program; if not, write to the Free Software Foundation, Inc.,
+   Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
 #include <stdio.h>
@@ -87,8 +77,8 @@ int callback_mpd(struct mg_connection *c)
         case MPD_API_RM_ALL:
             mpd_run_clear(mpd.conn);
             break;
-        case MPD_API_GET_PLAYLIST:
-            n = mpd_put_playlist(mpd.buf);
+        case MPD_API_GET_QUEUE:
+            n = mpd_put_queue(mpd.buf);
             break;
         case MPD_API_RM_TRACK:
             if(sscanf(c->content, "MPD_API_RM_TRACK,%u", &uint_buf))
@@ -144,6 +134,21 @@ int callback_mpd(struct mg_connection *c)
                     mpd_run_play_id(mpd.conn, int_buf);
                 free(p_charbuf);
             }
+            break;
+        case MPD_API_ADD_PLAYLIST:
+            if(sscanf(c->content, "MPD_API_ADD_PLAYLIST,%m[^\t\n]", &p_charbuf) && p_charbuf != NULL)
+            {
+                mpd_run_load(mpd.conn, p_charbuf);
+                free(p_charbuf);
+            }
+            break;
+        case MPD_API_SEARCH:
+            if(sscanf(c->content, "MPD_API_SEARCH,%m[^\t\n]", &p_charbuf) && p_charbuf != NULL)
+            {
+                n = mpd_search(mpd.buf, p_charbuf);
+                free(p_charbuf);
+            }
+            break;
 #ifdef WITH_MPD_HOST_CHANGE
         /* Commands allowed when disconnected from MPD server */
         case MPD_API_SET_MPDHOST:
@@ -162,7 +167,7 @@ int callback_mpd(struct mg_connection *c)
             n = snprintf(mpd.buf, MAX_SIZE, "{\"type\":\"mpdhost\", \"data\": "
                 "{\"host\" : \"%s\", \"port\": \"%d\", \"passwort_set\": %s}"
                 "}", mpd.host, mpd.port, mpd.password ? "true" : "false");
-            printf("mpd_password is %p\n", mpd.password);
+            break;
         case MPD_API_SET_MPDPASS:
             if(sscanf(c->content, "MPD_API_SET_MPDPASS,%m[^\t\n ]", &p_charbuf) && 
                 p_charbuf != NULL)
@@ -241,7 +246,7 @@ static int mpd_notify_callback(struct mg_connection *c) {
 
         if(s->queue_version != mpd.queue_version)
         {
-            n = snprintf(mpd.buf, MAX_SIZE, "{\"type\":\"update_playlist\"}");
+            n = snprintf(mpd.buf, MAX_SIZE, "{\"type\":\"update_queue\"}");
             mg_websocket_write(c, 1, mpd.buf, n);
             s->queue_version = mpd.queue_version;
         }
@@ -335,22 +340,22 @@ int mpd_put_state(char *buffer, int *current_song_id, unsigned *queue_version)
     }
 
     len = snprintf(buffer, MAX_SIZE,
-            "{\"type\":\"state\", \"data\":{"
-            " \"state\":%d, \"volume\":%d, \"repeat\":%d,"
-            " \"single\":%d, \"consume\":%d, \"random\":%d, "
-            " \"songpos\": %d, \"elapsedTime\": %d, \"totalTime\":%d, "
-            " \"currentsongid\": %d"
-            "}}", 
-            mpd_status_get_state(status),
-            mpd_status_get_volume(status), 
-            mpd_status_get_repeat(status),
-            mpd_status_get_single(status),
-            mpd_status_get_consume(status),
-            mpd_status_get_random(status),
-            mpd_status_get_song_pos(status),
-            mpd_status_get_elapsed_time(status),
-            mpd_status_get_total_time(status),
-            mpd_status_get_song_id(status));
+        "{\"type\":\"state\", \"data\":{"
+        " \"state\":%d, \"volume\":%d, \"repeat\":%d,"
+        " \"single\":%d, \"consume\":%d, \"random\":%d, "
+        " \"songpos\": %d, \"elapsedTime\": %d, \"totalTime\":%d, "
+        " \"currentsongid\": %d"
+        "}}", 
+        mpd_status_get_state(status),
+        mpd_status_get_volume(status), 
+        mpd_status_get_repeat(status),
+        mpd_status_get_single(status),
+        mpd_status_get_consume(status),
+        mpd_status_get_random(status),
+        mpd_status_get_song_pos(status),
+        mpd_status_get_elapsed_time(status),
+        mpd_status_get_total_time(status),
+        mpd_status_get_song_id(status));
 
     *current_song_id = mpd_status_get_song_id(status);
     *queue_version = mpd_status_get_queue_version(status);
@@ -386,23 +391,16 @@ int mpd_put_current_song(char *buffer)
     return cur - buffer;
 }
 
-int mpd_put_playlist(char *buffer)
+int mpd_put_queue(char *buffer)
 {
     char *cur = buffer;
     const char *end = buffer + MAX_SIZE;
     struct mpd_entity *entity;
 
-    if (!mpd_send_list_queue_meta(mpd.conn)) {
-        fprintf(stderr, "MPD mpd_send_list_queue_meta: %s\n", mpd_connection_get_error_message(mpd.conn));
-        cur += snprintf(cur, end  - cur, "{\"type\":\"error\",\"data\":\"%s\"}", 
-            mpd_connection_get_error_message(mpd.conn));
+    if (!mpd_send_list_queue_meta(mpd.conn))
+        RETURN_ERROR_AND_RECOVER("mpd_send_list_queue_meta");
 
-        if (!mpd_connection_clear_error(mpd.conn))
-            mpd.conn_state = MPD_FAILURE;
-        return cur - buffer;
-    }
-
-    cur += snprintf(cur, end  - cur, "{\"type\": \"playlist\", \"data\": [ ");
+    cur += snprintf(cur, end  - cur, "{\"type\": \"queue\", \"data\": [ ");
 
     while((entity = mpd_recv_entity(mpd.conn)) != NULL) {
         const struct mpd_song *song;
@@ -410,12 +408,12 @@ int mpd_put_playlist(char *buffer)
         if(mpd_entity_get_type(entity) == MPD_ENTITY_TYPE_SONG) {
             song = mpd_entity_get_song(entity);
             cur += snprintf(cur, end  - cur, 
-                    "{\"id\":%d, \"pos\":%d, \"duration\":%d, \"title\":\"%s\"},",
-                    mpd_song_get_id(song),
-                    mpd_song_get_pos(song),
-                    mpd_song_get_duration(song),
-                    mpd_get_title(song)
-                    );
+                "{\"id\":%d, \"pos\":%d, \"duration\":%d, \"title\":\"%s\"},",
+                mpd_song_get_id(song),
+                mpd_song_get_pos(song),
+                mpd_song_get_duration(song),
+                mpd_get_title(song)
+                );
         }
         mpd_entity_free(entity);
     }
@@ -432,15 +430,10 @@ int mpd_put_browse(char *buffer, char *path)
     const char *end = buffer + MAX_SIZE;
     struct mpd_entity *entity;
 
-    if (!mpd_send_list_meta(mpd.conn, path)) {
-        fprintf(stderr, "MPD mpd_send_list_meta: %s\n", mpd_connection_get_error_message(mpd.conn));
-        cur += snprintf(cur, end  - cur, "{\"type\":\"error\",\"data\":\"%s\"}", 
-            mpd_connection_get_error_message(mpd.conn));
 
-        if (!mpd_connection_clear_error(mpd.conn))
-            mpd.conn_state = MPD_FAILURE;
-        return cur - buffer;
-    }
+    if (!mpd_send_list_meta(mpd.conn, path))
+        RETURN_ERROR_AND_RECOVER("mpd_send_list_meta");
+
     cur += snprintf(cur, end  - cur, "{\"type\":\"browse\",\"data\":[ ");
 
     while((entity = mpd_recv_entity(mpd.conn)) != NULL) {
@@ -493,6 +486,39 @@ int mpd_put_browse(char *buffer, char *path)
     cur += snprintf(cur, end  - cur, "] }");
     return cur - buffer;
 }
+
+int mpd_search(char *buffer, char *searchstr)
+{
+    char *cur = buffer;
+    const char *end = buffer + MAX_SIZE;
+    struct mpd_song *song;
+
+    if(mpd_search_db_songs(mpd.conn, false) == false)
+        RETURN_ERROR_AND_RECOVER("mpd_search_db_songs");
+    else if(mpd_search_add_any_tag_constraint(mpd.conn, MPD_OPERATOR_DEFAULT, searchstr) == false)
+        RETURN_ERROR_AND_RECOVER("mpd_search_add_any_tag_constraint");
+    else if(mpd_search_commit(mpd.conn) == false)
+        RETURN_ERROR_AND_RECOVER("mpd_search_commit");
+    else {
+        cur += snprintf(cur, end  - cur, "{\"type\": \"search\", \"data\": [ ");
+
+        while((song = mpd_recv_song(mpd.conn)) != NULL) {
+            cur += snprintf(cur, end  - cur, 
+                "{\"type\":\"song\",\"uri\":\"%s\",\"duration\":%d,\"title\":\"%s\"},",
+                mpd_song_get_uri(song),
+                mpd_song_get_duration(song),
+                mpd_get_title(song)
+            );
+            mpd_song_free(song);
+        }
+
+        /* remove last ',' */
+        cur--;
+        cur += snprintf(cur, end  - cur, "] }");
+    }
+    return cur - buffer;
+}
+
 
 void mpd_disconnect()
 {

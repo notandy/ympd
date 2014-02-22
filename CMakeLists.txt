@@ -11,19 +11,27 @@ option(WITH_MPD_HOST_CHANGE "Let users of the web frontend change the MPD Host" 
 find_package(LibMPDClient REQUIRED)
 find_package(Threads REQUIRED)
 
-configure_file(${PROJECT_SOURCE_DIR}/src/config.h.in
-    ${PROJECT_BINARY_DIR}/config.h)
+configure_file(src/config.h.in ${PROJECT_BINARY_DIR}/config.h)
 include_directories(${PROJECT_BINARY_DIR})
 
 include(CheckCSourceCompiles)
-include(CPack)
 
 set(CMAKE_C_FLAGS "-std=gnu99 -Wall") 
 set(CMAKE_C_FLAGS_DEBUG "-ggdb -pedantic")
 
+file(GLOB RESOURCES 
+	RELATIVE ${PROJECT_SOURCE_DIR}
+	htdocs/js/*
+	htdocs/assets/*
+	htdocs/css/*.min.css
+	htdocs/fonts/*
+	htdocs/index.html
+)
+
 add_custom_command(OUTPUT ${PROJECT_BINARY_DIR}/http_files.h
-    COMMAND perl mkdata.pl index.html js/* assets/* css/* fonts/* > ${PROJECT_BINARY_DIR}/http_files.h
-    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/htdocs
+    COMMAND perl htdocs/mkdata.pl ${RESOURCES} > ${PROJECT_BINARY_DIR}/http_files.h
+    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+    DEPENDS ${RESOURCES}
 )
 
 set(SOURCES
