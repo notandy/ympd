@@ -67,12 +67,12 @@ int main(int argc, char **argv)
         {"port",         required_argument, 0, 'p'},
         {"webport",      required_argument, 0, 'w'},
         {"user",         required_argument, 0, 'u'},
-        {"version",      no_argument,       0, 'V'},
+        {"version",      no_argument,       0, 'v'},
         {"help",         no_argument,       0,  0 },
         {0,              0,                 0,  0 }
     };
 
-    while((n = getopt_long(argc, argv, "h:p:w:u::V",
+    while((n = getopt_long(argc, argv, "h:p:w:u:v",
                 long_options, &option_index)) != -1) {
         switch (n) {
             case 'h':
@@ -84,9 +84,10 @@ int main(int argc, char **argv)
                 mg_set_option(server, "listening_port", optarg);
                 break;
             case 'u':
+                printf("Strarg is %s\n", optarg);
                 mg_set_option(server, "run_as_user", optarg);
                 break;
-            case 'V':
+            case 'v':
                 fprintf(stdout, "ympd  %d.%d.%d\n"
                         "Copyright (C) 2014 Andrew Karpow <andy@ndyk.de>\n"
                         "built " __DATE__ " "__TIME__ " ("__VERSION__")\n",
@@ -95,12 +96,12 @@ int main(int argc, char **argv)
                 break;
             default:
                 fprintf(stderr, "Usage: %s [OPTION]...\n\n"
-                        "\t-h, --host <host>\t\tconnect to mpd at host [localhost]\n"
-                        "\t-p, --port <port>\t\tconnect to mpd at port [6600]\n"
-                        "\t-w, --webport [ip:]<port>\t\tlisten interface/port for webserver [8080]\n"
-                        "\t-u, --user <username>\t\t\tdrop priviliges to user after socket bind\n"
-                        "\t-V, --version\t\t\tget version\n"
-                        "\t--help\t\t\t\tthis help\n"
+                        " -h, --host <host>\t\tconnect to mpd at host [localhost]\n"
+                        " -p, --port <port>\t\tconnect to mpd at port [6600]\n"
+                        " -w, --webport [ip:]<port>\tlisten interface/port for webserver [8080]\n"
+                        " -u, --user <username>\t\tdrop priviliges to user after socket bind\n"
+                        " -V, --version\t\t\tget version\n"
+                        " --help\t\t\t\tthis help\n"
                         , argv[0]);
                 return EXIT_FAILURE;
         }

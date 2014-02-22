@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 2.6)
 project (ympd)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmake/")
 set(CPACK_PACKAGE_VERSION_MAJOR "1")
-set(CPACK_PACKAGE_VERSION_MINOR "0")
+set(CPACK_PACKAGE_VERSION_MINOR "2")
 set(CPACK_PACKAGE_VERSION_PATCH "0")
 
 option(WITH_MPD_HOST_CHANGE "Let users of the web frontend change the MPD Host" ON)
@@ -39,6 +39,7 @@ set(SOURCES
     src/http_server.c
     src/mpd_client.c
     src/mongoose.c
+    src/json_encode.c
 )
 
 add_executable(ympd ${SOURCES} ${PROJECT_BINARY_DIR}/http_files.h)

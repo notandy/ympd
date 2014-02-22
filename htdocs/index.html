@@ -39,7 +39,7 @@
 
         <ul id="nav_links" class="nav navbar-nav">
           <li id="queue"><a href="#/">Queue</a></li>
-          <li id="browse"><a href="#/browse/">Browse database</a></li>
+          <li id="browse"><a href="#/browse/0/">Browse database</a></li>
           <li><a href="#" data-toggle="modal" data-target="#settings" onclick="getHost();">Settings</a></li>
         </ul>
 
@@ -82,7 +82,7 @@
         
         <div class="panel panel-primary">
           <!-- Default panel contents -->
-          <div id="panel-heading" class="panel-heading">Queue</div>
+          <div class="panel-heading"><b id="panel-heading">Queue</b></div>
           <div class="panel-body">
             <h1>
               <span id="track-icon" class="glyphicon glyphicon-play"></span>
@@ -116,6 +116,10 @@
             </tbody>
           </table>
         </div><!-- /.panel -->
+        <ul class="pager">
+          <li id="prev" class="page-btn hide"><a href="">Previous</a></li>
+          <li id="next" class="page-btn"><a href="">Next</a></li>
+        </ul>
       </div><!-- /.col-md-10 -->
 
       <div class="col-md-2 col-xs-12" >
@@ -192,6 +196,10 @@
                 data-placement="right" data-toggle="popover" data-content="Password does not match!"
                 data-trigger="manual" />
               </div>
+              <div class="form-group col-md-12">
+                <div id="mpd_password_set" class="hide alert alert-info">MPD Password is set</div>
+              </div>
+
             </div>
           </form>
         </div>
@@ -203,6 +211,22 @@
     </div><!-- /.modal-dialog -->
   </div><!-- /.modal -->
 
+  <div class="modal fade bs-example-modal-sm" id="wait" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h1>Searching...</h1>
+        </div>
+        <div class="modal-body">
+          <div class="progress progress-striped active">
+            <div class="progress-bar"  role="progressbar" aria-valuenow="45" aria-valuemin="0" aria-valuemax="100" style="width: 100%">
+              <span class="sr-only">Please Wait</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
 
   <!-- Bootstrap core JavaScript

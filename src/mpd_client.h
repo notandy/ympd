@@ -32,6 +32,8 @@
 
 
 #define MAX_SIZE 1024 * 100
+#define MAX_ELEMENTS_PER_PAGE 512
+
 #define GEN_ENUM(X) X,
 #define GEN_STR(X) #X,
 #define MPD_CMDS(X) \
@@ -98,8 +100,8 @@ int callback_mpd(struct mg_connection *c);
 int mpd_close_handler(struct mg_connection *c);
 int mpd_put_state(char *buffer, int *current_song_id, unsigned *queue_version);
 int mpd_put_current_song(char *buffer);
-int mpd_put_queue(char *buffer);
-int mpd_put_browse(char *buffer, char *path);
+int mpd_put_queue(char *buffer, unsigned int offset);
+int mpd_put_browse(char *buffer, char *path, unsigned int offset);
 int mpd_search(char *buffer, char *searchstr);
 void mpd_disconnect();
 #endif

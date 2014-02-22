@@ -19,34 +19,49 @@
 var socket;
 var last_state;
 var current_app;
+var pagination = 0;
+var browsepath;
 var lastSongTitle = "";
 var current_song = new Object();
+var MAX_ELEMENTS_PER_PAGE = 512;
 
 var app = $.sammy(function() {
-    this.before('/', function(e, data) {
-        $('#nav_links > li').removeClass('active');
-    });
 
-    this.get('#/', function() {
+    function runBrowse() {
         current_app = 'queue';
+
         $('#breadcrump').addClass('hide');
         $('#salamisandwich').find("tr:gt(0)").remove();
-        socket.send('MPD_API_GET_QUEUE');
+        socket.send('MPD_API_GET_QUEUE,'+pagination);
 
         $('#panel-heading').text("Queue");
         $('#queue').addClass('active');
+    }
+
+    function prepare() {
+        $('#nav_links > li').removeClass('active');
+        $('.page-btn').addClass('hide');
+        pagination = 0;
+        browsepath = '';
+    }
+
+    this.get(/\#\/(\d+)/, function() {
+        prepare();
+        pagination = parseInt(this.params['splat'][0]);
+        runBrowse();
     });
 
-    this.get(/\#\/browse\/(.*)/, function() {
+    this.get(/\#\/browse\/(\d+)\/(.*)/, function() {
+        prepare();
+        browsepath = this.params['splat'][1];
+        pagination = parseInt(this.params['splat'][0]);
         current_app = 'browse';
-        $('#breadcrump').removeClass('hide').empty().append("<li><a href=\"#/browse/\">root</a></li>");
+        $('#breadcrump').removeClass('hide').empty().append("<li><a href=\"#/browse/0/\">root</a></li>");
         $('#salamisandwich').find("tr:gt(0)").remove();
-        var path = this.params['splat'][0];
+        socket.send('MPD_API_GET_BROWSE,'+pagination+','+(browsepath ? browsepath : "/"));
 
-        socket.send('MPD_API_GET_BROWSE,' + path);
-
-        $('#panel-heading').text("Browse database: "+path);
-        var path_array = path.split('/');
+        $('#panel-heading').text("Browse database: "+browsepath);
+        var path_array = browsepath.split('/');
         var full_path = "";
         $.each(path_array, function(index, chunk) {
             if(path_array.length - 1 == index) {
@@ -55,7 +70,7 @@ var app = $.sammy(function() {
             }
 
             full_path = full_path + chunk;
-            $('#breadcrump').append("<li><a href=\"#/browse/" + full_path + "\">"+chunk+"</a></li>");
+            $('#breadcrump').append("<li><a href=\"#/browse/0/" + full_path + "\">"+chunk+"</a></li>");
             full_path += "/";
         });
         $('#browse').addClass('active');
@@ -73,7 +88,7 @@ var app = $.sammy(function() {
     });
 
     this.get("/", function(context) {
-        context.redirect("#/");
+        context.redirect("#/0");
     });
 });
 
@@ -117,8 +132,8 @@ function webSocketConnect() {
             app.run();
         }
 
-        socket.onmessage =function got_packet(msg) {
-            if(msg.data === last_state)
+        socket.onmessage = function got_packet(msg) {
+            if(msg.data === last_state || msg.data.length == 0)
                 return;
 
             var obj = JSON.parse(msg.data);
@@ -140,6 +155,11 @@ function webSocketConnect() {
                         "</td><td></td></tr>");
                     }
 
+                    if(obj.data[obj.data.length-1].id >= pagination + MAX_ELEMENTS_PER_PAGE)
+                        $('#next').removeClass('hide');
+                    if(pagination > 0)
+                        $('#prev').removeClass('hide');
+
                     $('#salamisandwich > tbody > tr').on({
                         mouseover: function(){
                             if($(this).children().last().has("a").length == 0)
@@ -160,6 +180,7 @@ function webSocketConnect() {
                     });
                     break;
                 case "search":
+                    $('#wait').modal('hide');
                 case "browse":
                     if(current_app !== 'browse' && current_app !== 'search')
                         break;
@@ -194,7 +215,22 @@ function webSocketConnect() {
                                     "</td><td></td></tr>"
                                 );
                                 break;
+                            case "wrap":
+                                if(current_app == 'browse') {
+                                    $('#next').removeClass('hide');
+                                } else {
+                                    $('#salamisandwich > tbody').append(
+                                        "<tr><td><span class=\"glyphicon glyphicon-remove\"></span></td>" + 
+                                        "<td>Too many results, please refine your search!</td>" + 
+                                        "<td></td><td></td></tr>"
+                                    );
+                                }
+                                break;
                         }
+
+                        if(pagination > 0)
+                            $('#prev').removeClass('hide');
+
                     }
 
                     function appendClickableIcon(appendTo, onClickAction, glyphicon) {
@@ -219,21 +255,27 @@ function webSocketConnect() {
                                 appendClickableIcon($(this), 'MPD_API_ADD_PLAY_TRACK', 'play');
                         },
                         click: function() {
-                            if($(this).is(".dir"))
-                                app.setLocation("#/browse/"+$(this).attr("uri"));
-                            else {
-                                if($(this).is(".song"))
+                            switch($(this).attr('class')) {
+                                case 'dir':
+                                    app.setLocation("#/browse/0/"+$(this).attr("uri"));
+                                    break;
+                                case 'song':
                                     socket.send("MPD_API_ADD_TRACK," + $(this).attr("uri"));
-                                else 
+                                    $('.top-right').notify({
+                                        message:{
+                                            text: $('td:nth-child(2)', this).text() + " added"
+                                        }
+                                    }).show();
+                                    break;
+                                case 'plist':
                                     socket.send("MPD_API_ADD_PLAYLIST," + $(this).attr("uri"));
-
-                                $('.top-right').notify({
-                                    message:{
-                                        text: $('td:nth-child(2)', this).text() + " added"
-                                    }
-                                }).show();
+                                    $('.top-right').notify({
+                                        message:{
+                                            text: "Playlist " + $('td:nth-child(2)', this).text() + " added"
+                                        }
+                                    }).show();
+                                    break;
                             }
-
                         },
                         mouseleave: function(){
                             $(this).children().last().find("a").stop().remove();
@@ -300,7 +342,7 @@ function webSocketConnect() {
                     break;
                 case "update_queue":
                     if(current_app === 'queue')
-                        socket.send('MPD_API_GET_QUEUE');
+                        socket.send('MPD_API_GET_QUEUE,'+pagination);
                     break;
                 case "song_change":
                     $('#currenttrack').text(" " + obj.data.title);
@@ -327,10 +369,8 @@ function webSocketConnect() {
                 case "mpdhost":
                     $('#mpdhost').val(obj.data.host);
                     $('#mpdport').val(obj.data.port);
-                    if(obj.data.passwort_set) {
-                        $('#mpd_pw').attr('placeholder', '*******');
-                        $('#mpd_pw_con').attr('placeholder', '*******');
-                    }
+                    if(obj.data.passwort_set)
+                        $('#mpd_password_set').removeClass('hide');
                     break;
                 case "error":
                     $('.top-right').notify({
@@ -481,9 +521,36 @@ function getHost() {
 }
 
 $('#search').submit(function () {
-
     app.setLocation("#/search/"+$('#search > div > input').val());
+    $('#wait').modal('show');
+    setTimeout(function() {
+        $('#wait').modal('hide');
+    }, 10000);
     return false;
+});
+
+$('.page-btn').on('click', function (e) {
+
+    switch ($(this).text()) {
+        case "Next":
+            pagination += MAX_ELEMENTS_PER_PAGE;
+            break;
+        case "Previous":
+            pagination -= MAX_ELEMENTS_PER_PAGE;
+            if(pagination <= 0)
+                pagination = 0;
+            break;
+    }
+
+    switch(current_app) {
+        case "queue":
+            app.setLocation('#/'+pagination);
+            break;
+        case "browse":
+            app.setLocation('#/browse/'+pagination+'/'+browsepath);
+            break;
+    }
+    e.preventDefault();
 });
 
 function confirmSettings() {
@@ -507,16 +574,9 @@ function notificationsSupported() {
 }
 
 function songNotify(artist, title) {
-    if (!notificationsSupported())
-	   return;
-
-    if (window.webkitNotifications.checkPermission() == 0) {
-	   var notification = window.webkitNotifications.createNotification("assets/favicon.ico", artist, title);
-	   notification.show();
-	   setTimeout(function(notification) {
-		  notification.cancel();
-	   }, 3000, notification);
-    } else {
-	   window.webkitNotifications.requestPermission();
-    }
+	var notification = window.webkitNotifications.createNotification("assets/favicon.ico", artist, title);
+	notification.show();
+	setTimeout(function(notification) {
+	   notification.cancel();
+	}, 3000, notification);
 }
