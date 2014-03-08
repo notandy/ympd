@@ -171,8 +171,7 @@ int callback_mpd(struct mg_connection *c)
                 "}", mpd.host, mpd.port, mpd.password ? "true" : "false");
             break;
         case MPD_API_SET_MPDPASS:
-            if(sscanf(c->content, "MPD_API_SET_MPDPASS,%m[^\t\n ]", &p_charbuf) && 
-                p_charbuf != NULL)
+            if(sscanf(c->content, "MPD_API_SET_MPDPASS,%m[^\t\n ]", &p_charbuf))
             {
                 if(mpd.password)
                     free(mpd.password);

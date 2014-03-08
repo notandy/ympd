@@ -84,7 +84,6 @@ int main(int argc, char **argv)
                 mg_set_option(server, "listening_port", optarg);
                 break;
             case 'u':
-                printf("Strarg is %s\n", optarg);
                 mg_set_option(server, "run_as_user", optarg);
                 break;
             case 'v':

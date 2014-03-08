@@ -21,6 +21,14 @@
 
 #include "mongoose.h"
 
+struct embedded_file {
+  const char *name;
+  const unsigned char *data;
+  const char *mimetype;
+  size_t size;
+};
+
+const struct embedded_file *find_embedded_file(const char *name);
 int callback_http(struct mg_connection *c);
 
 #endif

@@ -19,7 +19,6 @@
 #include <string.h>
 
 #include "http_server.h"
-#include "http_files.h"
 
 int callback_http(struct mg_connection *c)
 {

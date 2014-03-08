@@ -12,7 +12,7 @@ find_package(LibMPDClient REQUIRED)
 find_package(Threads REQUIRED)
 
 configure_file(src/config.h.in ${PROJECT_BINARY_DIR}/config.h)
-include_directories(${PROJECT_BINARY_DIR})
+include_directories(${PROJECT_BINARY_DIR} ${PROJECT_SOURCE_DIR})
 
 include(CheckCSourceCompiles)
 
@@ -28,8 +28,11 @@ file(GLOB RESOURCES
 	htdocs/index.html
 )
 
-add_custom_command(OUTPUT ${PROJECT_BINARY_DIR}/http_files.h
-    COMMAND perl htdocs/mkdata.pl ${RESOURCES} > ${PROJECT_BINARY_DIR}/http_files.h
+add_executable(mkdata htdocs/mkdata.c)
+get_target_property(MKDATA_EXE mkdata LOCATION)
+
+add_custom_command(OUTPUT ${PROJECT_BINARY_DIR}/assets.c
+    COMMAND ${MKDATA_EXE} ${RESOURCES} > ${PROJECT_BINARY_DIR}/assets.c
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
     DEPENDS ${RESOURCES}
 )
@@ -40,9 +43,10 @@ set(SOURCES
     src/mpd_client.c
     src/mongoose.c
     src/json_encode.c
+    assets.c
 )
 
-add_executable(ympd ${SOURCES} ${PROJECT_BINARY_DIR}/http_files.h)
+add_executable(ympd ${SOURCES})
 target_link_libraries(ympd ${LIBMPDCLIENT_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
 
 install(TARGETS ympd DESTINATION bin)
