@@ -569,6 +569,13 @@ function confirmSettings() {
     $('#settings').modal('hide');
 }
 
+$('#mpd_password_set > button').on('click', function (e) {
+    socket.send('MPD_API_SET_MPDPASS,');
+    $('#mpd_pw').val("");
+    $('#mpd_pw_con').val("");
+    $('#mpd_password_set').addClass('hide');
+})
+
 function notificationsSupported() {
     return "webkitNotifications" in window;
 }
