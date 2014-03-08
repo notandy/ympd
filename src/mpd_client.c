@@ -46,7 +46,7 @@ int callback_mpd(struct mg_connection *c)
     size_t n = 0;
     unsigned int uint_buf, uint_buf_2;
     int int_buf;
-    char *p_charbuf;
+    char *p_charbuf = NULL;
 
     if(cmd_id == -1)
         return MG_CLIENT_CONTINUE;

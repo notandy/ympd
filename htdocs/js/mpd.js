@@ -155,7 +155,7 @@ function webSocketConnect() {
                         "</td><td></td></tr>");
                     }
 
-                    if(obj.data[obj.data.length-1].id >= pagination + MAX_ELEMENTS_PER_PAGE)
+                    if(obj.data[obj.data.length-1].pos + 1 >= pagination + MAX_ELEMENTS_PER_PAGE)
                         $('#next').removeClass('hide');
                     if(pagination > 0)
                         $('#prev').removeClass('hide');
@@ -358,7 +358,7 @@ function webSocketConnect() {
                     }
 
                     if ($.cookie("notification") === "true")
-                        songNotify(obj.data.title, obj.data.artist + " " + obj.data.album );
+                        songNotify(obj.data.title, obj.data.artist, obj.data.album );
                     else
                         $('.top-right').notify({
                             message:{html: notification},
@@ -573,8 +573,27 @@ function notificationsSupported() {
     return "webkitNotifications" in window;
 }
 
-function songNotify(artist, title) {
-	var notification = window.webkitNotifications.createNotification("assets/favicon.ico", artist, title);
+function songNotify(title, artist, album) {
+    /*var opt = {
+        type: "list",
+        title: title,
+        message: title,
+        items: []
+    }
+    if(artist.length > 0)
+        opt.items.push({title: "Artist", message: artist});
+    if(album.length > 0)
+        opt.items.push({title: "Album", message: album});
+*/
+    //chrome.notifications.create(id, options, creationCallback);
+
+    var textNotification = "";
+    if(artist.length > 0)
+        textNotification += " " + artist;
+    if(album.length > 0)
+        textNotification += "\n " + album;
+
+	var notification = window.webkitNotifications.createNotification("assets/favicon.ico", textNotification, title);
 	notification.show();
 	setTimeout(function(notification) {
 	   notification.cancel();
