@@ -1,7 +1,9 @@
 ympd
 ====
+[![Build Status](http://ci.ympd.org/github.com/notandy/ympd/status.png?branch=mongoose)](https://ci.ympd.org/github.com/notandy/ympd)
 
 Standalone MPD Web GUI written in C, utilizing Websockets and Bootstrap/JS
+
 
 http://www.ympd.org
 
