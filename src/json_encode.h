@@ -15,15 +15,13 @@
    with this program; if not, write to the Free Software Foundation, Inc.,
    Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
+   
+#ifndef __JSON_ENCODE_H__
+#define __JSON_ENCODE_H__
 
-#ifndef __CONFIG_H__
-#define __CONFIG_H__
+int json_emit_int(char *buf, int buf_len, long int value);
+int json_emit_double(char *buf, int buf_len, double value);
+int json_emit_quoted_str(char *buf, int buf_len, const char *str);
+int json_emit_raw_str(char *buf, int buf_len, const char *str);
 
-#define YMPD_VERSION_MAJOR ${CPACK_PACKAGE_VERSION_MAJOR}
-#define YMPD_VERSION_MINOR ${CPACK_PACKAGE_VERSION_MINOR}
-#define YMPD_VERSION_PATCH ${CPACK_PACKAGE_VERSION_PATCH}
-#define DATADIR "${CMAKE_INSTALL_PREFIX}/share/${PROJECT_NAME}"
-#define LOCAL_RESOURCE_PATH DATADIR"/htdocs"
-#cmakedefine WITH_MPD_HOST_CHANGE
 #endif
-

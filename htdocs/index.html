@@ -10,10 +10,11 @@
   <title>ympd</title>
 
   <!-- Bootstrap core CSS -->
-  <link href="css/bootstrap.css" rel="stylesheet">
+  <link href="css/bootstrap.min.css" rel="stylesheet">
+  <link href="css/bootstrap-theme.min.css" rel="stylesheet">
 
   <!-- Custom styles for this template -->
-  <link href="css/mpd.css" rel="stylesheet">
+  <link href="css/mpd.min.css" rel="stylesheet">
   <link href="assets/favicon.ico" rel="shortcut icon" type="image/vnd.microsoft.icon">
 
   <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
@@ -37,9 +38,8 @@
       <div class="collapse navbar-collapse">
 
         <ul id="nav_links" class="nav navbar-nav">
-          <li id="playlist"><a href="#/">Playlist</a></li>
-          <li id="browse"><a href="#/browse/">Browse database</a></li>
-          <li><a href="#" data-toggle="modal" data-target="#about" onclick="getVersion();">About</a></li>
+          <li id="queue"><a href="#/">Queue</a></li>
+          <li id="browse"><a href="#/browse/0/">Browse database</a></li>
           <li><a href="#" data-toggle="modal" data-target="#settings" onclick="getHost();">Settings</a></li>
         </ul>
 
@@ -65,6 +65,11 @@
             </div>
           </div>
         </div>
+        <form id="search" class="navbar-form navbar-right" role="search">
+          <div class="form-group">
+            <input type="text" class="form-control" placeholder="Search">
+          </div>
+        </form>
       </div><!--/.nav-collapse -->
     </div>
   </div>
@@ -77,7 +82,7 @@
         
         <div class="panel panel-primary">
           <!-- Default panel contents -->
-          <div id="panel-heading" class="panel-heading">Playlist</div>
+          <div class="panel-heading"><b id="panel-heading">Queue</b></div>
           <div class="panel-body">
             <h1>
               <span id="track-icon" class="glyphicon glyphicon-play"></span>
@@ -111,6 +116,10 @@
             </tbody>
           </table>
         </div><!-- /.panel -->
+        <ul class="pager">
+          <li id="prev" class="page-btn hide"><a href="">Previous</a></li>
+          <li id="next" class="page-btn"><a href="">Next</a></li>
+        </ul>
       </div><!-- /.col-md-10 -->
 
       <div class="col-md-2 col-xs-12" >
@@ -150,34 +159,6 @@
   </div><!-- /.container -->
 
   <!-- Modal -->
-  <div class="modal fade" id="about" tabindex="-1" role="dialog" aria-labelledby="aboutLabel" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-          <h2 class="modal-title" id="aboutLabel">About</h2>
-        </div>
-        <div class="modal-body">
-          <h4><a href="http://www.ympd.org"><span class="glyphicon glyphicon-play-circle"></span> ympd</a>&nbsp;&nbsp;&nbsp;<small>MPD Web GUI - written in C, utilizing Websockets and Bootstrap/JS</small></h4>
-          <p>
-          ympd is a lightweight MPD (Music Player Daemon) web client that runs without a dedicated werbserver or interpreters like PHP, NodeJS or Ruby. It's tuned for minimal resource usage and requires only very litte dependencies.</p>
-          <p class="text-muted">
-          ympd <span id="ympd_version"></span><br/>
-          libmpdclient <span id="mpd_version"></span><br/>
-          </p>
-          <h5>ympd uses following excellent software:</h5>
-          <h6><a href="http://libwebsockets.org">libWebSockets</a> <small>LGPL2.1 + static link exception</small></h6>
-          <h6><a href="http://www.musicpd.org/libs/libmpdclient/">libMPDClient</a> <small>BSD License</small></h6>
-          <br/>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-        </div>
-      </div><!-- /.modal-content -->
-    </div><!-- /.modal-dialog -->
-  </div><!-- /.modal -->
-
-  <!-- Modal -->
   <div class="modal fade" id="settings" tabindex="-1" role="dialog" aria-labelledby="settingsLabel" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">
@@ -186,6 +167,13 @@
           <h2 class="modal-title" id="settingsLabel"><span class="glyphicon glyphicon-wrench"></span> Settings</h2>
         </div>
         <div class="modal-body">
+          <h4><a href="http://www.ympd.org"><span class="glyphicon glyphicon-play-circle"></span> ympd</a>&nbsp;&nbsp;&nbsp;<small>MPD Web GUI - written in C, utilizing Websockets and Bootstrap/JS</small></h4>
+          <p>
+          ympd is a lightweight MPD (Music Player Daemon) web client that runs without a dedicated werbserver or interpreters like PHP, NodeJS or Ruby. It's tuned for minimal resource usage and requires only very litte dependencies.</p>
+          <h5>ympd uses following excellent software:</h5>
+          <h6><a href="http://cesanta.com/docs.html">Mongoose</a> <small>GPLv2</small></h6>
+          <h6><a href="http://www.musicpd.org/libs/libmpdclient/">libMPDClient</a> <small>BSD License</small></h6>
+          <hr />
           <form role="form">
             <div class="row">
               <div class="form-group col-md-9">
@@ -197,16 +185,51 @@
                 <input type="text" class="form-control" id="mpdport" />
               </div>
             </div>
+            <div class="row">
+              <div class="form-group col-md-6">
+                <label class="control-label" for="mpd_pw">MPD Password</label>
+                <input type="password" class="form-control" id="mpd_pw" placeholder="Password"/>
+              </div>
+              <div class="form-group col-md-6">
+                <label class="control-label" for="mpd_pw_con">MPD Password (Confirmation)</label>
+                <input type="password" class="form-control" id="mpd_pw_con"  placeholder="Password confirmation"
+                data-placement="right" data-toggle="popover" data-content="Password does not match!"
+                data-trigger="manual" />
+              </div>
+              <div class="form-group col-md-12">
+                <div id="mpd_password_set" class="hide alert alert-info">
+                  <button type="button" class="close" aria-hidden="true">&times;</button>
+                  MPD Password is set
+                </div>
+              </div>
+
+            </div>
           </form>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-          <button type="button" class="btn btn-default" data-dismiss="modal" onclick="setHost();">Save</button>
+          <button type="button" class="btn btn-default" onclick="confirmSettings();">Save</button>
         </div>
       </div><!-- /.modal-content -->
     </div><!-- /.modal-dialog -->
   </div><!-- /.modal -->
 
+  <div class="modal fade bs-example-modal-sm" id="wait" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h1>Searching...</h1>
+        </div>
+        <div class="modal-body">
+          <div class="progress progress-striped active">
+            <div class="progress-bar"  role="progressbar" aria-valuenow="45" aria-valuemin="0" aria-valuemax="100" style="width: 100%">
+              <span class="sr-only">Please Wait</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
 
   <!-- Bootstrap core JavaScript

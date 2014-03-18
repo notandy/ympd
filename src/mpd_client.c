@@ -1,29 +1,19 @@
 /* ympd
-   (c) 2013-2014 Andrew Karpow <andy@ympd.org>
+   (c) 2013-2014 Andrew Karpow <andy@ndyk.de>
    This project's homepage is: http://www.ympd.org
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; version 2 of the License.
 
-   Redistribution and use in source and binary forms, with or without
-   modification, are permitted provided that the following conditions
-   are met:
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
 
-   - Redistributions of source code must retain the above copyright
-   notice, this list of conditions and the following disclaimer.
-
-   - Redistributions in binary form must reproduce the above copyright
-   notice, this list of conditions and the following disclaimer in the
-   documentation and/or other materials provided with the distribution.
-
-   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-   ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-   LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-   A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE FOUNDATION OR
-   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-   EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-   PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-   PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-   LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-   NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+   You should have received a copy of the GNU General Public License along
+   with this program; if not, write to the Free Software Foundation, Inc.,
+   Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
 #include <stdio.h>
@@ -31,274 +21,300 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <libgen.h>
-
 #include <mpd/client.h>
-#include <mpd/status.h>
-#include <mpd/song.h>
-#include <mpd/entity.h>
-#include <mpd/search.h>
-#include <mpd/tag.h>
 
 #include "mpd_client.h"
 #include "config.h"
+#include "json_encode.h"
 
-struct mpd_connection *conn = NULL;
-enum mpd_conn_states mpd_conn_state = MPD_DISCONNECTED;
-enum mpd_state mpd_play_state = MPD_STATE_UNKNOWN;
+const char * mpd_cmd_strs[] = {
+    MPD_CMDS(GEN_STR)
+};
 
-int callback_ympd(struct libwebsocket_context *context,
-        struct libwebsocket *wsi,
-        enum libwebsocket_callback_reasons reason,
-        void *user, void *in, size_t len)
+static inline enum mpd_cmd_ids get_cmd_id(char *cmd)
 {
-    size_t n,  m = -1;
-    char *buf = NULL, *p;
-    struct per_session_data__ympd *pss = (struct per_session_data__ympd *)user;
+    for(int i = 0; i < sizeof(mpd_cmd_strs)/sizeof(mpd_cmd_strs[0]); i++)
+        if(!strncmp(cmd, mpd_cmd_strs[i], strlen(mpd_cmd_strs[i])))
+            return i;
 
-    switch (reason) {
-        case LWS_CALLBACK_ESTABLISHED:
-            lwsl_info("mpd_client: "
-                    "LWS_CALLBACK_ESTABLISHED\n");
+    return -1;
+}
+
+int callback_mpd(struct mg_connection *c)
+{
+    enum mpd_cmd_ids cmd_id = get_cmd_id(c->content);
+    size_t n = 0;
+    unsigned int uint_buf, uint_buf_2;
+    int int_buf;
+    char *p_charbuf = NULL;
+
+    if(cmd_id == -1)
+        return MG_CLIENT_CONTINUE;
+
+    if(mpd.conn_state != MPD_CONNECTED && cmd_id != MPD_API_SET_MPDHOST &&
+        cmd_id != MPD_API_GET_MPDHOST && cmd_id != MPD_API_SET_MPDPASS)
+        return MG_CLIENT_CONTINUE;
+
+    switch(cmd_id)
+    {
+        case MPD_API_UPDATE_DB:
+            mpd_run_update(mpd.conn, NULL);
             break;
-
-        case LWS_CALLBACK_SERVER_WRITEABLE:
-            buf = (char *)malloc(MAX_SIZE + LWS_SEND_BUFFER_PRE_PADDING + LWS_SEND_BUFFER_POST_PADDING);
-            if(buf == NULL) {
-                lwsl_err("ERROR Failed allocating memory\n");
-                return -1;
-            }
-            p = &buf[LWS_SEND_BUFFER_PRE_PADDING];
-
-            if(pss->do_send & DO_SEND_ERROR) {
-                n = snprintf(p, MAX_SIZE, "{\"type\":\"error\", \"data\": \"%s\"}", 
-                    mpd_connection_get_error_message(conn));
-                pss->do_send &= ~DO_SEND_ERROR;
-
-                /* Try to recover error */
-                if (!mpd_connection_clear_error(conn))
-                    mpd_conn_state = MPD_FAILURE;
-            }
-            else if(mpd_conn_state != MPD_CONNECTED) {
-                n = snprintf(p, MAX_SIZE, "{\"type\":\"disconnected\"}");
-            }
-            else if(pss->do_send & DO_SEND_PLAYLIST) {
-                /*n = mpd_put_playlist(p);*/
-                n = snprintf(p, MAX_SIZE, "{\"type\":\"update_playlist\"}");
-                pss->do_send &= ~DO_SEND_PLAYLIST;
-            }
-            else if(pss->do_send & DO_SEND_TRACK_INFO) {
-                n = mpd_put_current_song(p);
-                pss->do_send &= ~DO_SEND_TRACK_INFO;
-            }
-            else if(pss->do_send & DO_SEND_BROWSE) {
-                n = mpd_put_browse(p, pss->browse_path);
-                pss->do_send &= ~DO_SEND_BROWSE;
-                free(pss->browse_path);
-            }
-            else if(pss->do_send & DO_SEND_MPDHOST) {
-                n = snprintf(p, MAX_SIZE, "{\"type\":\"mpdhost\", \"data\": "
-                    "{\"host\" : \"%s\", \"port\": \"%d\"}"
-                    "}", mpd_host, mpd_port);
-                pss->do_send &= ~DO_SEND_MPDHOST;
-            }
-            else {
-                /* Default Action */
-                int current_song_id;
-                unsigned queue_version;
-
-                n = mpd_put_state(p, &current_song_id, &queue_version);
-                if(current_song_id != pss->current_song_id)
-                {
-                    pss->current_song_id = current_song_id;
-                    pss->do_send |= DO_SEND_TRACK_INFO;
-                    libwebsocket_callback_on_writable(context, wsi);
-                }
-                else if(pss->queue_version != queue_version) {
-                    pss->queue_version = queue_version;
-                    pss->do_send |= DO_SEND_PLAYLIST;
-                    libwebsocket_callback_on_writable(context, wsi);
-                }
-            }
-
-            if(n > 0)
-                m = libwebsocket_write(wsi, (unsigned char *)p, n, LWS_WRITE_TEXT);
-
-            if (m < n) {
-                lwsl_err("ERROR %d writing to socket\n", n, m);
-                free(buf);
-                return -1;
-            }
-            free(buf);
+        case MPD_API_SET_PAUSE:
+            mpd_run_toggle_pause(mpd.conn);
             break;
-
-        case LWS_CALLBACK_RECEIVE:
-            if(!strcmp((const char *)in, MPD_API_GET_PLAYLIST))
-                pss->do_send |= DO_SEND_PLAYLIST;
-            else if(!strcmp((const char *)in, MPD_API_GET_TRACK_INFO))
-                pss->do_send |= DO_SEND_TRACK_INFO;
-            else if(!strcmp((const char *)in, MPD_API_UPDATE_DB))
-                mpd_run_update(conn, NULL);
-            else if(!strcmp((const char *)in, MPD_API_SET_PAUSE))
-                mpd_run_toggle_pause(conn);
-            else if(!strcmp((const char *)in, MPD_API_SET_PREV))
-                mpd_run_previous(conn);
-            else if(!strcmp((const char *)in, MPD_API_SET_NEXT))
-                mpd_run_next(conn);
-            else if(!strcmp((const char *)in, MPD_API_SET_PLAY))
-                mpd_run_play(conn);
-            else if(!strcmp((const char *)in, MPD_API_SET_STOP))
-                mpd_run_stop(conn);
-            else if(!strcmp((const char *)in, MPD_API_RM_ALL))
-                mpd_run_clear(conn);
-            else if(!strncmp((const char *)in, MPD_API_RM_TRACK, sizeof(MPD_API_RM_TRACK)-1)) {
-                unsigned id;
-                if(sscanf(in, "MPD_API_RM_TRACK,%u", &id))
-                    mpd_run_delete_id(conn, id);
-
-                libwebsocket_callback_on_writable(context, wsi);
+        case MPD_API_SET_PREV:
+            mpd_run_previous(mpd.conn);
+            break;
+        case MPD_API_SET_NEXT:
+            mpd_run_next(mpd.conn);
+            break;
+        case MPD_API_SET_PLAY:
+            mpd_run_play(mpd.conn);
+            break;
+        case MPD_API_SET_STOP:
+            mpd_run_stop(mpd.conn);
+            break;
+        case MPD_API_RM_ALL:
+            mpd_run_clear(mpd.conn);
+            break;
+        case MPD_API_RM_TRACK:
+            if(sscanf(c->content, "MPD_API_RM_TRACK,%u", &uint_buf))
+                mpd_run_delete_id(mpd.conn, uint_buf);
+            break;
+        case MPD_API_PLAY_TRACK:
+            if(sscanf(c->content, "MPD_API_PLAY_TRACK,%u", &uint_buf))
+                mpd_run_play_id(mpd.conn, uint_buf);
+            break;
+        case MPD_API_TOGGLE_RANDOM:
+            if(sscanf(c->content, "MPD_API_TOGGLE_RANDOM,%u", &uint_buf))
+                mpd_run_random(mpd.conn, uint_buf);
+            break;
+        case MPD_API_TOGGLE_REPEAT:
+            if(sscanf(c->content, "MPD_API_TOGGLE_REPEAT,%u", &uint_buf))
+                mpd_run_repeat(mpd.conn, uint_buf);
+            break;
+        case MPD_API_TOGGLE_CONSUME:
+            if(sscanf(c->content, "MPD_API_TOGGLE_CONSUME,%u", &uint_buf))
+                mpd_run_consume(mpd.conn, uint_buf);
+            break;
+        case MPD_API_TOGGLE_SINGLE:
+            if(sscanf(c->content, "MPD_API_TOGGLE_SINGLE,%u", &uint_buf))
+                mpd_run_single(mpd.conn, uint_buf);
+            break;
+        case MPD_API_SET_VOLUME:
+            if(sscanf(c->content, "MPD_API_SET_VOLUME,%ud", &uint_buf) && uint_buf <= 100)
+                mpd_run_set_volume(mpd.conn, uint_buf);
+            break;
+        case MPD_API_SET_SEEK:
+            if(sscanf(c->content, "MPD_API_SET_SEEK,%u,%u", &uint_buf, &uint_buf_2))
+                mpd_run_seek_id(mpd.conn, uint_buf, uint_buf_2);
+            break;
+        case MPD_API_GET_QUEUE:
+            if(sscanf(c->content, "MPD_API_GET_QUEUE,%u", &uint_buf))
+                n = mpd_put_queue(mpd.buf, uint_buf);
+            break;
+        case MPD_API_GET_BROWSE:
+            if(sscanf(c->content, "MPD_API_GET_BROWSE,%u,%m[^\t\n]", &uint_buf, &p_charbuf) && p_charbuf != NULL)
+            {
+                n = mpd_put_browse(mpd.buf, p_charbuf, uint_buf);
+                free(p_charbuf);
             }
-            else if(!strncmp((const char *)in, MPD_API_PLAY_TRACK, sizeof(MPD_API_PLAY_TRACK)-1)) {
-                unsigned id;
-                if(sscanf(in, "MPD_API_PLAY_TRACK,%u", &id))
-                    mpd_run_play_id(conn, id);
+            break;
+        case MPD_API_ADD_TRACK:
+            if(sscanf(c->content, "MPD_API_ADD_TRACK,%m[^\t\n]", &p_charbuf) && p_charbuf != NULL)
+            {
+                mpd_run_add(mpd.conn, p_charbuf);
+                free(p_charbuf);
             }
-            else if(!strncmp((const char *)in, MPD_API_TOGGLE_RANDOM, sizeof(MPD_API_TOGGLE_RANDOM)-1)) {
-                unsigned random;
-                if(sscanf(in, "MPD_API_TOGGLE_RANDOM,%u", &random))
-                    mpd_run_random(conn, random);
+            break;
+        case MPD_API_ADD_PLAY_TRACK:
+            if(sscanf(c->content, "MPD_API_ADD_PLAY_TRACK,%m[^\t\n]", &p_charbuf) && p_charbuf != NULL)
+            {
+                int_buf = mpd_run_add_id(mpd.conn, p_charbuf);
+                if(int_buf != -1)
+                    mpd_run_play_id(mpd.conn, int_buf);
+                free(p_charbuf);
             }
-            else if(!strncmp((const char *)in, MPD_API_TOGGLE_REPEAT, sizeof(MPD_API_TOGGLE_REPEAT)-1)) {
-                unsigned repeat;
-                if(sscanf(in, "MPD_API_TOGGLE_REPEAT,%u", &repeat))
-                    mpd_run_repeat(conn, repeat);
+            break;
+        case MPD_API_ADD_PLAYLIST:
+            if(sscanf(c->content, "MPD_API_ADD_PLAYLIST,%m[^\t\n]", &p_charbuf) && p_charbuf != NULL)
+            {
+                mpd_run_load(mpd.conn, p_charbuf);
+                free(p_charbuf);
             }
-            else if(!strncmp((const char *)in, MPD_API_TOGGLE_CONSUME, sizeof(MPD_API_TOGGLE_CONSUME)-1)) {
-                unsigned consume;
-                if(sscanf(in, "MPD_API_TOGGLE_CONSUME,%u", &consume))
-                    mpd_run_consume(conn, consume);
+            break;
+        case MPD_API_SEARCH:
+            if(sscanf(c->content, "MPD_API_SEARCH,%m[^\t\n]", &p_charbuf) && p_charbuf != NULL)
+            {
+                n = mpd_search(mpd.buf, p_charbuf);
+                free(p_charbuf);
             }
-            else if(!strncmp((const char *)in, MPD_API_TOGGLE_SINGLE, sizeof(MPD_API_TOGGLE_SINGLE)-1)) {
-                unsigned single;
-                if(sscanf(in, "MPD_API_TOGGLE_SINGLE,%u", &single))
-                    mpd_run_single(conn, single);
-            }
-            else if(!strncmp((const char *)in, MPD_API_SET_VOLUME, sizeof(MPD_API_SET_VOLUME)-1)) {
-                unsigned int volume;
-                if(sscanf(in, "MPD_API_SET_VOLUME,%ud", &volume) && volume <= 100)
-                    mpd_run_set_volume(conn, volume);
-            }
-            else if(!strncmp((const char *)in, MPD_API_SET_SEEK, sizeof(MPD_API_SET_SEEK)-1)) {
-                unsigned int seek, songid;
-                if(sscanf(in, "MPD_API_SET_SEEK,%u,%u", &songid, &seek)) {
-                    mpd_run_seek_id(conn, songid, seek);
-                }
-            }
-            else if(!strncmp((const char *)in, MPD_API_GET_BROWSE, sizeof(MPD_API_GET_BROWSE)-1)) {
-                char *dir;
-                if(sscanf(in, "MPD_API_GET_BROWSE,%m[^\t\n]", &dir) && dir != NULL) {
-                    pss->do_send |= DO_SEND_BROWSE;
-                    pss->browse_path = dir;
-                }
-            }
-            else if(!strncmp((const char *)in, MPD_API_ADD_TRACK, sizeof(MPD_API_ADD_TRACK)-1)) {
-                char *uri;
-                if(sscanf(in, "MPD_API_ADD_TRACK,%m[^\t\n]", &uri) && uri != NULL) {
-                    mpd_run_add(conn, uri);
-                    free(uri);
-                }
-            }
-            else if(!strncmp((const char *)in, MPD_API_ADD_PLAY_TRACK, sizeof(MPD_API_ADD_PLAY_TRACK)-1)) {
-                char *uri;
-                if(sscanf(in, "MPD_API_ADD_PLAY_TRACK,%m[^\t\n]", &uri) && uri != NULL) {
-                    int added_song = mpd_run_add_id(conn, uri);
-                    if(added_song != -1)
-                        mpd_run_play_id(conn, added_song);
-                    free(uri);
-                }
-            }
+            break;
 #ifdef WITH_MPD_HOST_CHANGE
-            else if(!strncmp((const char *)in, MPD_API_SET_MPDHOST, sizeof(MPD_API_SET_MPDHOST)-1)) {
-                char *host;
-                int port = 0;
-                if(sscanf(in, "MPD_API_SET_MPDHOST,%d,%m[^\t\n ]", &port, &host) && host != NULL && port > 0) {
-                    strncpy(mpd_host, host, sizeof(mpd_host));
-                    free(host);
-                    mpd_port = port;
-                    mpd_conn_state = MPD_RECONNECT;
-                    break;
-                }
+        /* Commands allowed when disconnected from MPD server */
+        case MPD_API_SET_MPDHOST:
+            int_buf = 0;
+            if(sscanf(c->content, "MPD_API_SET_MPDHOST,%d,%m[^\t\n ]", &int_buf, &p_charbuf) && 
+                p_charbuf != NULL && int_buf > 0)
+            {
+                strncpy(mpd.host, p_charbuf, sizeof(mpd.host));
+                free(p_charbuf);
+                mpd.port = int_buf;
+                mpd.conn_state = MPD_RECONNECT;
+                return MG_CLIENT_CONTINUE;
             }
-            else if(!strncmp((const char *)in, MPD_API_GET_MPDHOST, sizeof(MPD_API_GET_MPDHOST)-1)) {
-                pss->do_send |= DO_SEND_MPDHOST;
+            break;
+        case MPD_API_GET_MPDHOST:
+            n = snprintf(mpd.buf, MAX_SIZE, "{\"type\":\"mpdhost\", \"data\": "
+                "{\"host\" : \"%s\", \"port\": \"%d\", \"passwort_set\": %s}"
+                "}", mpd.host, mpd.port, mpd.password ? "true" : "false");
+            break;
+        case MPD_API_SET_MPDPASS:
+            if(sscanf(c->content, "MPD_API_SET_MPDPASS,%m[^\t\n ]", &p_charbuf))
+            {
+                if(mpd.password)
+                    free(mpd.password);
+
+                mpd.password = p_charbuf;
+                mpd.conn_state = MPD_RECONNECT;
+                return MG_CLIENT_CONTINUE;
             }
+            break;
 #endif
-
-            if(mpd_conn_state == MPD_CONNECTED && mpd_connection_get_error(conn) != MPD_ERROR_SUCCESS)
-                pss->do_send |= DO_SEND_ERROR;
-            break;
-
-        default:
-            break;
     }
 
+    if(mpd.conn_state == MPD_CONNECTED && mpd_connection_get_error(mpd.conn) != MPD_ERROR_SUCCESS)
+    {
+        n = snprintf(mpd.buf, MAX_SIZE, "{\"type\":\"error\", \"data\": \"%s\"}", 
+            mpd_connection_get_error_message(mpd.conn));
+
+        /* Try to recover error */
+        if (!mpd_connection_clear_error(mpd.conn))
+            mpd.conn_state = MPD_FAILURE;
+    }
+
+    if(n > 0)
+        mg_websocket_write(c, 1, mpd.buf, n);
+
+    return MG_CLIENT_CONTINUE;
+}
+
+int mpd_close_handler(struct mg_connection *c)
+{
+    /* Cleanup session data */
+    if(c->connection_param)
+        free(c->connection_param);
     return 0;
 }
 
-void mpd_loop()
+static int mpd_notify_callback(struct mg_connection *c) {
+    size_t n;
+
+    if(!c->is_websocket)
+        return MG_REQUEST_PROCESSED;
+
+    if(c->callback_param)
+    {
+        /* error message? */
+        n = snprintf(mpd.buf, MAX_SIZE, "{\"type\":\"error\",\"data\":\"%s\"}", 
+            (const char *)c->callback_param);
+
+        mg_websocket_write(c, 1, mpd.buf, n);
+        return MG_REQUEST_PROCESSED;
+    }
+
+    if(!c->connection_param)
+        c->connection_param = calloc(1, sizeof(struct t_mpd_client_session));
+
+    struct t_mpd_client_session *s = (struct t_mpd_client_session *)c->connection_param;
+
+    if(mpd.conn_state != MPD_CONNECTED) {
+        n = snprintf(mpd.buf, MAX_SIZE, "{\"type\":\"disconnected\"}");
+        mg_websocket_write(c, 1, mpd.buf, n);
+    }
+    else
+    {
+        mg_websocket_write(c, 1, mpd.buf, mpd.buf_size);
+
+        if(s->song_id != mpd.song_id)
+        {
+            n = mpd_put_current_song(mpd.buf);
+            mg_websocket_write(c, 1, mpd.buf, n);
+            s->song_id = mpd.song_id;
+        }
+
+        if(s->queue_version != mpd.queue_version)
+        {
+            n = snprintf(mpd.buf, MAX_SIZE, "{\"type\":\"update_queue\"}");
+            mg_websocket_write(c, 1, mpd.buf, n);
+            s->queue_version = mpd.queue_version;
+        }
+    }
+
+    return MG_REQUEST_PROCESSED;
+}
+
+void mpd_poll(struct mg_server *s)
 {
-    switch (mpd_conn_state) {
+    switch (mpd.conn_state) {
         case MPD_DISCONNECTED:
             /* Try to connect */
-            lwsl_notice("MPD Connecting to %s:%d\n", mpd_host, mpd_port);
-            conn = mpd_connection_new(mpd_host, mpd_port, 3000);
-            if (conn == NULL) {
-                lwsl_err("Out of memory.");
-                mpd_conn_state = MPD_FAILURE;
+            fprintf(stdout, "MPD Connecting to %s:%d\n", mpd.host, mpd.port);
+            mpd.conn = mpd_connection_new(mpd.host, mpd.port, 3000);
+            if (mpd.conn == NULL) {
+                fprintf(stderr, "Out of memory.");
+                mpd.conn_state = MPD_FAILURE;
                 return;
             }
 
-            if (mpd_connection_get_error(conn) != MPD_ERROR_SUCCESS) {
-                lwsl_err("MPD connection: %s\n", mpd_connection_get_error_message(conn));
-                mpd_conn_state = MPD_FAILURE;
+            if (mpd_connection_get_error(mpd.conn) != MPD_ERROR_SUCCESS) {
+                fprintf(stderr, "MPD connection: %s\n", mpd_connection_get_error_message(mpd.conn));
+                mg_iterate_over_connections(s, mpd_notify_callback, 
+                    (void *)mpd_connection_get_error_message(mpd.conn));
+                mpd.conn_state = MPD_FAILURE;
                 return;
             }
 
-            lwsl_notice("MPD connected.\n");
-            mpd_conn_state = MPD_CONNECTED;
+            if(mpd.password && !mpd_run_password(mpd.conn, mpd.password))
+            {
+                fprintf(stderr, "MPD connection: %s\n", mpd_connection_get_error_message(mpd.conn));
+                mg_iterate_over_connections(s, mpd_notify_callback, 
+                    (void *)mpd_connection_get_error_message(mpd.conn));
+                mpd.conn_state = MPD_FAILURE;
+                return;
+            }
+
+            fprintf(stderr, "MPD connected.\n");
+            mpd.conn_state = MPD_CONNECTED;
             break;
 
         case MPD_FAILURE:
-            lwsl_err("MPD connection failed.\n");
+            fprintf(stderr, "MPD connection failed.\n");
 
+        case MPD_DISCONNECT:
         case MPD_RECONNECT:
-            if(conn != NULL)
-                mpd_connection_free(conn);
-            conn = NULL;
-            mpd_conn_state = MPD_DISCONNECTED;
+            if(mpd.conn != NULL)
+                mpd_connection_free(mpd.conn);
+            mpd.conn = NULL;
+            mpd.conn_state = MPD_DISCONNECTED;
             break;
 
         case MPD_CONNECTED:
-            /* Nothing to do */
+            mpd.buf_size = mpd_put_state(mpd.buf, &mpd.song_id, &mpd.queue_version);
+            mg_iterate_over_connections(s, mpd_notify_callback, NULL);
             break;
     }
 }
 
 char* mpd_get_title(struct mpd_song const *song)
 {
-    char *str, *ptr;
+    char *str;
 
     str = (char *)mpd_song_get_tag(song, MPD_TAG_TITLE, 0);
     if(str == NULL){
         str = basename((char *)mpd_song_get_uri(song));
     }
-
-    if(str == NULL)
-        return NULL;
-
-    ptr = str;
-    while(*ptr++ != '\0')
-        if(*ptr=='"')
-            *ptr='\'';
 
     return str;
 }
@@ -308,30 +324,30 @@ int mpd_put_state(char *buffer, int *current_song_id, unsigned *queue_version)
     struct mpd_status *status;
     int len;
 
-    status = mpd_run_status(conn);
+    status = mpd_run_status(mpd.conn);
     if (!status) {
-        lwsl_err("MPD mpd_run_status: %s\n", mpd_connection_get_error_message(conn));
-        mpd_conn_state = MPD_FAILURE;
+        fprintf(stderr, "MPD mpd_run_status: %s\n", mpd_connection_get_error_message(mpd.conn));
+        mpd.conn_state = MPD_FAILURE;
         return 0;
     }
 
     len = snprintf(buffer, MAX_SIZE,
-            "{\"type\":\"state\", \"data\":{"
-            " \"state\":%d, \"volume\":%d, \"repeat\":%d,"
-            " \"single\":%d, \"consume\":%d, \"random\":%d, "
-            " \"songpos\": %d, \"elapsedTime\": %d, \"totalTime\":%d, "
-            " \"currentsongid\": %d"
-            "}}", 
-            mpd_status_get_state(status),
-            mpd_status_get_volume(status), 
-            mpd_status_get_repeat(status),
-            mpd_status_get_single(status),
-            mpd_status_get_consume(status),
-            mpd_status_get_random(status),
-            mpd_status_get_song_pos(status),
-            mpd_status_get_elapsed_time(status),
-            mpd_status_get_total_time(status),
-            mpd_status_get_song_id(status));
+        "{\"type\":\"state\", \"data\":{"
+        " \"state\":%d, \"volume\":%d, \"repeat\":%d,"
+        " \"single\":%d, \"consume\":%d, \"random\":%d, "
+        " \"songpos\": %d, \"elapsedTime\": %d, \"totalTime\":%d, "
+        " \"currentsongid\": %d"
+        "}}", 
+        mpd_status_get_state(status),
+        mpd_status_get_volume(status), 
+        mpd_status_get_repeat(status),
+        mpd_status_get_single(status),
+        mpd_status_get_consume(status),
+        mpd_status_get_random(status),
+        mpd_status_get_song_pos(status),
+        mpd_status_get_elapsed_time(status),
+        mpd_status_get_total_time(status),
+        mpd_status_get_song_id(status));
 
     *current_song_id = mpd_status_get_song_id(status);
     *queue_version = mpd_status_get_queue_version(status);
@@ -345,89 +361,102 @@ int mpd_put_current_song(char *buffer)
     const char *end = buffer + MAX_SIZE;
     struct mpd_song *song;
 
-    song = mpd_run_current_song(conn);
+    song = mpd_run_current_song(mpd.conn);
     if(song == NULL)
         return 0;
 
-    cur += snprintf(cur, end - cur, "{\"type\": \"song_change\", \"data\":"
-            "{\"pos\":%d, \"title\":\"%s\"",
-            mpd_song_get_pos(song),
-            mpd_get_title(song));
-    if(mpd_song_get_tag(song, MPD_TAG_ARTIST, 0) != NULL)
-        cur += snprintf(cur, end - cur, ", \"artist\":\"%s\"",
-            mpd_song_get_tag(song, MPD_TAG_ARTIST, 0));
-    if(mpd_song_get_tag(song, MPD_TAG_ALBUM, 0) != NULL)
-        cur += snprintf(cur, end - cur, ", \"album\":\"%s\"",
-            mpd_song_get_tag(song, MPD_TAG_ALBUM, 0));
+    cur += json_emit_raw_str(cur, end - cur, "{\"type\": \"song_change\", \"data\":{\"pos\":");
+    cur += json_emit_int(cur, end - cur, mpd_song_get_pos(song));
+    cur += json_emit_raw_str(cur, end - cur, ",\"title\":");
+    cur += json_emit_quoted_str(cur, end - cur, mpd_get_title(song));
 
-    cur += snprintf(cur, end - cur, "}}");
+    if(mpd_song_get_tag(song, MPD_TAG_ARTIST, 0) != NULL)
+    {
+        cur += json_emit_raw_str(cur, end - cur, ",\"artist\":");
+        cur += json_emit_quoted_str(cur, end - cur, mpd_song_get_tag(song, MPD_TAG_ARTIST, 0));
+    }
+
+    if(mpd_song_get_tag(song, MPD_TAG_ALBUM, 0) != NULL)
+    {
+        cur += json_emit_raw_str(cur, end - cur, ",\"album\":");
+        cur += json_emit_quoted_str(cur, end - cur, mpd_song_get_tag(song, MPD_TAG_ALBUM, 0));
+    }
+
+    cur += json_emit_raw_str(cur, end - cur, "}}");
     mpd_song_free(song);
-    mpd_response_finish(conn);
+    mpd_response_finish(mpd.conn);
 
     return cur - buffer;
 }
 
-int mpd_put_playlist(char *buffer)
+int mpd_put_queue(char *buffer, unsigned int offset)
 {
     char *cur = buffer;
     const char *end = buffer + MAX_SIZE;
     struct mpd_entity *entity;
 
-    if (!mpd_send_list_queue_meta(conn)) {
-        lwsl_err("MPD mpd_send_list_queue_meta: %s\n", mpd_connection_get_error_message(conn));
-        cur += snprintf(cur, end  - cur, "{\"type\":\"error\",\"data\":\"%s\"}", 
-            mpd_connection_get_error_message(conn));
+    if (!mpd_send_list_queue_range_meta(mpd.conn, offset, offset+MAX_ELEMENTS_PER_PAGE))
+        RETURN_ERROR_AND_RECOVER("mpd_send_list_queue_meta");
 
-        if (!mpd_connection_clear_error(conn))
-            mpd_conn_state = MPD_FAILURE;
-        return cur - buffer;
-    }
+    cur += json_emit_raw_str(cur, end  - cur, "{\"type\":\"queue\",\"data\":[ ");
 
-    cur += snprintf(cur, end  - cur, "{\"type\": \"playlist\", \"data\": [ ");
-
-    while((entity = mpd_recv_entity(conn)) != NULL) {
+    while((entity = mpd_recv_entity(mpd.conn)) != NULL) {
         const struct mpd_song *song;
 
         if(mpd_entity_get_type(entity) == MPD_ENTITY_TYPE_SONG) {
             song = mpd_entity_get_song(entity);
-            cur += snprintf(cur, end  - cur, 
-                    "{\"id\":%d, \"pos\":%d, \"duration\":%d, \"title\":\"%s\"},",
-                    mpd_song_get_id(song),
-                    mpd_song_get_pos(song),
-                    mpd_song_get_duration(song),
-                    mpd_get_title(song)
-                    );
+
+            cur += json_emit_raw_str(cur, end - cur, "{\"id\":");
+            cur += json_emit_int(cur, end - cur, mpd_song_get_id(song));
+            cur += json_emit_raw_str(cur, end - cur, ",\"pos\":");
+            cur += json_emit_int(cur, end - cur, mpd_song_get_pos(song));
+            cur += json_emit_raw_str(cur, end - cur, ",\"duration\":");
+            cur += json_emit_int(cur, end - cur, mpd_song_get_duration(song));
+            cur += json_emit_raw_str(cur, end - cur, ",\"title\":");
+            cur += json_emit_quoted_str(cur, end - cur, mpd_get_title(song));
+            cur += json_emit_raw_str(cur, end - cur, "},");
         }
         mpd_entity_free(entity);
     }
 
     /* remove last ',' */
     cur--;
-    cur += snprintf(cur, end  - cur, "] }");
+
+    cur += json_emit_raw_str(cur, end - cur, "]}");
     return cur - buffer;
 }
 
-int mpd_put_browse(char *buffer, char *path)
+int mpd_put_browse(char *buffer, char *path, unsigned int offset)
 {
     char *cur = buffer;
     const char *end = buffer + MAX_SIZE;
     struct mpd_entity *entity;
+    unsigned int entity_count = 0;
 
-    if (!mpd_send_list_meta(conn, path)) {
-        lwsl_err("MPD mpd_send_list_meta: %s\n", mpd_connection_get_error_message(conn));
-        cur += snprintf(cur, end  - cur, "{\"type\":\"error\",\"data\":\"%s\"}", 
-            mpd_connection_get_error_message(conn));
+    if (!mpd_send_list_meta(mpd.conn, path))
+        RETURN_ERROR_AND_RECOVER("mpd_send_list_meta");
 
-        if (!mpd_connection_clear_error(conn))
-            mpd_conn_state = MPD_FAILURE;
-        return cur - buffer;
-    }
-    cur += snprintf(cur, end  - cur, "{\"type\":\"browse\",\"data\":[ ");
+    cur += json_emit_raw_str(cur, end  - cur, "{\"type\":\"browse\",\"data\":[ ");
 
-    while((entity = mpd_recv_entity(conn)) != NULL) {
+    while((entity = mpd_recv_entity(mpd.conn)) != NULL) {
         const struct mpd_song *song;
         const struct mpd_directory *dir;
         const struct mpd_playlist *pl;
+
+        if(offset > entity_count)
+        {
+            mpd_entity_free(entity);
+            entity_count++;
+            continue;
+        }
+        else if(offset + MAX_ELEMENTS_PER_PAGE - 1 < entity_count)
+        {
+            mpd_entity_free(entity);
+            cur += json_emit_raw_str(cur, end  - cur, "{\"type\":\"wrap\",\"count\":");
+            cur += json_emit_int(cur, end - cur, entity_count);
+            cur += json_emit_raw_str(cur, end  - cur, "} ");
+            break;
+        }
 
         switch (mpd_entity_get_type(entity)) {
             case MPD_ENTITY_TYPE_UNKNOWN:
@@ -435,42 +464,92 @@ int mpd_put_browse(char *buffer, char *path)
 
             case MPD_ENTITY_TYPE_SONG:
                 song = mpd_entity_get_song(entity);
-                cur += snprintf(cur, end  - cur, 
-                        "{\"type\":\"song\",\"uri\":\"%s\",\"duration\":%d,\"title\":\"%s\"},",
-                        mpd_song_get_uri(song),
-                        mpd_song_get_duration(song),
-                        mpd_get_title(song)
-                        );
+                cur += json_emit_raw_str(cur, end - cur, "{\"type\":\"song\",\"uri\":");
+                cur += json_emit_quoted_str(cur, end - cur, mpd_song_get_uri(song));
+                cur += json_emit_raw_str(cur, end - cur, ",\"duration\":");
+                cur += json_emit_int(cur, end - cur, mpd_song_get_duration(song));
+                cur += json_emit_raw_str(cur, end - cur, ",\"title\":");
+                cur += json_emit_quoted_str(cur, end - cur, mpd_get_title(song));
+                cur += json_emit_raw_str(cur, end - cur, "},");
                 break;
 
             case MPD_ENTITY_TYPE_DIRECTORY:
                 dir = mpd_entity_get_directory(entity);
-                cur += snprintf(cur, end  - cur, 
-                        "{\"type\":\"directory\",\"dir\":\"%s\", \"basename\":\"%s\"},",
-                        mpd_directory_get_path(dir), 
-                        basename((char *)mpd_directory_get_path(dir))
-                        );
+
+                cur += json_emit_raw_str(cur, end - cur, "{\"type\":\"directory\",\"dir\":");
+                cur += json_emit_quoted_str(cur, end - cur, mpd_directory_get_path(dir));
+                cur += json_emit_raw_str(cur, end - cur, "},");
                 break;
 
             case MPD_ENTITY_TYPE_PLAYLIST:
                 pl = mpd_entity_get_playlist(entity);
-                cur += snprintf(cur, end  - cur, 
-                        "{\"type\":\"playlist\",\"plist\":\"%s\"},",
-                        mpd_playlist_get_path(pl)
-                        );
+                cur += json_emit_raw_str(cur, end - cur, "{\"type\":\"playlist\",\"plist\":");
+                cur += json_emit_quoted_str(cur, end - cur, mpd_playlist_get_path(pl));
+                cur += json_emit_raw_str(cur, end - cur, "},");
                 break;
         }
         mpd_entity_free(entity);
+        entity_count++;
     }
 
-    if (mpd_connection_get_error(conn) != MPD_ERROR_SUCCESS || !mpd_response_finish(conn)) {
-        lwsl_err("MPD mpd_send_list_meta: %s\n", mpd_connection_get_error_message(conn));
-        mpd_conn_state = MPD_FAILURE;
+    if (mpd_connection_get_error(mpd.conn) != MPD_ERROR_SUCCESS || !mpd_response_finish(mpd.conn)) {
+        fprintf(stderr, "MPD mpd_send_list_meta: %s\n", mpd_connection_get_error_message(mpd.conn));
+        mpd.conn_state = MPD_FAILURE;
         return 0;
     }
 
     /* remove last ',' */
     cur--;
-    cur += snprintf(cur, end  - cur, "] }");
+
+    cur += json_emit_raw_str(cur, end - cur, "]}");
     return cur - buffer;
+}
+
+int mpd_search(char *buffer, char *searchstr)
+{
+    int i = 0;
+    char *cur = buffer;
+    const char *end = buffer + MAX_SIZE;
+    struct mpd_song *song;
+
+    if(mpd_search_db_songs(mpd.conn, false) == false)
+        RETURN_ERROR_AND_RECOVER("mpd_search_db_songs");
+    else if(mpd_search_add_any_tag_constraint(mpd.conn, MPD_OPERATOR_DEFAULT, searchstr) == false)
+        RETURN_ERROR_AND_RECOVER("mpd_search_add_any_tag_constraint");
+    else if(mpd_search_commit(mpd.conn) == false)
+        RETURN_ERROR_AND_RECOVER("mpd_search_commit");
+    else {
+        cur += json_emit_raw_str(cur, end - cur, "{\"type\":\"search\",\"data\":[ ");
+
+        while((song = mpd_recv_song(mpd.conn)) != NULL) {
+            cur += json_emit_raw_str(cur, end - cur, "{\"type\":\"song\",\"uri\":");
+            cur += json_emit_quoted_str(cur, end - cur, mpd_song_get_uri(song));
+            cur += json_emit_raw_str(cur, end - cur, ",\"duration\":");
+            cur += json_emit_int(cur, end - cur, mpd_song_get_duration(song));
+            cur += json_emit_raw_str(cur, end - cur, ",\"title\":");
+            cur += json_emit_quoted_str(cur, end - cur, mpd_get_title(song));
+            cur += json_emit_raw_str(cur, end - cur, "},");
+            mpd_song_free(song);
+
+            /* Maximum results */
+            if(i++ >= 300)
+            {
+                cur += json_emit_raw_str(cur, end - cur, "{\"type\":\"wrap\"},");
+                break;
+            }
+        }
+
+        /* remove last ',' */
+        cur--;
+
+        cur += json_emit_raw_str(cur, end - cur, "]}");
+    }
+    return cur - buffer;
+}
+
+
+void mpd_disconnect()
+{
+    mpd.conn_state = MPD_DISCONNECT;
+    mpd_poll(NULL);
 }
