@@ -55,7 +55,7 @@ int callback_mpd(struct mg_connection *c)
         cmd_id != MPD_API_GET_MPDHOST && cmd_id != MPD_API_SET_MPDPASS)
         return MG_CLIENT_CONTINUE;
 
-    mpd_connection_set_timeout(mpd.conn, 5000);
+    mpd_connection_set_timeout(mpd.conn, 10000);
     switch(cmd_id)
     {
         case MPD_API_UPDATE_DB:
