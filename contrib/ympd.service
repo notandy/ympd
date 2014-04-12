@@ -3,7 +3,11 @@ Description=ympd server daemon
 Requires=network.target local-fs.target
 
 [Service]
-ExecStart=/usr/bin/ympd
+Environment=MPD_HOST=localhost
+Environment=MPD_PORT=6600
+Environment=WEB_PORT=8080
+EnvironmentFile=/etc/conf.d/ympd
+ExecStart=/usr/bin/ympd -h $MPD_HOST -p $MPD_PORT  -w $WEB_PORT
 Type=simple
 
 [Install]
