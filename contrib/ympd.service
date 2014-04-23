@@ -6,7 +6,7 @@ Requires=network.target local-fs.target
 Environment=MPD_HOST=localhost
 Environment=MPD_PORT=6600
 Environment=WEB_PORT=8080
-EnvironmentFile=/etc/conf.d/ympd
+EnvironmentFile=-/etc/conf.d/ympd
 ExecStart=/usr/bin/ympd -h $MPD_HOST -p $MPD_PORT  -w $WEB_PORT
 Type=simple
 
