@@ -45,7 +45,7 @@
 
         <div class="btn-toolbar navbar-btn navbar-right" role="toolbar">
           <div class="btn-group">
-            <button type="button" class="btn btn-default" onclick="socket.send('MPD_API_SET_NEXT');">
+            <button type="button" class="btn btn-default" onclick="socket.send('MPD_API_SET_PREV');">
               <span class="glyphicon glyphicon-backward"></span>
             </button>
             <button type="button" class="btn btn-default" onclick="socket.send('MPD_API_SET_STOP');">
@@ -54,7 +54,7 @@
             <button type="button" class="btn btn-default" onclick="clickPlay();">
               <span id="play-icon" class="glyphicon glyphicon-pause"></span>
             </button>
-            <button type="button" class="btn btn-default" onclick="socket.send('MPD_API_SET_PREV');">
+            <button type="button" class="btn btn-default" onclick="socket.send('MPD_API_SET_NEXT');">
               <span class="glyphicon glyphicon-forward"></span>
             </button>
           </div>
