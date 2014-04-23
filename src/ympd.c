@@ -56,6 +56,7 @@ int main(int argc, char **argv)
     int n, option_index = 0;
     struct mg_server *server = mg_create_server(NULL);
     unsigned int current_timer = 0, last_timer = 0;
+    char *run_as_user = NULL;
 
     atexit(bye);
     mg_set_option(server, "listening_port", "8080");
@@ -84,7 +85,7 @@ int main(int argc, char **argv)
                 mg_set_option(server, "listening_port", optarg);
                 break;
             case 'u':
-                mg_set_option(server, "run_as_user", optarg);
+                run_as_user = strdup(optarg);
                 break;
             case 'v':
                 fprintf(stdout, "ympd  %d.%d.%d\n"
@@ -104,6 +105,13 @@ int main(int argc, char **argv)
                         , argv[0]);
                 return EXIT_FAILURE;
         }
+    }
+
+    /* drop privilges at last to ensure proper port binding */
+    if(run_as_user != NULL)
+    {
+        mg_set_option(server, "run_as_user", run_as_user);
+        free(run_as_user);
     }
 
     mg_set_http_close_handler(server, mpd_close_handler);
