@@ -502,7 +502,7 @@ $('#btnnotify').on('click', function (e) {
             }
 
             if (permission === "granted") {
-                $.cookie("notification", true);
+                $.cookie("notification", true, { expires: 424242 });
                 $('btnnotify').addClass("active");
             }
         });
