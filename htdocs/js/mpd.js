@@ -493,15 +493,19 @@ $('#btnrepeat').on('click', function (e) {
 });
 
 $('#btnnotify').on('click', function (e) {
-    if($.cookie("notification") === "true")
+    if($.cookie("notification") === "true") {
         $.cookie("notification", false);
-    else {
-        window.webkitNotifications.requestPermission();
-        if (window.webkitNotifications.checkPermission() == 0)
-        {
-            $.cookie("notification", true);
-            $('btnnotify').addClass("active");
-        }
+    } else {
+        Notification.requestPermission(function (permission) {
+            if(!('permission' in Notification)) {
+                Notification.permission = permission;
+            }
+
+            if (permission === "granted") {
+                $.cookie("notification", true);
+                $('btnnotify').addClass("active");
+            }
+        });
     }
 });
 
@@ -577,7 +581,7 @@ $('#mpd_password_set > button').on('click', function (e) {
 })
 
 function notificationsSupported() {
-    return "webkitNotifications" in window;
+    return "Notification" in window;
 }
 
 function songNotify(title, artist, album) {
@@ -595,14 +599,13 @@ function songNotify(title, artist, album) {
     //chrome.notifications.create(id, options, creationCallback);
 
     var textNotification = "";
-    if(artist.length > 0)
+    if(typeof artist != 'undefined' && artist.length > 0)
         textNotification += " " + artist;
-    if(album.length > 0)
+    if(typeof album != 'undefined' && album.length > 0)
         textNotification += "\n " + album;
 
-	var notification = window.webkitNotifications.createNotification("assets/favicon.ico", textNotification, title);
-	notification.show();
-	setTimeout(function(notification) {
-	   notification.cancel();
-	}, 3000, notification);
+	var notification = new Notification(title, {icon: 'assets/favicon.ico', body: textNotification});
+    setTimeout(function(notification) {
+        notification.close();
+    }, 3000, notification);
 }
