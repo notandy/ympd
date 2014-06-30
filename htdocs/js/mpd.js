@@ -100,7 +100,7 @@ $(document).ready(function(){
     });
     $("#localvolumeslider").slider(0);
     $("#localvolumeslider").on('slider.newValue', function(evt,data){
-        document.getElementById("player").volume=data.val/100;
+        $("#player").volume=data.val/100;
     });
     $('#progressbar').slider(0);
     $("#progressbar").on('slider.newValue', function(evt,data){
