@@ -58,16 +58,20 @@ int main(int argc, char *argv[])
     int i, j, buf;
     FILE *fd;
 
-    if(argc <= 1)
-        error(EXIT_FAILURE, 0, "Usage: ./%s <this_file> <file1> [file2, ...] > embedded_data.c", argv[0]);
+    if(argc <= 1) {
+        printf("Usage: ./%s <this_file> <file1> [file2, ...] > embedded_data.c", argv[0]);
+        return 0;
+    }
 
     for(i = 1; i < argc; i++)
     {
         printf("static const unsigned char v%d[] = {", i);
         
-        fd = fopen(argv[i], "r");
-        if(!fd)
-            error(EXIT_FAILURE, errno, "Failed open file %s", argv[i]);
+        fd = fopen(argv[i], "rb");
+        if(!fd) {
+            fprintf(stderr, "Failed to open file %s: %s", argv[i], strerror(errno));
+            return errno;
+        }
 
         j = 0;
         while((buf = fgetc(fd)) != EOF)
