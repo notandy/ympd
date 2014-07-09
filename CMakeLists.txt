@@ -48,6 +48,9 @@ set(SOURCES
 
 add_executable(ympd ${SOURCES})
 target_link_libraries(ympd ${LIBMPDCLIENT_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
+if (WIN32)
+    target_link_libraries(ympd ws2_32)
+endif()
 
 install(TARGETS ympd DESTINATION bin)
 install(FILES ympd.1 DESTINATION ${CMAKE_INSTALL_PREFIX}/share/man/man1)
