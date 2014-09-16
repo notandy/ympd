@@ -36,6 +36,23 @@ Usage: ./ympd [OPTION]...
  --help                     this help
 ```
 
+Raspberry Pi
+------------
+
+Due to its small size, ympd is well-suited to run on the Raspberry Pi. Installing it is pretty straightforward:
+
+```
+git clone https://github.com/notandy/ympd.git
+cd ympd/
+sudo apt-get install cmake libmpdclient-dev
+mkdir build
+cd build
+cmake .. -DCMAKE_INSTALL_PREFIX:PATH=/usr
+make
+sudo make install
+sudo cp ../contrib/init.debian /etc/init.d/
+sudo service ympd start
+```
 
 Copyright
 ---------
