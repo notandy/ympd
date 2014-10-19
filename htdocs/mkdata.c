@@ -7,7 +7,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <error.h>
+#include <err.h>
 #include <errno.h>
 #include <string.h>
 
@@ -59,17 +59,17 @@ int main(int argc, char *argv[])
     FILE *fd;
 
     if(argc <= 1)
-        error(EXIT_FAILURE, 0, "Usage: ./%s <this_file> <file1> [file2, ...] > embedded_data.c", argv[0]);
+        err(EXIT_FAILURE, "Usage: ./%s <this_file> <file1> [file2, ...] > embedded_data.c", argv[0]);
 
     for(i = 1; i < argc; i++)
     {
-        printf("static const unsigned char v%d[] = {", i);
-        
         fd = fopen(argv[i], "r");
         if(!fd)
-            error(EXIT_FAILURE, errno, "Failed open file %s", argv[i]);
+            err(EXIT_FAILURE, "%s", argv[i]);
 
-        j = 0;
+        printf("static const unsigned char v%d[] = {", i);
+        
+	j = 0;
         while((buf = fgetc(fd)) != EOF)
         {
             if(!(j % 12))
