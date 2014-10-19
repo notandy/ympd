@@ -29,7 +29,7 @@ file(GLOB RESOURCES
 )
 
 add_executable(mkdata htdocs/mkdata.c)
-get_target_property(MKDATA_EXE mkdata LOCATION)
+set(MKDATA_EXE $<TARGET_FILE:mkdata>)
 
 add_custom_command(OUTPUT ${PROJECT_BINARY_DIR}/assets.c
     COMMAND ${MKDATA_EXE} ${RESOURCES} > ${PROJECT_BINARY_DIR}/assets.c
