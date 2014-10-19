@@ -32,13 +32,18 @@ file(GLOB RESOURCES
 	htdocs/index.html
 )
 
-add_executable(mkdata htdocs/mkdata.c)
-set(MKDATA_EXE $<TARGET_FILE:mkdata>)
+if(CMAKE_CROSSCOMPILING)
+	set(MKDATA_EXE ${PROJECT_SOURCE_DIR}/htdocs/mkdata.pl)
+else()
+	set(MKDATA_EXE $<TARGET_FILE:mkdata>)
+	set(MKDATA_TARGET mkdata)
+	add_executable(mkdata htdocs/mkdata.c)
+endif()
 
 add_custom_command(OUTPUT ${PROJECT_BINARY_DIR}/assets.c
-    COMMAND ${MKDATA_EXE} ${RESOURCES} > ${PROJECT_BINARY_DIR}/assets.c
-    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-    DEPENDS ${RESOURCES} mkdata
+	COMMAND ${MKDATA_EXE} ${RESOURCES} > ${PROJECT_BINARY_DIR}/assets.c
+	WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+	DEPENDS ${RESOURCES} ${MKDATA_TARGET}
 )
 
 set(SOURCES
