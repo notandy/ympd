@@ -49,11 +49,11 @@ int callback_mpd(struct mg_connection *c)
     char *p_charbuf = NULL;
 
     if(cmd_id == -1)
-        return MG_CLIENT_CONTINUE;
+        return MG_TRUE;
 
     if(mpd.conn_state != MPD_CONNECTED && cmd_id != MPD_API_SET_MPDHOST &&
         cmd_id != MPD_API_GET_MPDHOST && cmd_id != MPD_API_SET_MPDPASS)
-        return MG_CLIENT_CONTINUE;
+        return MG_TRUE;
 
     mpd_connection_set_timeout(mpd.conn, 10000);
     switch(cmd_id)
@@ -163,7 +163,7 @@ int callback_mpd(struct mg_connection *c)
                 free(p_charbuf);
                 mpd.port = int_buf;
                 mpd.conn_state = MPD_RECONNECT;
-                return MG_CLIENT_CONTINUE;
+                return MG_TRUE;
             }
             break;
         case MPD_API_GET_MPDHOST:
@@ -179,7 +179,7 @@ int callback_mpd(struct mg_connection *c)
 
                 mpd.password = p_charbuf;
                 mpd.conn_state = MPD_RECONNECT;
-                return MG_CLIENT_CONTINUE;
+                return MG_TRUE;
             }
             break;
 #endif
@@ -198,7 +198,7 @@ int callback_mpd(struct mg_connection *c)
     if(n > 0)
         mg_websocket_write(c, 1, mpd.buf, n);
 
-    return MG_CLIENT_CONTINUE;
+    return MG_TRUE;
 }
 
 int mpd_close_handler(struct mg_connection *c)
@@ -209,11 +209,11 @@ int mpd_close_handler(struct mg_connection *c)
     return 0;
 }
 
-static int mpd_notify_callback(struct mg_connection *c) {
+static int mpd_notify_callback(struct mg_connection *c, enum mg_event ev) {
     size_t n;
 
     if(!c->is_websocket)
-        return MG_REQUEST_PROCESSED;
+        return MG_TRUE;
 
     if(c->callback_param)
     {
@@ -222,7 +222,7 @@ static int mpd_notify_callback(struct mg_connection *c) {
             (const char *)c->callback_param);
 
         mg_websocket_write(c, 1, mpd.buf, n);
-        return MG_REQUEST_PROCESSED;
+        return MG_TRUE;
     }
 
     if(!c->connection_param)
@@ -253,7 +253,7 @@ static int mpd_notify_callback(struct mg_connection *c) {
         }
     }
 
-    return MG_REQUEST_PROCESSED;
+    return MG_TRUE;
 }
 
 void mpd_poll(struct mg_server *s)

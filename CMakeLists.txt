@@ -7,6 +7,7 @@ set(CPACK_PACKAGE_VERSION_MINOR "2")
 set(CPACK_PACKAGE_VERSION_PATCH "2")
 
 option(WITH_MPD_HOST_CHANGE "Let users of the web frontend change the MPD Host" ON)
+option(WITH_IPV6 "enable IPv6 support" ON)
 
 find_package(LibMPDClient REQUIRED)
 find_package(Threads REQUIRED)
@@ -18,6 +19,9 @@ include(CheckCSourceCompiles)
 
 set(CMAKE_C_FLAGS "-std=gnu99 -Wall") 
 set(CMAKE_C_FLAGS_DEBUG "-ggdb -pedantic")
+if(WITH_IPV6)
+	set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS NS_ENABLE_IPV6)
+endif()
 
 file(GLOB RESOURCES 
 	RELATIVE ${PROJECT_SOURCE_DIR}

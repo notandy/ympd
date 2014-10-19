@@ -34,10 +34,10 @@ int callback_http(struct mg_connection *c)
         mg_send_header(c, "Content-Type", req_file->mimetype);
         mg_send_data(c, req_file->data, req_file->size);
     
-        return MG_REQUEST_PROCESSED;
+        return MG_TRUE;
     }
 
     mg_send_status(c, 404);
     mg_printf_data(c, "Not Found");
-    return MG_REQUEST_PROCESSED;
+    return MG_TRUE;
 }

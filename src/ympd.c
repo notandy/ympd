@@ -38,28 +38,37 @@ void bye()
     force_exit = 1;
 }
 
-static int server_callback(struct mg_connection *c) {
-    if (c->is_websocket)
-    {
-        c->content[c->content_len] = '\0';
-        if(c->content_len)
-            return callback_mpd(c);
-        else
-            return MG_CLIENT_CONTINUE;
+static int server_callback(struct mg_connection *c, enum mg_event ev) {
+    switch(ev) {
+        case MG_CLOSE:
+            mpd_close_handler(c);
+            return MG_TRUE;
+        case MG_REQUEST:
+            if (c->is_websocket) {
+                c->content[c->content_len] = '\0';
+                if(c->content_len)
+                    return callback_mpd(c);
+                else
+                    return MG_TRUE;
+            } else
+                return callback_http(c);
+        case MG_AUTH:
+            return MG_TRUE;
+        default:
+            return MG_FALSE;
     }
-    else
-        return callback_http(c);
 }
 
 int main(int argc, char **argv)
 {
     int n, option_index = 0;
-    struct mg_server *server = mg_create_server(NULL);
+    struct mg_server *server = mg_create_server(NULL, server_callback);
     unsigned int current_timer = 0, last_timer = 0;
     char *run_as_user = NULL;
+    char const *error_msg = NULL;
 
     atexit(bye);
-    mg_set_option(server, "listening_port", "8080");
+    error_msg = mg_set_option(server, "listening_port", "8080");
     mpd.port = 6600;
     strcpy(mpd.host, "127.0.0.1");
 
@@ -82,7 +91,7 @@ int main(int argc, char **argv)
             case 'p':
                 mpd.port = atoi(optarg);
             case 'w':
-                mg_set_option(server, "listening_port", optarg);
+                error_msg = mg_set_option(server, "listening_port", optarg);
                 break;
             case 'u':
                 run_as_user = strdup(optarg);
@@ -105,19 +114,29 @@ int main(int argc, char **argv)
                         , argv[0]);
                 return EXIT_FAILURE;
         }
+
+        if(error_msg)
+        {
+            fprintf(stderr, "Mongoose error: %s\n", error_msg);
+            return EXIT_FAILURE;
+        }
     }
 
     /* drop privilges at last to ensure proper port binding */
     if(run_as_user != NULL)
     {
-        mg_set_option(server, "run_as_user", run_as_user);
+        error_msg = mg_set_option(server, "run_as_user", run_as_user);
         free(run_as_user);
+        if(error_msg)
+        {
+            fprintf(stderr, "Mongoose error: %s\n", error_msg);
+            return EXIT_FAILURE;
+        }
     }
 
-    mg_set_http_close_handler(server, mpd_close_handler);
-    mg_set_request_handler(server, server_callback);
     while (!force_exit) {
-        current_timer = mg_poll_server(server, 200);
+        mg_poll_server(server, 200);
+        current_timer = time(NULL);
         if(current_timer - last_timer)
         {
             last_timer = current_timer;
