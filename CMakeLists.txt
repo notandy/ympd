@@ -4,7 +4,7 @@ project (ympd)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmake/")
 set(CPACK_PACKAGE_VERSION_MAJOR "1")
 set(CPACK_PACKAGE_VERSION_MINOR "2")
-set(CPACK_PACKAGE_VERSION_PATCH "2")
+set(CPACK_PACKAGE_VERSION_PATCH "3")
 
 option(WITH_MPD_HOST_CHANGE "Let users of the web frontend change the MPD Host" ON)
 option(WITH_IPV6 "enable IPv6 support" ON)
