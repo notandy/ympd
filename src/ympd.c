@@ -51,7 +51,11 @@ static int server_callback(struct mg_connection *c, enum mg_event ev) {
                 else
                     return MG_TRUE;
             } else
+#ifdef WITH_DYNAMIC_SERVING
+                return MG_FALSE;
+#else
                 return callback_http(c);
+#endif
         case MG_AUTH:
             return MG_TRUE;
         default:
@@ -69,6 +73,10 @@ int main(int argc, char **argv)
 
     atexit(bye);
     error_msg = mg_set_option(server, "listening_port", "8080");
+#ifdef WITH_DYNAMIC_SERVING
+    mg_set_option(server, "document_root", SRC_PATH);
+#endif
+
     mpd.port = 6600;
     strcpy(mpd.host, "127.0.0.1");
 

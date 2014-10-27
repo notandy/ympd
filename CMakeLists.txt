@@ -7,6 +7,7 @@ set(CPACK_PACKAGE_VERSION_MINOR "2")
 set(CPACK_PACKAGE_VERSION_PATCH "3")
 
 option(WITH_MPD_HOST_CHANGE "Let users of the web frontend change the MPD Host" ON)
+option(WITH_DYNAMIC_SERVING "Serve file of ./htdocs dynamically (development)" OFF)
 option(WITH_IPV6 "enable IPv6 support" ON)
 
 find_package(LibMPDClient REQUIRED)
