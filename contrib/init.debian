@@ -1,4 +1,4 @@
-#/bin/sh
+#!/bin/sh
 ### BEGIN INIT INFO
 # Provides:          ympd
 # Required-Start:    $local_fs $mpd
@@ -21,7 +21,7 @@ SCRIPTNAME=/etc/init.d/$NAME
 LOG_OUT=/var/log/$NAME.out
 LOG_ERR=/var/log/$NAME.err
 YMPD_USER=mpd
-DAEMON_OPT="--user $YMPD_USER --webport 80"
+DAEMON_OPT="--user $YMPD_USER --webport 8080"
 
 # Exit if the package is not installed
 [ -x "$DAEMON" ] || exit 0
