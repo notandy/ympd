@@ -419,9 +419,9 @@ function get_appropriate_ws_url()
             u = u.substr(7);
     }
 
-    u = u.split('/');
+    u = u.split('#');
 
-    return pcol + u[0];
+    return pcol + u[0] + "/ws";
 }
 
 var updateVolumeIcon = function(volume)
