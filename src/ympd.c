@@ -98,6 +98,7 @@ int main(int argc, char **argv)
                 break;
             case 'p':
                 mpd.port = atoi(optarg);
+                break;
             case 'w':
                 error_msg = mg_set_option(server, "listening_port", optarg);
                 break;
