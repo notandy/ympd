@@ -137,6 +137,7 @@ function webSocketConnect() {
                 return;
 
             var obj = JSON.parse(msg.data);
+            
 
             switch (obj.type) {
                 case "queue":
@@ -150,7 +151,9 @@ function webSocketConnect() {
 
                         $('#salamisandwich > tbody').append(
                             "<tr trackid=\"" + obj.data[song].id + "\"><td>" + (obj.data[song].pos + 1) + "</td>" +
-                                "<td>"+ obj.data[song].title +"</td>" + 
+                                "<td>"+ obj.data[song].title +"</td>" +
+                                "<td>"+ obj.data[song].album +"</td>" +
+                                "<td>"+ obj.data[song].artist +"</td>" + 
                                 "<td>"+ minutes + ":" + (seconds < 10 ? '0' : '') + seconds +
                         "</td><td></td></tr>");
                     }
@@ -192,6 +195,7 @@ function webSocketConnect() {
                                     "<tr uri=\"" + obj.data[item].dir + "\" class=\"dir\">" +
                                     "<td><span class=\"glyphicon glyphicon-folder-open\"></span></td>" + 
                                     "<td><a>" + basename(obj.data[item].dir) + "</a></td>" + 
+                                    "<td></td><td></td>" +
                                     "<td></td><td></td></tr>"
                                 );
                                 break;
@@ -199,7 +203,8 @@ function webSocketConnect() {
                                 $('#salamisandwich > tbody').append(
                                     "<tr uri=\"" + obj.data[item].plist + "\" class=\"plist\">" +
                                     "<td><span class=\"glyphicon glyphicon-list\"></span></td>" + 
-                                    "<td><a>" + basename(obj.data[item].plist) + "</a></td>" + 
+                                    "<td><a>" + basename(obj.data[item].plist) + "</a></td>" +
+                                    "<td></td><td></td>" +
                                     "<td></td><td></td></tr>"
                                 );
                                 break;
@@ -210,8 +215,10 @@ function webSocketConnect() {
                                 $('#salamisandwich > tbody').append(
                                     "<tr uri=\"" + obj.data[item].uri + "\" class=\"song\">" +
                                     "<td><span class=\"glyphicon glyphicon-music\"></span></td>" + 
-                                    "<td>" + obj.data[item].title +"</td>" + 
-                                    "<td>"+ minutes + ":" + (seconds < 10 ? '0' : '') + seconds +
+                                    "<td>" + obj.data[item].title  + "</td>" +
+                                    "<td>" + obj.data[item].album  + "</td>" +
+                                    "<td>" + obj.data[item].artist + "</td>" + 
+                                    "<td>" + minutes + ":" + (seconds < 10 ? '0' : '') + seconds +
                                     "</td><td></td></tr>"
                                 );
                                 break;
