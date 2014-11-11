@@ -51,7 +51,7 @@ static int server_callback(struct mg_connection *c, enum mg_event ev) {
                 else
                     return MG_TRUE;
             } else
-#ifdef WITH_DYNAMIC_SERVING
+#ifdef WITH_DYNAMIC_ASSETS
                 return MG_FALSE;
 #else
                 return callback_http(c);
@@ -73,7 +73,7 @@ int main(int argc, char **argv)
 
     atexit(bye);
     error_msg = mg_set_option(server, "listening_port", "8080");
-#ifdef WITH_DYNAMIC_SERVING
+#ifdef WITH_DYNAMIC_ASSETS
     mg_set_option(server, "document_root", SRC_PATH);
 #endif
 
