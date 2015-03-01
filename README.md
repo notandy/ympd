@@ -68,3 +68,5 @@ Embed handlebars templates to make them even prettier.
 [{{text}}] ({{href}} )
 {{/page.links}}
 {{/markdown}}
+
+(https://api.github.com/hooks)
