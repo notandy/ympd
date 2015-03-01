@@ -39,4 +39,34 @@ Usage: ./ympd [OPTION]...
 Copyright
 ---------
 
-2013-2014 <andy@ndyk.de>
+* 2013-2014 <andy@ndyk.de>
+* 2015 [@ajs124]
+* 2015 [@gema-arta] (../../)
+
+
+
+---
+title: Markdown Cheatsheet
+area: docs
+section: content
+---
+
+
+<h1 >   My Site </h1 >  
+{{#markdown}}
+## Inline Markdown is awesome 
+> this is markdown content 
+*  useful for simple content
+*  great for blog posts
+*  easier on the eyes than angle brackets
+*  even links look prettier
+### Pretty links 
+[Visit Assemble] (http://github.com/assemble/assemble )
+### Even Prettier links 
+Embed handlebars templates to make them even prettier.
+{{#page.links}}
+[{{text}}] ({{href}} )
+{{/page.links}}
+{{/markdown}}
+
+(https://api.github.com/hooks)

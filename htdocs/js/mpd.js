@@ -314,7 +314,6 @@ function webSocketConnect() {
                         $('#btnrandom').addClass("active")
                     else
                         $('#btnrandom').removeClass("active");
-
                     if(obj.data.consume)
                         $('#btnconsume').addClass("active")
                     else
@@ -324,6 +323,11 @@ function webSocketConnect() {
                         $('#btnsingle').addClass("active")
                     else
                         $('#btnsingle').removeClass("active");
+
+                    if(obj.data.crossfade)
+                        $('#btncrossfade').addClass("active")
+                    else
+                        $('#btncrossfade').removeClass("active");
 
                     if(obj.data.repeat)
                         $('#btnrepeat').addClass("active")
@@ -481,12 +485,20 @@ $('#btnrandom').on('click', function (e) {
     socket.send("MPD_API_TOGGLE_RANDOM," + ($(this).hasClass('active') ? 0 : 1));
 
 });
+
+$('#btnshuffle').on('click', function (e) {
+    socket.send("MPD_API_SHUFFLE," + ($(this).hasClass('active') ? 0 : 1));
+
+});
 $('#btnconsume').on('click', function (e) {
     socket.send("MPD_API_TOGGLE_CONSUME," + ($(this).hasClass('active') ? 0 : 1));
 
 });
 $('#btnsingle').on('click', function (e) {
     socket.send("MPD_API_TOGGLE_SINGLE," + ($(this).hasClass('active') ? 0 : 1));
+});
+$('#btncrossfade').on('click', function(e) {
+    socket.send("MPD_API_TOGGLE_CROSSFADE," + ($(this).hasClass('active') ? 0 : 1));
 });
 $('#btnrepeat').on('click', function (e) {
     socket.send("MPD_API_TOGGLE_REPEAT," + ($(this).hasClass('active') ? 0 : 1));

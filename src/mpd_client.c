@@ -102,6 +102,10 @@ int callback_mpd(struct mg_connection *c)
             if(sscanf(c->content, "MPD_API_TOGGLE_SINGLE,%u", &uint_buf))
                 mpd_run_single(mpd.conn, uint_buf);
             break;
+        case MPD_API_TOGGLE_CROSSFADE:
+            if(sscanf(c->content, "MPD_API_TOGGLE_CROSSFADE,%u", &uint_buf))
+                mpd_run_crossfade(mpd.conn, uint_buf);
+            break;
         case MPD_API_SET_VOLUME:
             if(sscanf(c->content, "MPD_API_SET_VOLUME,%ud", &uint_buf) && uint_buf <= 100)
                 mpd_run_set_volume(mpd.conn, uint_buf);
@@ -151,6 +155,9 @@ int callback_mpd(struct mg_connection *c)
                 free(p_charbuf);
             }
             break;
+	case MPD_API_TOGGLE_SHUFFLE:
+                mpd_run_shuffle(mpd.conn);
+	break;
 #ifdef WITH_MPD_HOST_CHANGE
         /* Commands allowed when disconnected from MPD server */
         case MPD_API_SET_MPDHOST:
@@ -335,7 +342,7 @@ int mpd_put_state(char *buffer, int *current_song_id, unsigned *queue_version)
     len = snprintf(buffer, MAX_SIZE,
         "{\"type\":\"state\", \"data\":{"
         " \"state\":%d, \"volume\":%d, \"repeat\":%d,"
-        " \"single\":%d, \"consume\":%d, \"random\":%d, "
+        " \"single\":%d, \"crossfade\":%d, \"consume\":%d, \"random\":%d, "
         " \"songpos\": %d, \"elapsedTime\": %d, \"totalTime\":%d, "
         " \"currentsongid\": %d"
         "}}", 
@@ -343,6 +350,7 @@ int mpd_put_state(char *buffer, int *current_song_id, unsigned *queue_version)
         mpd_status_get_volume(status), 
         mpd_status_get_repeat(status),
         mpd_status_get_single(status),
+        mpd_status_get_crossfade(status),
         mpd_status_get_consume(status),
         mpd_status_get_random(status),
         mpd_status_get_song_pos(status),
