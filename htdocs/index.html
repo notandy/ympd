@@ -149,6 +149,9 @@
             <button type="button" class="btn btn-default" onclick="socket.send('MPD_API_RM_ALL');">
               <span class="glyphicon glyphicon-trash"></span> Clear queue
             </button>
+	    <button type="button" class="btn btn-default" onclick="socket.send('MPD_API_TOGGLE_SHUFFLE');">
+	      <span class="glyphicon glyphicon-random"></span> Shuffle queue
+            </button>
           </div>
 
   	      <div id="btn-responsive-block" class="btn-group-vertical btn-block btn-group-lg" data-toggle="buttons">
