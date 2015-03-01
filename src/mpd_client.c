@@ -151,6 +151,9 @@ int callback_mpd(struct mg_connection *c)
                 free(p_charbuf);
             }
             break;
+	case MPD_API_TOGGLE_SHUFFLE:
+                mpd_run_shuffle(mpd.conn);
+	break;
 #ifdef WITH_MPD_HOST_CHANGE
         /* Commands allowed when disconnected from MPD server */
         case MPD_API_SET_MPDHOST:

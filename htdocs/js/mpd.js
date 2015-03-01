@@ -314,7 +314,6 @@ function webSocketConnect() {
                         $('#btnrandom').addClass("active")
                     else
                         $('#btnrandom').removeClass("active");
-
                     if(obj.data.consume)
                         $('#btnconsume').addClass("active")
                     else
@@ -479,6 +478,11 @@ function basename(path) {
 
 $('#btnrandom').on('click', function (e) {
     socket.send("MPD_API_TOGGLE_RANDOM," + ($(this).hasClass('active') ? 0 : 1));
+
+});
+
+$('#btnshuffle').on('click', function (e) {
+    socket.send("MPD_API_SHUFFLE," + ($(this).hasClass('active') ? 0 : 1));
 
 });
 $('#btnconsume').on('click', function (e) {
