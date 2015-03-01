@@ -43,7 +43,8 @@ Copyright
 * 2015 @ajs124 
 * 2015 [@gema-arta]
 
-({{href}} )
+
+[{{text}}] ({{href}} )
 
 ---
 title: Markdown Cheatsheet
