@@ -40,3 +40,4 @@ Copyright
 ---------
 
 2013-2014 <andy@ndyk.de>
+2015 <ajs124> <gema-arta>
