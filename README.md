@@ -40,11 +40,10 @@ Copyright
 ---------
 
 * 2013-2014 <andy@ndyk.de>
-* 2015 @ajs124 
-* 2015 [@gema-arta]
+* 2015 [@ajs124]
+* 2015 [@gema-arta] (../../)
 
 
-[{{text}}] ({{href}} )
 
 ---
 title: Markdown Cheatsheet
