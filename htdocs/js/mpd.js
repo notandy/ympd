@@ -325,6 +325,11 @@ function webSocketConnect() {
                     else
                         $('#btnsingle').removeClass("active");
 
+                    if(obj.data.crossfade)
+                        $('#btncrossfade').addClass("active")
+                    else
+                        $('#btncrossfade').removeClass("active");
+
                     if(obj.data.repeat)
                         $('#btnrepeat').addClass("active")
                     else
@@ -487,6 +492,9 @@ $('#btnconsume').on('click', function (e) {
 });
 $('#btnsingle').on('click', function (e) {
     socket.send("MPD_API_TOGGLE_SINGLE," + ($(this).hasClass('active') ? 0 : 1));
+});
+$('#btncrossfade').on('click', function(e) {
+    socket.send("MPD_API_TOGGLE_CROSSFADE," + ($(this).hasClass('active') ? 0 : 1));
 });
 $('#btnrepeat').on('click', function (e) {
     socket.send("MPD_API_TOGGLE_REPEAT," + ($(this).hasClass('active') ? 0 : 1));
