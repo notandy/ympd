@@ -565,6 +565,13 @@ $('.page-btn').on('click', function (e) {
     e.preventDefault();
 });
 
+function addStream() {
+    if($('#streamurl').val().length > 0) {
+    	socket.send('MPD_API_ADD_TRACK,'+$('#streamurl').val());
+    }
+    $('#addstream').modal('hide');
+}
+
 function confirmSettings() {
     if($('#mpd_pw').val().length + $('#mpd_pw_con').val().length > 0) {
         if ($('#mpd_pw').val() !== $('#mpd_pw_con').val())
