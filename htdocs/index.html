@@ -40,6 +40,7 @@
         <ul id="nav_links" class="nav navbar-nav">
           <li id="queue"><a href="#/">Queue</a></li>
           <li id="browse"><a href="#/browse/0/">Browse database</a></li>
+          <li><a href="#" data-toggle="modal" data-target="#addstream">Add Stream</a></li>
           <li><a href="#" data-toggle="modal" data-target="#settings" onclick="getHost();">Settings</a></li>
         </ul>
 
@@ -212,6 +213,32 @@
         <div class="modal-footer">
           <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
           <button type="button" class="btn btn-default" onclick="confirmSettings();">Save</button>
+        </div>
+      </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+  </div><!-- /.modal -->
+
+  <!-- Modal -->
+  <div class="modal fade" id="addstream" tabindex="-1" role="dialog" aria-labelledby="addstreamLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+          <h2 class="modal-title" id="addstreamLabel"><span class="glyphicon glyphicon-wrench"></span> Add Stream</h2>
+        </div>
+        <div class="modal-body">
+          <form role="form">
+            <div class="row">
+              <div class="form-group col-md-9">
+                <label class="control-label" for="streamurl">Stream URL</label>
+                <input type="text" class="form-control" id="streamurl" />
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-default" onclick="addStream();">Add Stream</button>
         </div>
       </div><!-- /.modal-content -->
     </div><!-- /.modal-dialog -->
