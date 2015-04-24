@@ -274,8 +274,11 @@ void mpd_poll(struct mg_server *s)
 
             if (mpd_connection_get_error(mpd.conn) != MPD_ERROR_SUCCESS) {
                 fprintf(stderr, "MPD connection: %s\n", mpd_connection_get_error_message(mpd.conn));
-                mg_iterate_over_connections(s, mpd_notify_callback, 
-                    (void *)mpd_connection_get_error_message(mpd.conn));
+                for (struct mg_connection *c = mg_next(s, NULL); c != NULL; c = mg_next(s, c))
+                {
+                    c->callback_param = (void *)mpd_connection_get_error_message(mpd.conn);
+                    mpd_notify_callback(c, MG_POLL);
+                }
                 mpd.conn_state = MPD_FAILURE;
                 return;
             }
@@ -283,8 +286,11 @@ void mpd_poll(struct mg_server *s)
             if(mpd.password && !mpd_run_password(mpd.conn, mpd.password))
             {
                 fprintf(stderr, "MPD connection: %s\n", mpd_connection_get_error_message(mpd.conn));
-                mg_iterate_over_connections(s, mpd_notify_callback, 
-                    (void *)mpd_connection_get_error_message(mpd.conn));
+                for (struct mg_connection *c = mg_next(s, NULL); c != NULL; c = mg_next(s, c))
+                {
+                    c->callback_param = (void *)mpd_connection_get_error_message(mpd.conn);
+                    mpd_notify_callback(c, MG_POLL);
+                }
                 mpd.conn_state = MPD_FAILURE;
                 return;
             }
@@ -307,7 +313,11 @@ void mpd_poll(struct mg_server *s)
 
         case MPD_CONNECTED:
             mpd.buf_size = mpd_put_state(mpd.buf, &mpd.song_id, &mpd.queue_version);
-            mg_iterate_over_connections(s, mpd_notify_callback, NULL);
+            for (struct mg_connection *c = mg_next(s, NULL); c != NULL; c = mg_next(s, c))
+            {
+                c->callback_param = NULL;
+                mpd_notify_callback(c, MG_POLL);
+            }
             break;
     }
 }
