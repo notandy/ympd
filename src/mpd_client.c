@@ -219,8 +219,9 @@ out_host_change:
             if(mpd.password)
                 free(mpd.password);
 
-            mpd.password = token;
+            mpd.password = strdup(token);
             mpd.conn_state = MPD_RECONNECT;
+            free(p_charbuf);
             return MG_TRUE;
 out_set_pass:
             free(p_charbuf);
