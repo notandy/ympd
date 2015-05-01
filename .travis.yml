@@ -1,0 +1,14 @@
+language: c
+
+compiler: 
+  - gcc
+  - clang
+
+before_install:
+  - sudo apt-get install -qq libmpdclient-dev cmake
+  - mkdir build
+  - cd build
+  - cmake -D CMAKE_BUILD_TYPE=DEBUG ..
+
+script: make
+
