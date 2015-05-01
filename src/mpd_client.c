@@ -110,7 +110,7 @@ int callback_mpd(struct mg_connection *c)
                 mpd_run_crossfade(mpd.conn, uint_buf);
             break;
         case MPD_API_GET_OUTPUTS:
-            mpd.buf_size = mpd_put_outputnames(mpd.buf);
+            mpd.buf_size = mpd_put_outputs(mpd.buf, 1);
             c->callback_param = NULL;
             mpd_notify_callback(c, MG_POLL);
             break;
@@ -356,7 +356,7 @@ void mpd_poll(struct mg_server *s)
             mpd_connection_set_timeout(mpd.conn, 10000);
             mpd.conn_state = MPD_CONNECTED;
             /* write outputs */
-            mpd.buf_size = mpd_put_outputnames(mpd.buf);
+            mpd.buf_size = mpd_put_outputs(mpd.buf, 1);
             for (struct mg_connection *c = mg_next(s, NULL); c != NULL; c = mg_next(s, c))
             {
                 c->callback_param = NULL;
@@ -382,7 +382,7 @@ void mpd_poll(struct mg_server *s)
                 c->callback_param = NULL;
                 mpd_notify_callback(c, MG_POLL);
             }
-            mpd.buf_size = mpd_put_outputs(mpd.buf);
+            mpd.buf_size = mpd_put_outputs(mpd.buf, 0);
             for (struct mg_connection *c = mg_next(s, NULL); c != NULL; c = mg_next(s, c))
             {
                 c->callback_param = NULL;
@@ -441,43 +441,7 @@ int mpd_put_state(char *buffer, int *current_song_id, unsigned *queue_version)
     return len;
 }
 
-int mpd_put_outputs(char *buffer)
-{
-    struct mpd_output *out;
-    static int *outputs;
-    static int soutputs;
-    int idx, maxidx;
-    char *str, *strend;
-
-    maxidx = 0;
-    mpd_send_outputs(mpd.conn);
-    while ((out = mpd_recv_output(mpd.conn)) != NULL) {
-        idx = mpd_output_get_id(out);
-        if (idx >= soutputs) {
-            /* realloc some more */
-            soutputs = (idx + 1 + 15) & ~15; /* round up to 16 */
-            outputs = realloc(outputs, sizeof(*outputs)*soutputs);
-            if (!outputs)
-                exit(1);
-        }
-        if (idx > maxidx)
-            maxidx = idx;
-        outputs[idx] = mpd_output_get_enabled(out);
-        mpd_output_free(out);
-    }
-    mpd_response_finish(mpd.conn);
-
-    str = buffer;
-    strend = buffer+MAX_SIZE;
-    str += snprintf(str, strend-str, "{\"type\":\"outputs\", \"data\":{");
-    for (idx = 0; idx <= maxidx; ++idx)
-        str += snprintf(str, strend-str, "%c \"%d\":%d",
-                idx ? ',' : ' ', idx, outputs[idx]);
-    str += snprintf(str, strend-str, " }}");
-    return str-buffer;
-}
-
-int mpd_put_outputnames(char *buffer)
+int mpd_put_outputs(char *buffer, int names)
 {
     struct mpd_output *out;
     int nout;
@@ -485,16 +449,20 @@ int mpd_put_outputnames(char *buffer)
 
     str = buffer;
     strend = buffer+MAX_SIZE;
-    str += snprintf(str, strend-str, "{\"type\":\"outputnames\", \"data\":{");
+    str += snprintf(str, strend-str, "{\"type\":\"%s\", \"data\":{",
+            names ? "outputnames" : "output");
 
     mpd_send_outputs(mpd.conn);
     nout = 0;
     while ((out = mpd_recv_output(mpd.conn)) != NULL) {
         if (nout++)
             *str++ = ',';
-        str += snprintf(str, strend - str, " \"%d\":\"%s\"",
-                mpd_output_get_id(out),
-                mpd_output_get_name(out));
+        if (names)
+            str += snprintf(str, strend - str, " \"%d\":\"%s\"",
+                    mpd_output_get_id(out), mpd_output_get_name(out));
+        else
+            str += snprintf(str, strend-str, " \"%d\":%d",
+                    mpd_output_get_id(out), mpd_output_get_enabled(out));
         mpd_output_free(out);
     }
     mpd_response_finish(mpd.conn);
