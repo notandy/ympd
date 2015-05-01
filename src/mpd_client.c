@@ -465,7 +465,10 @@ int mpd_put_outputs(char *buffer, int names)
                     mpd_output_get_id(out), mpd_output_get_enabled(out));
         mpd_output_free(out);
     }
-    mpd_response_finish(mpd.conn);
+    if (!mpd_response_finish(mpd.conn)) {
+        mpd_connection_clear_error(mpd.conn);
+        return NULL;
+    }
     str += snprintf(str, strend-str, " }}");
     return str-buffer;
 }
