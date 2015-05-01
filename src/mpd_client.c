@@ -455,7 +455,7 @@ int mpd_put_outputs(char *buffer)
         idx = mpd_output_get_id(out);
         if (idx >= soutputs) {
             /* realloc some more */
-            soutputs = (idx + 15) & ~15; /* round up to 16 */
+            soutputs = (idx + 1 + 15) & ~15; /* round up to 16 */
             outputs = realloc(outputs, sizeof(*outputs)*soutputs);
             if (!outputs)
                 exit(1);
