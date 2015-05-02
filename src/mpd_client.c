@@ -466,8 +466,9 @@ int mpd_put_outputs(char *buffer, int names)
         mpd_output_free(out);
     }
     if (!mpd_response_finish(mpd.conn)) {
+        fprintf(stderr, "MPD outputs: %s\n", mpd_connection_get_error_message(mpd.conn));
         mpd_connection_clear_error(mpd.conn);
-        return NULL;
+        return 0;
     }
     str += snprintf(str, strend-str, " }}");
     return str-buffer;
