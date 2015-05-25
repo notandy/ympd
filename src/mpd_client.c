@@ -450,7 +450,7 @@ int mpd_put_outputs(char *buffer, int names)
     str = buffer;
     strend = buffer+MAX_SIZE;
     str += snprintf(str, strend-str, "{\"type\":\"%s\", \"data\":{",
-            names ? "outputnames" : "output");
+            names ? "outputnames" : "outputs");
 
     mpd_send_outputs(mpd.conn);
     nout = 0;
