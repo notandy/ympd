@@ -185,21 +185,25 @@ function webSocketConnect() {
                     if(current_app !== 'browse' && current_app !== 'search')
                         break;
 
+                    /* The use of encodeURI() below might seem useless, but it's not. It prevents
+                     * some browsers, such as Safari, from changing the normalization form of the
+                     * URI from NFD to NFC, breaking our link with MPD.
+                     */
                     for (var item in obj.data) {
                         switch(obj.data[item].type) {
                             case "directory":
                                 $('#salamisandwich > tbody').append(
-                                    "<tr uri=\"" + obj.data[item].dir + "\" class=\"dir\">" +
-                                    "<td><span class=\"glyphicon glyphicon-folder-open\"></span></td>" + 
-                                    "<td><a>" + basename(obj.data[item].dir) + "</a></td>" + 
+                                    "<tr uri=\"" + encodeURI(obj.data[item].dir) + "\" class=\"dir\">" +
+                                    "<td><span class=\"glyphicon glyphicon-folder-open\"></span></td>" +
+                                    "<td><a>" + basename(obj.data[item].dir) + "</a></td>" +
                                     "<td></td><td></td></tr>"
                                 );
                                 break;
                             case "playlist":
                                 $('#salamisandwich > tbody').append(
-                                    "<tr uri=\"" + obj.data[item].plist + "\" class=\"plist\">" +
-                                    "<td><span class=\"glyphicon glyphicon-list\"></span></td>" + 
-                                    "<td><a>" + basename(obj.data[item].plist) + "</a></td>" + 
+                                    "<tr uri=\"" + encodeURI(obj.data[item].plist) + "\" class=\"plist\">" +
+                                    "<td><span class=\"glyphicon glyphicon-list\"></span></td>" +
+                                    "<td><a>" + basename(obj.data[item].plist) + "</a></td>" +
                                     "<td></td><td></td></tr>"
                                 );
                                 break;
@@ -208,9 +212,9 @@ function webSocketConnect() {
                                 var seconds = obj.data[item].duration - minutes * 60;
 
                                 $('#salamisandwich > tbody').append(
-                                    "<tr uri=\"" + obj.data[item].uri + "\" class=\"song\">" +
-                                    "<td><span class=\"glyphicon glyphicon-music\"></span></td>" + 
-                                    "<td>" + obj.data[item].title +"</td>" + 
+                                    "<tr uri=\"" + encodeURI(obj.data[item].uri) + "\" class=\"song\">" +
+                                    "<td><span class=\"glyphicon glyphicon-music\"></span></td>" +
+                                    "<td>" + obj.data[item].title +"</td>" +
                                     "<td>"+ minutes + ":" + (seconds < 10 ? '0' : '') + seconds +
                                     "</td><td></td></tr>"
                                 );
