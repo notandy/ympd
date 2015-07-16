@@ -106,6 +106,13 @@ $(document).ready(function(){
         }
     });
 
+    $('#addstream').on('shown.bs.modal', function () {
+        $('#streamurl').focus();
+     })
+    $('#addstream form').on('submit', function (e) {
+        addStream();
+    });
+
     if(!notificationsSupported())
         $('#btnnotify').addClass("disabled");
     else
@@ -573,6 +580,7 @@ function addStream() {
     if($('#streamurl').val().length > 0) {
     	socket.send('MPD_API_ADD_TRACK,'+$('#streamurl').val());
     }
+    $('#streamurl').val("");
     $('#addstream').modal('hide');
 }
 
