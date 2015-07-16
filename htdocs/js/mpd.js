@@ -243,7 +243,7 @@ function webSocketConnect() {
                             "<span class=\"glyphicon glyphicon-" + glyphicon + "\"></span></a>")
                             .find('a').click(function(e) {
                                 e.stopPropagation();
-                                socket.send(onClickAction + "," + $(this).parents("tr").attr("uri"));
+                                socket.send(onClickAction + "," + decodeURI($(this).parents("tr").attr("uri")));
                             $('.top-right').notify({
                                 message:{
                                     text: $('td:nth-child(2)', $(this).parents("tr")).text() + " added"
@@ -264,7 +264,7 @@ function webSocketConnect() {
                                     app.setLocation("#/browse/0/"+$(this).attr("uri"));
                                     break;
                                 case 'song':
-                                    socket.send("MPD_API_ADD_TRACK," + $(this).attr("uri"));
+                                    socket.send("MPD_API_ADD_TRACK," + decodeURI($(this).attr("uri")));
                                     $('.top-right').notify({
                                         message:{
                                             text: $('td:nth-child(2)', this).text() + " added"
@@ -272,7 +272,7 @@ function webSocketConnect() {
                                     }).show();
                                     break;
                                 case 'plist':
-                                    socket.send("MPD_API_ADD_PLAYLIST," + $(this).attr("uri"));
+                                    socket.send("MPD_API_ADD_PLAYLIST," + decodeURI($(this).attr("uri")));
                                     $('.top-right').notify({
                                         message:{
                                             text: "Playlist " + $('td:nth-child(2)', this).text() + " added"
