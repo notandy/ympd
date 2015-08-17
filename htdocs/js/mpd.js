@@ -41,6 +41,7 @@ var app = $.sammy(function() {
     function prepare() {
         $('#nav_links > li').removeClass('active');
         $('.page-btn').addClass('hide');
+        $('#add-all-songs').hide();
         pagination = 0;
         browsepath = '';
     }
@@ -59,6 +60,15 @@ var app = $.sammy(function() {
         $('#breadcrump').removeClass('hide').empty().append("<li><a href=\"#/browse/0/\">root</a></li>");
         $('#salamisandwich').find("tr:gt(0)").remove();
         socket.send('MPD_API_GET_BROWSE,'+pagination+','+(browsepath ? browsepath : "/"));
+        // Don't add all songs from root
+        if (browsepath) {
+            var add_all_songs = $('#add-all-songs');
+            add_all_songs.off(); // remove previous binds
+            add_all_songs.on('click', function() {
+                socket.send('MPD_API_ADD_TRACK,'+browsepath);
+            });
+            add_all_songs.show();
+        }
 
         $('#panel-heading').text("Browse database: "+browsepath);
         var path_array = browsepath.split('/');
