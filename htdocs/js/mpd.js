@@ -115,107 +115,7 @@ var app = $.sammy(function() {
         dirble_catid = this.params['splat'][0];
         dirble_page = this.params['splat'][1];
 
-        $.getJSON( "http://api.dirble.com/v2/category/"+dirble_catid+"/stations?page="+dirble_page+"&per_page=20&token=2e223c9909593b94fc6577361a", function( data ) {
-
-            $('#dirble_loading').addClass('hide');
-            if (data.length == 20) $('#next').removeClass('hide');
-
-            var max = data.length - data.length%2;
-
-            for(i = 0; i < max; i+=2) {
-
-                $('#dirble_left > tbody').append(
-                    "<tr><td radioid=\""+data[i].id+"\">"+data[i].name+"</td></tr>"
-                );
-                $('#dirble_right > tbody').append(
-                    "<tr><td radioid=\""+data[i+1].id+"\">"+data[i+1].name+"</td></tr>"
-                );
-            }
-
-            if (max != data.length) {
-                $('#dirble_left > tbody').append(
-                    "<tr><td radioid=\""+data[max].id+"\">"+data[max].name+"</td></tr>"
-                );
-            }
-
-            $('#dirble_left > tbody > tr > td').on({
-                click: function() {
-                    var _this = $(this);
-
-                    $.getJSON( "http://api.dirble.com/v2/station/"+$(this).attr("radioid")+"?token=2e223c9909593b94fc6577361a", function( data ) {
-
-                        socket.send("MPD_API_ADD_TRACK," + data.streams[0].stream);
-                        $('.top-right').notify({
-                            message:{
-                                text: _this.text() + " added"
-                            }
-                        }).show();
-                    });
-                },
-                mouseenter: function() {
-                    var _this = $(this);
-
-                    $(this).last().append(
-                    "<a role=\"button\" class=\"pull-right btn-group-hover\">" +
-                    "<span class=\"glyphicon glyphicon-play\"></span></a>").find('a').click(function(e) {
-                        e.stopPropagation();
-
-                        $.getJSON( "http://api.dirble.com/v2/station/"+_this.attr("radioid")+"?token=2e223c9909593b94fc6577361a", function( data ) {
-
-                            socket.send("MPD_API_ADD_PLAY_TRACK," + data.streams[0].stream);
-                            $('.top-right').notify({
-                                message:{
-                                    text: _this.text() + " added"
-                                }
-                            }).show();
-                        });
-                    }).fadeTo('fast',1);
-                },
-
-                mouseleave: function(){
-                    $(this).last().find("a").stop().remove();
-                }
-            });
-
-            $('#dirble_right> tbody > tr > td').on({
-                click: function() {
-                    var _this = $(this);
-
-                    $.getJSON( "http://api.dirble.com/v2/station/"+$(this).attr("radioid")+"?token=2e223c9909593b94fc6577361a", function( data ) {
-
-                        socket.send("MPD_API_ADD_TRACK," + data.streams[0].stream);
-                        $('.top-right').notify({
-                            message:{
-                                text: _this.text() + " added"
-                            }
-                        }).show();
-                    });
-                },
-                mouseenter: function() {
-                    var _this = $(this);
-
-                    $(this).last().append(
-                    "<a role=\"button\" class=\"pull-right btn-group-hover\">" +
-                    "<span class=\"glyphicon glyphicon-play\"></span></a>").find('a').click(function(e) {
-                        e.stopPropagation();
-
-                        $.getJSON( "http://api.dirble.com/v2/station/"+_this.attr("radioid")+"?token=2e223c9909593b94fc6577361a", function( data ) {
-
-                            socket.send("MPD_API_ADD_PLAY_TRACK," + data.streams[0].stream);
-                            $('.top-right').notify({
-                                message:{
-                                    text: _this.text() + " added"
-                                }
-                            }).show();
-                        });
-                    }).fadeTo('fast',1);
-                },
-
-                mouseleave: function(){
-                    $(this).last().find("a").stop().remove();
-                }
-            });
-        });
+        dirble_load_stations();
     });
 
 
@@ -232,54 +132,7 @@ var app = $.sammy(function() {
         $('#panel-heading').text("Dirble");
         $('#dirble').addClass('active');
 
-        $('#prev').addClass('hide');
-        $('#next').addClass('hide');
-
-        dirble_page = 1;
-
-        $.getJSON( "http://api.dirble.com/v2/categories?token=2e223c9909593b94fc6577361a", function( data ) {
-
-            $('#dirble_loading').addClass('hide');
-
-            data = data.sort(function(a, b) {
-                return (a.title > b.title) ? 1 : 0;
-            });
-
-            var max = data.length - data.length%2;
-
-            for(i = 0; i < max; i+=2) {
-
-                $('#dirble_left > tbody').append(
-                    "<tr><td catid=\""+data[i].id+"\">"+data[i].title+"</td></tr>"
-                );
-
-                $('#dirble_right > tbody').append(
-                    "<tr><td catid=\""+data[i+1].id+"\">"+data[i+1].title+"</td></tr>"
-                );
-            }
-
-            if (max != data.length) {
-                $('#dirble_left > tbody').append(
-                    "<tr><td catid=\""+data[max].id+"\">"+data[max].title+"</td></tr>"
-                );
-            }
-
-            $('#dirble_left > tbody > tr > td').on({
-                click: function() {
-                    dirble_selected_cat = $(this).text();
-                    dirble_catid = $(this).attr("catid");
-                    app.setLocation("#/dirble/"+dirble_catid+"/"+dirble_page);
-                }
-            });
-
-            $('#dirble_right > tbody > tr > td').on({
-                click: function() {
-                    dirble_selected_cat = $(this).text();
-                    dirble_catid = $(this).attr("catid");
-                    app.setLocation("#/dirble/"+dirble_catid+"/"+dirble_page);
-                }
-            });
-        });
+        dirble_load_categories();
     });
 
     this.get("/", function(context) {
@@ -833,4 +686,160 @@ function songNotify(title, artist, album) {
     setTimeout(function(notification) {
         notification.close();
     }, 3000, notification);
+}
+
+
+function dirble_load_categories() {
+
+    dirble_page = 1;
+
+    $.getJSON( "http://api.dirble.com/v2/categories?token=2e223c9909593b94fc6577361a", function( data ) {
+
+        $('#dirble_loading').addClass('hide');
+
+        data = data.sort(function(a, b) {
+            return (a.title > b.title) ? 1 : 0;
+        });
+
+        var max = data.length - data.length%2;
+
+        for(i = 0; i < max; i+=2) {
+
+            $('#dirble_left > tbody').append(
+                "<tr><td catid=\""+data[i].id+"\">"+data[i].title+"</td></tr>"
+            );
+
+            $('#dirble_right > tbody').append(
+                "<tr><td catid=\""+data[i+1].id+"\">"+data[i+1].title+"</td></tr>"
+            );
+        }
+
+        if (max != data.length) {
+            $('#dirble_left > tbody').append(
+                "<tr><td catid=\""+data[max].id+"\">"+data[max].title+"</td></tr>"
+            );
+        }
+
+        $('#dirble_left > tbody > tr > td').on({
+            click: function() {
+                dirble_selected_cat = $(this).text();
+                dirble_catid = $(this).attr("catid");
+                app.setLocation("#/dirble/"+dirble_catid+"/"+dirble_page);
+            }
+        });
+
+        $('#dirble_right > tbody > tr > td').on({
+            click: function() {
+                dirble_selected_cat = $(this).text();
+                dirble_catid = $(this).attr("catid");
+                app.setLocation("#/dirble/"+dirble_catid+"/"+dirble_page);
+            }
+        });
+    });
+}
+
+
+function dirble_load_stations() {
+
+    $.getJSON( "http://api.dirble.com/v2/category/"+dirble_catid+"/stations?page="+dirble_page+"&per_page=20&token=2e223c9909593b94fc6577361a", function( data ) {
+
+        $('#dirble_loading').addClass('hide');
+        if (data.length == 20) $('#next').removeClass('hide');
+
+        var max = data.length - data.length%2;
+
+        for(i = 0; i < max; i+=2) {
+
+            $('#dirble_left > tbody').append(
+                "<tr><td radioid=\""+data[i].id+"\">"+data[i].name+"</td></tr>"
+            );
+            $('#dirble_right > tbody').append(
+                "<tr><td radioid=\""+data[i+1].id+"\">"+data[i+1].name+"</td></tr>"
+            );
+        }
+
+        if (max != data.length) {
+            $('#dirble_left > tbody').append(
+                "<tr><td radioid=\""+data[max].id+"\">"+data[max].name+"</td></tr>"
+            );
+        }
+
+        $('#dirble_left > tbody > tr > td').on({
+            click: function() {
+                var _this = $(this);
+
+                $.getJSON( "http://api.dirble.com/v2/station/"+$(this).attr("radioid")+"?token=2e223c9909593b94fc6577361a", function( data ) {
+
+                    socket.send("MPD_API_ADD_TRACK," + data.streams[0].stream);
+                    $('.top-right').notify({
+                        message:{
+                            text: _this.text() + " added"
+                        }
+                    }).show();
+                });
+            },
+            mouseenter: function() {
+                var _this = $(this);
+
+                $(this).last().append(
+                "<a role=\"button\" class=\"pull-right btn-group-hover\">" +
+                "<span class=\"glyphicon glyphicon-play\"></span></a>").find('a').click(function(e) {
+                    e.stopPropagation();
+
+                    $.getJSON( "http://api.dirble.com/v2/station/"+_this.attr("radioid")+"?token=2e223c9909593b94fc6577361a", function( data ) {
+
+                        socket.send("MPD_API_ADD_PLAY_TRACK," + data.streams[0].stream);
+                        $('.top-right').notify({
+                            message:{
+                                text: _this.text() + " added"
+                            }
+                        }).show();
+                    });
+                }).fadeTo('fast',1);
+            },
+
+            mouseleave: function(){
+                $(this).last().find("a").stop().remove();
+            }
+        });
+
+        $('#dirble_right> tbody > tr > td').on({
+            click: function() {
+                var _this = $(this);
+
+                $.getJSON( "http://api.dirble.com/v2/station/"+$(this).attr("radioid")+"?token=2e223c9909593b94fc6577361a", function( data ) {
+
+                    socket.send("MPD_API_ADD_TRACK," + data.streams[0].stream);
+                    $('.top-right').notify({
+                        message:{
+                            text: _this.text() + " added"
+                        }
+                    }).show();
+                });
+            },
+            mouseenter: function() {
+                var _this = $(this);
+
+                $(this).last().append(
+                "<a role=\"button\" class=\"pull-right btn-group-hover\">" +
+                "<span class=\"glyphicon glyphicon-play\"></span></a>").find('a').click(function(e) {
+                    e.stopPropagation();
+
+                    $.getJSON( "http://api.dirble.com/v2/station/"+_this.attr("radioid")+"?token=2e223c9909593b94fc6577361a", function( data ) {
+
+                        socket.send("MPD_API_ADD_PLAY_TRACK," + data.streams[0].stream);
+                        $('.top-right').notify({
+                            message:{
+                                text: _this.text() + " added"
+                            }
+                        }).show();
+                    });
+                }).fadeTo('fast',1);
+            },
+
+            mouseleave: function(){
+                $(this).last().find("a").stop().remove();
+            }
+        });
+    });
 }
