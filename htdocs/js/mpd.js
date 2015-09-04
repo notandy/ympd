@@ -223,7 +223,7 @@ function webSocketConnect() {
                         "</td><td></td></tr>");
                     }
 
-                    if(obj.data[obj.data.length-1].pos + 1 >= pagination + MAX_ELEMENTS_PER_PAGE)
+                    if(obj.data.length && obj.data[obj.data.length-1].pos + 1 >= pagination + MAX_ELEMENTS_PER_PAGE)
                         $('#next').removeClass('hide');
                     if(pagination > 0)
                         $('#prev').removeClass('hide');
@@ -246,6 +246,22 @@ function webSocketConnect() {
                             $(this).children().last().find("a").stop().remove();
                         }
                     });
+                    //Helper function to keep table row from collapsing when being sorted
+                    var fixHelperModified = function(e, tr) {
+                      var $originals = tr.children();
+                      var $helper = tr.clone();
+                      $helper.children().each(function(index)
+                      {
+                        $(this).width($originals.eq(index).width())
+                      });
+                      return $helper;
+                    };
+                    
+                    //Make queue table sortable
+                    $("#salamisandwich > tbody").sortable({
+                      helper: fixHelperModified,
+                      stop: function(event,ui) {renumber_table('#salamisandwich',ui.item)}
+                    }).disableSelection();
                     break;
                 case "search":
                     $('#wait').modal('hide');
@@ -257,6 +273,7 @@ function webSocketConnect() {
                      * some browsers, such as Safari, from changing the normalization form of the
                      * URI from NFD to NFC, breaking our link with MPD.
                      */
+                    $('#salamisandwich > tbody').sortable('destroy');
                     for (var item in obj.data) {
                         switch(obj.data[item].type) {
                             case "directory":
@@ -572,6 +589,16 @@ function clickPlay() {
         socket.send('MPD_API_SET_PLAY');
     else
         socket.send('MPD_API_SET_PAUSE');
+}
+
+function renumber_table(tableID,item) {
+    was = item.children("td").first().text();//Check if first item exists!
+    is = item.index() + 1;//maybe add pagination
+
+    if (was != is) {
+        socket.send("MPD_API_MOVE_TRACK," + was + "," + is);
+        socket.send('MPD_API_GET_QUEUE,'+pagination);
+    }
 }
 
 function basename(path) {
