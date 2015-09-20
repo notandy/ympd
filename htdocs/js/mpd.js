@@ -638,3 +638,23 @@ function songNotify(title, artist, album) {
         notification.close();
     }, 3000, notification);
 }
+
+$(document).keydown(function(e){
+    if (e.target.tagName == 'INPUT') {
+        return;
+    }
+    switch (e.which) {
+        case 37: //left
+            socket.send('MPD_API_SET_PREV');
+            break;
+        case 39: //right
+            socket.send('MPD_API_SET_NEXT');
+            break;
+        case 32: //space
+            clickPlay();
+            break;
+        default:
+            return;
+    }
+    e.preventDefault();
+});
