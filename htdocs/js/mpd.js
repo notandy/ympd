@@ -18,6 +18,7 @@
 
 var socket;
 var last_state;
+var last_outputs;
 var current_app;
 var pagination = 0;
 var browsepath;
@@ -147,6 +148,8 @@ function webSocketConnect() {
             }).show();
 
             app.run();
+            /* emit initial request for output names */
+            socket.send("MPD_API_GET_OUTPUTS");
         }
 
         socket.onmessage = function got_packet(msg) {
@@ -358,6 +361,26 @@ function webSocketConnect() {
 
                     last_state = obj;
                     break;
+                case "outputnames":
+                    $('#btn-outputs-block button').remove();
+                    $.each(obj.data, function(id, name){
+                        var btn = $('<button id="btnoutput'+id+'" class="btn btn-default" onclick="toggleoutput(this, '+id+')"><span class="glyphicon glyphicon-volume-up"></span> '+name+'</button>');
+                        btn.appendTo($('#btn-outputs-block'));
+                    });
+                    /* remove cache, since the buttons have been recreated */
+                    last_outputs = '';
+                    break;
+                case "outputs":
+                    if(JSON.stringify(obj) === JSON.stringify(last_outputs))
+                        break;
+                    $.each(obj.data, function(id, enabled){
+                        if (enabled)
+                        $('#btnoutput'+id).addClass("active");
+                        else
+                        $('#btnoutput'+id).removeClass("active");
+                    });
+                    last_outputs = obj;
+                    break;
                 case "disconnected":
                     if($('.top-right').has('div').length == 0)
                         $('.top-right').notify({
@@ -520,6 +543,10 @@ $('#btncrossfade').on('click', function(e) {
 $('#btnrepeat').on('click', function (e) {
     socket.send("MPD_API_TOGGLE_REPEAT," + ($(this).hasClass('active') ? 0 : 1));
 });
+
+function toggleoutput(button, id) {
+    socket.send("MPD_API_TOGGLE_OUTPUT,"+id+"," + ($(button).hasClass('active') ? 0 : 1));
+}
 
 $('#btnnotify').on('click', function (e) {
     if($.cookie("notification") === "true") {
