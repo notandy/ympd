@@ -586,6 +586,13 @@ function addStream() {
     $('#addstream').modal('hide');
 }
 
+function saveQueue() {
+    if($('#playlistname').val().length > 0) {
+    	socket.send('MPD_API_SAVE_QUEUE,'+$('#playlistname').val());
+    }
+    $('#savequeue').modal('hide');
+}
+
 function confirmSettings() {
     if($('#mpd_pw').val().length + $('#mpd_pw_con').val().length > 0) {
         if ($('#mpd_pw').val() !== $('#mpd_pw_con').val())

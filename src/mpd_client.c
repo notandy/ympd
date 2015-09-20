@@ -169,6 +169,18 @@ out_play_track:
 out_playlist:
             free(p_charbuf);
             break;
+        case MPD_API_SAVE_QUEUE:
+            p_charbuf = strdup(c->content);
+            if(strcmp(strtok(p_charbuf, ","), "MPD_API_SAVE_QUEUE"))
+                goto out_save_queue;
+
+            if((token = strtok(NULL, ",")) == NULL)
+                goto out_save_queue;
+
+            mpd_run_save(mpd.conn, token);
+out_save_queue:
+            free(p_charbuf);
+            break;
         case MPD_API_SEARCH:
             p_charbuf = strdup(c->content);
             if(strcmp(strtok(p_charbuf, ","), "MPD_API_SEARCH"))
