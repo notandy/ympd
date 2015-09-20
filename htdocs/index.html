@@ -34,6 +34,7 @@
         <ul id="nav_links" class="nav navbar-nav">
           <li id="queue"><a href="#/">Queue</a></li>
           <li id="browse"><a href="#/browse/0/">Browse database</a></li>
+          <li id="dirble"><a href="#/dirble/">Dirble</a></li>
           <li><a href="#" data-toggle="modal" data-target="#addstream">Add Stream</a></li>
           <li><a href="#" data-toggle="modal" data-target="#settings" onclick="getHost();">Settings</a></li>
         </ul>
@@ -115,6 +116,29 @@
             <tbody>
             </tbody>
           </table>
+
+          <div id="dirble_panel">
+            <p id="dirble_loading" style="font-size:16px;font-weight:bold;margin-left:4em;">Loading...</p>
+            <table style="float:right; width:44%; margin-right:4%;" id="dirble_right" class="table table-hover">
+                <thead>
+                <tr>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+            <table style="width:44%; margin-left:4%;" id="dirble_left" class="table table-hover">
+                <thead>
+                <tr>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+
         </div><!-- /.panel -->
         <ul class="pager">
           <li id="prev" class="page-btn hide"><a href="">Previous</a></li>
