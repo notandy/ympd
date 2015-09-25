@@ -169,9 +169,6 @@
           </div>
 
           <div id="btn-responsive-block" class="btn-group-vertical btn-block btn-group-lg">
-            <button type="button" class="btn btn-default" onclick="updateDB();">
-              <span class="glyphicon glyphicon-refresh"></span> Update DB
-            </button>
             <button type="button" class="btn btn-default" onclick="socket.send('MPD_API_RM_ALL');">
               <span class="glyphicon glyphicon-trash"></span> Clear queue
             </button>
@@ -235,6 +232,13 @@
                 </div>
               </div>
 
+            </div>
+            <div class="row">
+              <div class="form-group col-md-12">
+                <button type="button" class="btn btn-default" onclick="updateDB();">
+                  <span class="glyphicon glyphicon-refresh"></span> Update DB
+                </button>
+              </div>
             </div>
           </form>
         </div>
