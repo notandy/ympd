@@ -23,7 +23,7 @@ include_directories(${PROJECT_BINARY_DIR} ${PROJECT_SOURCE_DIR}	${LIBMPDCLIENT_I
 
 include(CheckCSourceCompiles)
 
-set(CMAKE_C_FLAGS "-std=gnu99 -Wall")
+set(CMAKE_C_FLAGS "-std=gnu99 -Wall -DNS_ENABLE_SSL -lssl ")
 set(CMAKE_C_FLAGS_DEBUG "-ggdb -pedantic")
 if(WITH_IPV6)
     set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS NS_ENABLE_IPV6)
