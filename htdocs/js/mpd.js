@@ -273,7 +273,9 @@ function webSocketConnect() {
                      * some browsers, such as Safari, from changing the normalization form of the
                      * URI from NFD to NFC, breaking our link with MPD.
                      */
-                    $('#salamisandwich > tbody').sortable('destroy');
+                    if ($('#salamisandwich > tbody').is(':ui-sortable')) {
+                        $('#salamisandwich > tbody').sortable('destroy');
+                    }
                     for (var item in obj.data) {
                         switch(obj.data[item].type) {
                             case "directory":
