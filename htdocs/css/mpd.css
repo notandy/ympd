@@ -15,6 +15,14 @@ body {
   margin-bottom: 0;
 }
 
+#localvolumeslider {
+  width: 150px;
+}
+
+#localvolumeslider .progress {
+  margin-bottom: 0;
+}
+
 #volume-icon {
   float: left;
   margin-right: 10px;
