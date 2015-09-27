@@ -14,6 +14,7 @@ endif()
 option(WITH_MPD_HOST_CHANGE "Let users of the web frontend change the MPD Host" ON)
 option(WITH_DYNAMIC_ASSETS "Serve assets dynamically (e.g for development/packaging)" OFF)
 option(WITH_IPV6 "enable IPv6 support" ON)
+option(WITH_SSL "enable SSL support" ON)
 
 find_package(LibMPDClient REQUIRED)
 find_package(Threads REQUIRED)
@@ -23,10 +24,16 @@ include_directories(${PROJECT_BINARY_DIR} ${PROJECT_SOURCE_DIR}	${LIBMPDCLIENT_I
 
 include(CheckCSourceCompiles)
 
-set(CMAKE_C_FLAGS "-std=gnu99 -Wall -DNS_ENABLE_SSL -lssl ")
+set(CMAKE_C_FLAGS "-std=gnu99 -Wall")
 set(CMAKE_C_FLAGS_DEBUG "-ggdb -pedantic")
 if(WITH_IPV6)
     set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS NS_ENABLE_IPV6)
+endif()
+if(WITH_SSL)
+	find_package(OpenSSL REQUIRED)
+	include_directories(${OPENSSL_INCLUDE_DIR})
+#    list(APPEND LIB_LIST ${OPENSSL_LIBRARIES})
+    set_property(DIRECTORY APPEND PROPERTY COMPILE_DEFINITIONS NS_ENABLE_SSL)
 endif()
 
 file(GLOB RESOURCES 
@@ -63,7 +70,7 @@ if(NOT WITH_DYNAMIC_ASSETS)
 endif()
 
 add_executable(ympd ${SOURCES})
-target_link_libraries(ympd ${LIBMPDCLIENT_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(ympd ${LIBMPDCLIENT_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} ${OPENSSL_LIBRARIES})
 
 install(TARGETS ympd DESTINATION bin)
 install(FILES ympd.1 DESTINATION ${CMAKE_INSTALL_PREFIX}/share/man/man1)
