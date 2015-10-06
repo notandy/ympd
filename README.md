@@ -28,6 +28,8 @@ Run flags
 ```
 Usage: ./ympd [OPTION]...
 
+ -d, --digest <htdigest>    path to htdigest file for authorization
+                            (realm ympd) [no authorization]
  -h, --host <host>          connect to mpd at host [localhost]
  -p, --port <port>          connect to mpd at port [6600]
  -w, --webport [ip:]<port>  listen interface/port for webserver [8080]
