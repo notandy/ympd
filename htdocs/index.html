@@ -39,13 +39,7 @@
           <li><a href="#" data-toggle="modal" data-target="#settings" onclick="getHost();">Settings</a></li>
         </ul>
 
-        <form id="search" class="navbar-form navbar-right" role="search">
-          <div class="form-group">
-            <input type="text" class="form-control" placeholder="Search">
-         </div>
-        </form>
         <div class="btn-toolbar navbar-btn navbar-right" role="toolbar">
-          
           <div class="btn-group">
             <button type="button" class="btn btn-default" onclick="socket.send('MPD_API_SET_PREV');">
               <span class="glyphicon glyphicon-backward"></span>
@@ -65,21 +59,20 @@
             </div>
           </div>
           
-          <audio id="player" preload="none" src="http://mpd:8000/"></audio>
           <div class="btn-group">
-            <button type="button" class="btn btn-default" onclick="clickLocalStop()">
-              <span id="stop-icon" class="glyphicon glyphicon-stop"></span>
-            </button>
+            <audio id="player" preload="none"></audio>
+            <input type="hidden" id="localstream" value="" />
             <button type="button" class="btn btn-default" onclick="clickLocalPlay()">
-              <span id="play-icon" class="glyphicon glyphicon-play"></span>
+              <span id="localplay-icon" class="glyphicon glyphicon-play"></span>
             </button>
-            <div class="btn btn-toolbar btn-default">
-              <span id="volume-icon" class="glyphicon glyphicon-volume-up"></span>
-              <div id="localvolumeslider"></div>
-            </div>
           </div>
           
         </div>
+        <form id="search" class="navbar-form navbar-right" role="search">
+          <div class="form-group">
+            <input type="text" class="form-control" placeholder="Search">
+         </div>
+        </form>
       </div><!--/.nav-collapse -->
     </div>
   </div>
@@ -248,7 +241,12 @@
                   MPD Password is set
                 </div>
               </div>
-
+            </div>
+            <div class="row">
+              <div class="form-group col-md-12">
+                <label class="control-label" for="mpdstream">MPD Stream URL</label>
+                <input type="text" class="form-control" id="mpdstream" />
+              </div>
             </div>
           </form>
         </div>
