@@ -62,7 +62,8 @@ static int server_callback(struct mg_connection *c, enum mg_event ev) {
                 return callback_http(c);
 #endif
         case MG_AUTH:
-            if ( gpass == NULL )
+            // no auth for websockets since mobile safari does not support it
+            if ( (gpass == NULL) || (c->is_websocket) )
                 return MG_TRUE;
             else {
                 if ( (fp = fopen(gpass, "r")) != NULL ) {
