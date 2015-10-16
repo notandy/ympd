@@ -488,6 +488,7 @@ function webSocketConnect() {
                     break;
                 case "mpdhost":
                     $('#mpdhost').val(obj.data.host);
+                    setLocalStream(obj.data.host);
                     $('#mpdport').val(obj.data.port);
                     if(obj.data.passwort_set)
                         $('#mpd_password_set').removeClass('hide');
@@ -603,6 +604,45 @@ function renumber_table(tableID,item) {
     }
 }
 
+function clickLocalPlay() {
+    var player = document.getElementById('player');
+    $("#localplay-icon").removeClass("glyphicon-play").removeClass("glyphicon-pause");
+
+    if ( player.paused ) {
+        if ( $("#localstream").val() == "" ) {
+            $("#localstream").change(function(){ clickLocalPlay(); $(this).unbind("change"); });
+            $("#localplay-icon").addClass("glyphicon-play");
+            getHost();
+            return;
+        }
+        player.src = $("#localstream").val();
+        console.log("playing mpd stream: " + player.src);
+        player.load();
+        player.play();
+        $("#localplay-icon").addClass("glyphicon-pause");
+    } else {
+        player.pause();
+        player.src='';
+        player.removeAttribute("src");
+        $("#localplay-icon").addClass("glyphicon-play");
+    }
+}
+
+function setLocalStream(mpdhost) {
+    if ( $("#localstream").val() != "" )
+        return;
+
+    var mpdstream = "http://";
+    if ( mpdhost == "127.0.0.1" )
+        mpdstream += window.location.hostname;
+    else
+        mpdstream += mpdhost;
+    mpdstream += ":8000/";
+    $("#mpdstream").val(mpdstream);
+    $("#localstream").val(mpdstream);
+    $("#localstream").change();
+}
+
 function basename(path) {
     return path.split('/').reverse()[0];
 }
@@ -657,6 +697,7 @@ function getHost() {
 
     $('#mpdhost').keypress(onEnter);
     $('#mpdport').keypress(onEnter);
+    $('#mpdstream').keypress(onEnter);
     $('#mpd_pw').keypress(onEnter);
     $('#mpd_pw_con').keypress(onEnter);
 }
@@ -729,6 +770,7 @@ function confirmSettings() {
             socket.send('MPD_API_SET_MPDPASS,'+$('#mpd_pw').val());
     }
     socket.send('MPD_API_SET_MPDHOST,'+$('#mpdport').val()+','+$('#mpdhost').val());
+    $("#localstream").val($("#mpdstream").val());
     $('#settings').modal('hide');
 }
 
