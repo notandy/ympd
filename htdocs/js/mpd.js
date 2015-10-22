@@ -353,7 +353,10 @@ function webSocketConnect() {
                         click: function() {
                             switch($(this).attr('class')) {
                                 case 'dir':
-                                    app.setLocation("#/browse/0/"+$(this).attr("uri"));
+                                    pagination = 0;
+                                    browsepath = $(this).attr("uri");
+                                    $("#browse > a").attr("href", '#/browse/'+pagination+'/'+browsepath);
+                                    app.setLocation('#/browse/'+pagination+'/'+browsepath);
                                     break;
                                 case 'song':
                                     socket.send("MPD_API_ADD_TRACK," + decodeURI($(this).attr("uri")));
