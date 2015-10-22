@@ -61,12 +61,16 @@
               <div id="volumeslider"></div>
             </div>
           </div>
+        </div>
           
+        <div class="btn-toolbar navbar-btn navbar-right" role="toolbar">
           <audio id="player" preload="none"></audio>
-          <input type="hidden" id="localstream" value="" />
           <div class="btn-group" role="group">
             <button type="button" class="btn btn-default" onclick="clickLocalPlay()">
               <span id="localplay-icon" class="glyphicon glyphicon-play"></span>
+            </button>
+            <button type="button" class="btn btn-default" onclick="window.open('/player.html');">
+              <span id="localplay-icon" class="glyphicon glyphicon-new-window"></span>
             </button>
           </div>
         </div>
