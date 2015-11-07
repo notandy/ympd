@@ -82,6 +82,7 @@ int main(int argc, char **argv)
 
     static struct option long_options[] = {
         {"host",         required_argument, 0, 'h'},
+        {"password",     required_argument, 0, 'P'},
         {"port",         required_argument, 0, 'p'},
         {"webport",      required_argument, 0, 'w'},
         {"user",         required_argument, 0, 'u'},
@@ -90,7 +91,7 @@ int main(int argc, char **argv)
         {0,              0,                 0,  0 }
     };
 
-    while((n = getopt_long(argc, argv, "h:p:w:u:v",
+    while((n = getopt_long(argc, argv, "h:p:P:w:u:v",
                 long_options, &option_index)) != -1) {
         switch (n) {
             case 'h':
@@ -98,6 +99,9 @@ int main(int argc, char **argv)
                 break;
             case 'p':
                 mpd.port = atoi(optarg);
+                break;
+            case 'P':
+                mpd.password = strdup(optarg);
                 break;
             case 'w':
                 webport = strdup(optarg);
@@ -116,6 +120,7 @@ int main(int argc, char **argv)
                 fprintf(stderr, "Usage: %s [OPTION]...\n\n"
                         " -h, --host <host>\t\tconnect to mpd at host [localhost]\n"
                         " -p, --port <port>\t\tconnect to mpd at port [6600]\n"
+                        " -P, --password <password>\tuse password to authenticate to mpd []\n"
                         " -w, --webport [ip:]<port>\tlisten interface/port for webserver [8080]\n"
                         " -u, --user <username>\t\tdrop priviliges to user after socket bind\n"
                         " -V, --version\t\t\tget version\n"
