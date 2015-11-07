@@ -30,6 +30,7 @@ Usage: ./ympd [OPTION]...
 
  -h, --host <host>          connect to mpd at host [localhost]
  -p, --port <port>          connect to mpd at port [6600]
+ -P, --password <password>  use password to authenticate to mpd []
  -w, --webport [ip:]<port>  listen interface/port for webserver [8080]
  -u, --user <username>      drop priviliges to user after socket bind
  -V, --version              get version
