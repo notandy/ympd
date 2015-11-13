@@ -96,7 +96,7 @@ int main(int argc, char **argv)
     strcpy(mpd.host, "127.0.0.1");
 
     static struct option long_options[] = {
-        {"digest",       optional_argument, 0, 'd'},
+        {"digest",       required_argument, 0, 'd'},
         {"host",         required_argument, 0, 'h'},
         {"port",         required_argument, 0, 'p'},
         {"webport",      required_argument, 0, 'w'},
