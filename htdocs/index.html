@@ -35,7 +35,9 @@
         <ul id="nav_links" class="nav navbar-nav">
           <li id="queue"><a href="#/">Queue</a></li>
           <li id="browse"><a href="#/browse/0/">Browse database</a></li>
+<!--
           <li id="dirble"><a href="#/dirble/">Dirble</a></li>
+-->
           <li><a href="#" data-toggle="modal" data-target="#addstream">Add Stream</a></li>
           <li><a href="#" data-toggle="modal" data-target="#settings" onclick="getHost();">Settings</a></li>
         </ul>
@@ -55,18 +57,16 @@
               <span class="glyphicon glyphicon-forward"></span>
             </button>
           </div>
-          
+<!--          
           <div class="btn-group">
             <div class="btn btn-toolbar btn-default">
               <span id="volume-icon" class="glyphicon glyphicon-volume-up"></span>
               <div id="volumeslider"></div>
             </div>
           </div>
-        </div>
-          
-        <div class="btn-toolbar navbar-btn navbar-right" role="toolbar">
-          <audio id="player" preload="none"></audio>
-          <div class="btn-group" role="group">
+-->
+           <div class="btn-group" role="group">
+            <audio id="player" preload="none"></audio>
             <button type="button" class="btn btn-default" onclick="clickLocalPlay()">
               <span id="localplay-icon" class="glyphicon glyphicon-play"></span>
             </button>
@@ -74,8 +74,8 @@
               <span id="localplay-icon" class="glyphicon glyphicon-new-window"></span>
             </button>
           </div>
-        </div>
-
+       </div>
+          
         <form id="search" class="navbar-form navbar-right" role="search">
           <div class="form-group">
             <input type="text" class="form-control" placeholder="Search">
