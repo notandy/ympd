@@ -6,9 +6,10 @@ Requires=network.target local-fs.target
 Environment=MPD_HOST=localhost
 Environment=MPD_PORT=6600
 Environment=WEB_PORT=8080
+Environment=MPD_PASSWORD=
 Environment=YMPD_USER=nobody
 EnvironmentFile=/etc/default/ympd
-ExecStart=/usr/bin/ympd --user $YMPD_USER --webport $WEB_PORT --host $MPD_HOST --port $MPD_PORT
+ExecStart=/usr/bin/ympd --user $YMPD_USER --webport $WEB_PORT --host $MPD_HOST --port $MPD_PORT --password $MPD_PASSWORD
 Type=simple
 
 [Install]
