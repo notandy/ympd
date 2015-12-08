@@ -178,6 +178,65 @@ $(document).ready(function(){
     else
         if ($.cookie("notification") === "true")
             $('#btnnotify').addClass("active")
+	
+    document.getElementById('player').addEventListener('stalled', function() {
+						if ( !document.getElementById('player').paused ) {
+							this.pause();
+							clickLocalPlay();
+							$('.top-right').notify({
+								message:{text:"music stream stalled - trying to recover..."},
+								type: "danger",
+								fadeOut: { enabled: true, delay: 1000 },
+							}).show();
+						}
+    });
+
+    document.getElementById('player').addEventListener('pause', function() {
+        this.src='';
+        this.removeAttribute("src");
+    	$("#localplay-icon").removeClass("glyphicon-pause").addClass("glyphicon-play");
+    });
+
+	document.getElementById('player').addEventListener('error', function failed(e) {
+		this.pause();
+		switch (e.target.error.code) {
+			case e.target.error.MEDIA_ERR_ABORTED:
+				$('.top-right').notify({
+					message:{text:"Audio playback aborted by user."},
+					type: "info",
+					fadeOut: { enabled: true, delay: 1000 },
+				}).show();
+				break;
+			case e.target.error.MEDIA_ERR_NETWORK:
+				$('.top-right').notify({
+					message:{text:"Network error while playing audio."},
+					type: "danger",
+					fadeOut: { enabled: true, delay: 1000 },
+				}).show();
+				break;
+			case e.target.error.MEDIA_ERR_DECODE:
+				$('.top-right').notify({
+					message:{text:"Audio playback aborted. Did you unplug your headphones?"},
+					type: "danger",
+					fadeOut: { enabled: true, delay: 1000 },
+				}).show();
+				break;
+			case e.target.error.MEDIA_ERR_SRC_NOT_SUPPORTED:
+				$('.top-right').notify({
+					message:{text:"Error while loading audio (server, network or format error)."},
+					type: "danger",
+					fadeOut: { enabled: true, delay: 1000 },
+				}).show();
+				break;
+			default:
+				$('.top-right').notify({
+					message:{text:"Unknown error while playing audio."},
+					type: "danger",
+					fadeOut: { enabled: true, delay: 1000 },
+				}).show();
+				break;
+		}
+	}, true);
 });
 
 
@@ -596,12 +655,14 @@ var updatePlayIcon = function(state)
     if(state == 1) { // stop
         $("#play-icon").addClass("glyphicon-play");
         $('#track-icon').addClass("glyphicon-stop");
-    } else if(state == 2) { // pause
+		document.getElementById('player').pause();
+    } else if(state == 2) { // play
         $("#play-icon").addClass("glyphicon-pause");
         $('#track-icon').addClass("glyphicon-play");
-    } else { // play
+    } else { // pause
         $("#play-icon").addClass("glyphicon-play");
         $('#track-icon').addClass("glyphicon-pause");
+		document.getElementById('player').pause();
     }
 }
 
@@ -632,6 +693,11 @@ function renumber_table(tableID,item) {
 function clickLocalPlay() {
     var player = document.getElementById('player');
     $("#localplay-icon").removeClass("glyphicon-play").removeClass("glyphicon-pause");
+	
+
+    if ( !$('#track-icon').hasClass('glyphicon-play') ) {
+		clickPlay();
+	}
 
     if ( player.paused ) {
         var mpdstream = $.cookie("mpdstream");
@@ -649,9 +715,6 @@ function clickLocalPlay() {
         }
     } else {
         player.pause();
-        player.src='';
-        player.removeAttribute("src");
-        $("#localplay-icon").addClass("glyphicon-play");
     }
 }
 

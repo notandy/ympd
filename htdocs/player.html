@@ -17,6 +17,10 @@
   <!-- Custom styles for this template -->
   <link href="css/mpd.min.css" rel="stylesheet">
   <link href="assets/favicon.ico" rel="shortcut icon" type="image/vnd.microsoft.icon">
+  <script src="js/jquery-1.10.2.min.js"></script>
+  <script src="js/jquery.cookie.js"></script>
+  <script src="js/bootstrap.min.js"></script>
+  <script src="js/bootstrap-notify.js"></script>
 <script type="text/javascript">
 function clickLocalPlay() {
     var player = document.getElementById('player');
@@ -38,6 +42,66 @@ function clickLocalPlay() {
     }
 }
 
+$(document).ready(function(){
+	document.getElementById('player').addEventListener('stalled', function() {
+						if ( !document.getElementById('player').paused ) {
+							this.pause();
+							clickLocalPlay();
+							$('.top-right').notify({
+								message:{text:"music stream stalled - trying to recover..."},
+								type: "danger",
+								fadeOut: { enabled: true, delay: 1000 },
+							}).show();
+						}
+	});
+
+	document.getElementById('player').addEventListener('pause', function() {
+		this.src='';
+		this.removeAttribute("src");
+		$("#localplay-icon").removeClass("glyphicon-pause").addClass("glyphicon-play");
+	});
+
+	document.getElementById('player').addEventListener('error', function failed(e) {
+		this.pause();
+		switch (e.target.error.code) {
+			case e.target.error.MEDIA_ERR_ABORTED:
+				$('.top-right').notify({
+					message:{text:"Audio playback aborted by user."},
+					type: "info",
+					fadeOut: { enabled: true, delay: 1000 },
+				}).show();
+				break;
+			case e.target.error.MEDIA_ERR_NETWORK:
+				$('.top-right').notify({
+					message:{text:"Network error while playing audio."},
+					type: "danger",
+					fadeOut: { enabled: true, delay: 1000 },
+				}).show();
+				break;
+			case e.target.error.MEDIA_ERR_DECODE:
+				$('.top-right').notify({
+					message:{text:"Audio playback aborted. Did you unplug your headphones?"},
+					type: "danger",
+					fadeOut: { enabled: true, delay: 1000 },
+				}).show();
+				break;
+			case e.target.error.MEDIA_ERR_SRC_NOT_SUPPORTED:
+				$('.top-right').notify({
+					message:{text:"Error while loading audio (server, network or format error)."},
+					type: "danger",
+					fadeOut: { enabled: true, delay: 1000 },
+				}).show();
+				break;
+			default:
+				$('.top-right').notify({
+					message:{text:"Unknown error while playing audio."},
+					type: "danger",
+					fadeOut: { enabled: true, delay: 1000 },
+				}).show();
+				break;
+		}
+	}, true);
+});
 </script>
 </head>
 <body>
@@ -54,15 +118,9 @@ function clickLocalPlay() {
             <button type="button" class="btn btn-default btn-lg center-block" onclick="clickLocalPlay()">
               <span id="localplay-icon" class="glyphicon glyphicon-play"></span>
             </button>
+        <div class="notifications top-right"></div>
       </div>
     </div>
   </div>
-
-  <!-- Bootstrap core JavaScript
-  ================================================== -->
-  <!-- Placed at the end of the document so the pages load faster -->
-  <script src="js/jquery-1.10.2.min.js"></script>
-  <script src="js/jquery.cookie.js"></script>
-  <script src="js/bootstrap.min.js"></script>
 </body>
 </html>
