@@ -34,6 +34,14 @@ const char * mpd_cmd_strs[] = {
     MPD_CMDS(GEN_STR)
 };
 
+char * get_arg1 (char *p) {
+	return strchr(p, ',') + 1;
+}
+
+char * get_arg2 (char *p) {
+	return get_arg1(get_arg1(p));
+}
+
 static inline enum mpd_cmd_ids get_cmd_id(char *cmd)
 {
     for(int i = 0; i < sizeof(mpd_cmd_strs)/sizeof(mpd_cmd_strs[0]); i++)
@@ -151,7 +159,9 @@ int callback_mpd(struct mg_connection *c)
             if((token = strtok(NULL, ",")) == NULL)
                 goto out_browse;
 
-            n = mpd_put_browse(mpd.buf, token, uint_buf);
+			free(p_charbuf);
+            p_charbuf = strdup(c->content);
+            n = mpd_put_browse(mpd.buf, get_arg2(p_charbuf), uint_buf);
 out_browse:
 			free(p_charbuf);
             break;
@@ -163,7 +173,9 @@ out_browse:
             if((token = strtok(NULL, ",")) == NULL)
                 goto out_add_track;
 
-            mpd_run_add(mpd.conn, token);
+			free(p_charbuf);
+            p_charbuf = strdup(c->content);
+            mpd_run_add(mpd.conn, get_arg1(p_charbuf));
 out_add_track:
             free(p_charbuf);
             break;
@@ -175,7 +187,9 @@ out_add_track:
             if((token = strtok(NULL, ",")) == NULL)
                 goto out_play_track;
 
-            int_buf = mpd_run_add_id(mpd.conn, token);
+			free(p_charbuf);
+            p_charbuf = strdup(c->content);
+            int_buf = mpd_run_add_id(mpd.conn, get_arg1(p_charbuf));
             if(int_buf != -1)
                 mpd_run_play_id(mpd.conn, int_buf);
 out_play_track:
@@ -189,7 +203,9 @@ out_play_track:
             if((token = strtok(NULL, ",")) == NULL)
                 goto out_playlist;
 
-            mpd_run_load(mpd.conn, token);
+			free(p_charbuf);
+            p_charbuf = strdup(c->content);
+            mpd_run_load(mpd.conn, get_arg1(p_charbuf));
 out_playlist:
             free(p_charbuf);
             break;
@@ -201,7 +217,9 @@ out_playlist:
             if((token = strtok(NULL, ",")) == NULL)
                 goto out_save_queue;
 
-            mpd_run_save(mpd.conn, token);
+			free(p_charbuf);
+            p_charbuf = strdup(c->content);
+            mpd_run_save(mpd.conn, get_arg1(p_charbuf));
 out_save_queue:
             free(p_charbuf);
             break;
@@ -213,7 +231,9 @@ out_save_queue:
             if((token = strtok(NULL, ",")) == NULL)
                 goto out_search;
 
-            n = mpd_search(mpd.buf, token);
+			free(p_charbuf);
+            p_charbuf = strdup(c->content);
+            n = mpd_search(mpd.buf, get_arg1(p_charbuf));
 out_search:
             free(p_charbuf);
             break;
