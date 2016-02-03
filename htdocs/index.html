@@ -42,20 +42,6 @@
 
         <div class="btn-toolbar navbar-btn navbar-right" role="toolbar">
           <div class="btn-group">
-            <button type="button" class="btn btn-default" onclick="socket.send('MPD_API_SET_PREV');">
-              <span class="glyphicon glyphicon-backward"></span>
-            </button>
-            <button type="button" class="btn btn-default" onclick="socket.send('MPD_API_SET_STOP');">
-              <span id="stop-icon" class="glyphicon glyphicon-stop"></span>
-            </button>
-            <button type="button" class="btn btn-default" onclick="clickPlay();">
-              <span id="play-icon" class="glyphicon glyphicon-pause"></span>
-            </button>
-            <button type="button" class="btn btn-default" onclick="socket.send('MPD_API_SET_NEXT');">
-              <span class="glyphicon glyphicon-forward"></span>
-            </button>
-          </div>
-          <div class="btn-group">
             <div class="btn btn-toolbar btn-default">
               <span id="volume-icon" class="glyphicon glyphicon-volume-up"></span>
               <div id="volumeslider"></div>
@@ -71,47 +57,63 @@
     </div>
   </div>
 
+  <div id="bottom_bar" class="navbar navbar-inverse navbar-fixed-bottom">
+    <div id="div_hide_button">
+      <span id="hide_button" class="glyphicon glyphicon-chevron-down" style="cursor: pointer;" onclick="hide_bar();"></span>
+    </div>
+
+    <div id="container-bottom" class="container-fluid" style="margin-top: 1em; margin-left:1em;">
+      <div class="row">
+        <div class="col-md-3 col-xs-12" style="margin-bottom: 1em; font-size:120%;">
+            <span id="currenttrack"></span>
+            <br/>
+            <span id="album"></span>
+            <span id="artist"></span>
+        </div>
+
+        <div class="col-md-4 col-xs-7" style="margin-top:1em;">
+          <div id="progressbar"></div>
+        </div>
+
+        <div class="col-md-1 col-xs-5" style="margin-top:0.7em;">
+          <p id="counter" class="text">&nbsp;&nbsp;</p>
+        </div>
+
+        <div class="col-md-4 col-xs-12 btn-toolbar navbar-btn" style="text-align: center; font-size:200%">
+          <span class="glyphicon glyphicon-backward" style="cursor: pointer;" onclick="socket.send('MPD_API_SET_PREV');"></span>
+          <span id="stop-icon" class="glyphicon glyphicon-stop" style="cursor: pointer; margin-left:1em; margin-right:1em;" onclick="socket.send('MPD_API_SET_STOP');"></span>
+          <span id="play-icon" class="glyphicon glyphicon-pause" style="cursor: pointer; margin-right:1em;" onclick="clickPlay();"></span>
+          <span class="glyphicon glyphicon-forward" style="cursor: pointer;" onclick="socket.send('MPD_API_SET_NEXT');"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="container starter-template">
     <div class="row">
 
       <div class="col-md-10 col-xs-12">
         <div class="notifications top-right"></div>
-        
+
         <div class="panel panel-primary">
           <!-- Default panel contents -->
-          <div class="panel-heading"><b id="panel-heading">Queue</b></div>
-          <div class="panel-body">
-            <h1>
-              <span id="track-icon" class="glyphicon glyphicon-play"></span>
-              <span id="currenttrack"></span>
-            </h1>
-            <h4>
-              <span id="album" class="text"></span>
-              <span id="artist" class="text pull-right"></span>
-            </h4>
-            <p id="counter" class="text pull-right">&nbsp;&nbsp;</p>
-
-            <div id="progressbar"></div>
-
-
-          </div><!-- /.panel-body -->
-
-          <ol id="breadcrump" class="breadcrumb">
-          </ol>
-
-          <div class="col-md-12">
-          <button id="add-all-songs" class="btn btn-primary pull-right">Add all</button>
+          <div class="panel-heading">
+              <button id="add-all-songs" class="btn btn-warning pull-right">Add all</button>
+              <b id="panel-heading">Queue</b>
+              <ol id="breadcrump" class="breadcrumb">Queue</ol>
           </div>
-
 
           <!-- Table -->
           <table id="salamisandwich" class="table table-hover">
             <thead>
               <tr>
-                <th>#</th>
-                <th>Title</th>
-                <th>Duration</th>
-                <th></th>
+                  <th>#</th>
+                  <th>Title</th>
+                  <th>Artist</th>
+                  <th>Year</th>
+                  <th>Album</th>
+                  <th>Duration</th>
+                  <th></th>
               </tr>
             </thead>
             <tbody>
@@ -276,7 +278,7 @@
       </div><!-- /.modal-content -->
     </div><!-- /.modal-dialog -->
   </div><!-- /.modal -->
-  
+
   <div class="modal fade" id="savequeue" tabindex="-1" role="dialog" aria-labelledby="savequeueLabel" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">
