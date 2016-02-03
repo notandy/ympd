@@ -1,6 +1,7 @@
 body {
   padding-top: 50px;
   padding-bottom: 50px;
+  background-color: rgb(34, 34, 34);
 }
 
 .starter-template {
@@ -22,8 +23,8 @@ body {
 }
 
 #counter {
-	font-size: 24px;
-	margin-top: -6px;
+	font-size: 120%;
+	margin-right: 10px;
 	margin-left: 10px;
 	min-width: 50px;
 }
@@ -55,7 +56,7 @@ body {
   }
 }
 
-#salamisandwich td:nth-child(3), th:nth-child(3) {
+#salamisandwich td:nth-child(6), th:nth-child(6) {
   text-align: right;
 }
 
@@ -72,7 +73,7 @@ td:last-child, td:first-child {
   z-index: 9999;
 }
 
-/* Positioning */ 
+/* Positioning */
 .notifications.top-right {
   right: 10px;
   top: 60px;
@@ -83,4 +84,79 @@ td:last-child, td:first-child {
   position: relative;
   z-index: 9999;
   margin: 5px 0px;
+}
+
+#breadcrump {
+  padding: 0px 10px;
+  margin-bottom: 5px;
+  background-color: rgba(0,0,0,0);
+}
+
+
+.panel-default > .panel-heading {
+    color:#DDD ;
+    border-color: #FFFFFF;
+    background-image: linear-gradient(to bottom, #3C3C3C 0px, #222 100%);
+}
+
+.panel-primary > .panel-heading {
+    border-color: #FFFFFF;
+    background-image: linear-gradient(to bottom, #3C3C3C 0px, #222 100%);
+}
+
+.panel-default {
+    border-color: #AAA;
+}
+
+.panel-primary {
+    border-color: #AAA;
+}
+
+#bottom_bar {
+    width:98%;
+    margin: 0 auto;
+    border-radius: 15px 15px 0px 0px;
+    color: rgb(240, 240, 240);
+}
+
+#dirble_loading {
+    font-size:16px;
+    font-weight:bold;
+    margin-left:4em;
+}
+
+#dirble_left {
+    width:44%;
+    margin-left:4%;
+}
+
+#dirble_right {
+    float:right;
+    width:44%;
+    margin-right:4%;
+}
+
+#div_hide_button {
+    position:fixed;
+    z-index:10;
+    right:3em;
+    margin-top:1em;
+}
+
+#currenttrack {
+    font-size:120%;
+}
+
+#album {
+    margin-left:1em;
+    font-size:90%;
+}
+
+#artist {
+    margin-left:1em;
+    font-size:90%;
+}
+
+#add-all-songs {
+    margin-top: 0.3em;
 }

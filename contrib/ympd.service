@@ -7,8 +7,9 @@ Environment=MPD_HOST=localhost
 Environment=MPD_PORT=6600
 Environment=WEB_PORT=8080
 Environment=YMPD_USER=nobody
+Environment=DIGEST=
 EnvironmentFile=/etc/default/ympd
-ExecStart=/usr/bin/ympd --user $YMPD_USER --webport $WEB_PORT --host $MPD_HOST --port $MPD_PORT
+ExecStart=/usr/bin/ympd --user $YMPD_USER --webport $WEB_PORT --host $MPD_HOST --port $MPD_PORT $DIGEST
 Type=simple
 
 [Install]
