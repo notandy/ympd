@@ -16,6 +16,8 @@
    Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
+var TOKEN = "";
+
 var socket;
 var last_state;
 var last_outputs;
@@ -107,6 +109,9 @@ var app = $.sammy(function() {
 
 
     this.get(/\#\/dirble\/(\d+)\/(\d+)/, function() {
+        
+        if (TOKEN === "") context.redirect("#/0");
+        
         prepare();
         current_app = 'dirble';
         $('#breadcrump').removeClass('hide').empty().append("<li><a href=\"#/dirble/\">Categories</a></li><li>"+dirble_selected_cat+"</li>");
@@ -132,6 +137,9 @@ var app = $.sammy(function() {
 
 
     this.get(/\#\/dirble\//, function() {
+        
+        if (TOKEN === "") context.redirect("#/0");
+        
         prepare();
         current_app = 'dirble';
         $('#breadcrump').removeClass('hide').empty().append("<li>Categories</li>");
@@ -237,6 +245,8 @@ $(document).ready(function(){
 				break;
 		}
 	}, true);
+            
+    if (TOKEN === "") $('#dirble').addClass('hide');
 });
 
 
@@ -928,7 +938,7 @@ function dirble_load_categories() {
 
     dirble_page = 1;
 
-    $.getJSON( "http://api.dirble.com/v2/categories?token=2e223c9909593b94fc6577361a", function( data ) {
+    $.getJSON( "http://api.dirble.com/v2/categories?token="+TOKEN, function( data ) {
 
         $('#dirble_loading').addClass('hide');
 
@@ -976,7 +986,7 @@ function dirble_load_categories() {
 
 function dirble_load_stations() {
 
-    $.getJSON( "http://api.dirble.com/v2/category/"+dirble_catid+"/stations?page="+dirble_page+"&per_page=20&token=2e223c9909593b94fc6577361a", function( data ) {
+    $.getJSON( "http://api.dirble.com/v2/category/"+dirble_catid+"/stations?page="+dirble_page+"&per_page=20&token="+TOKEN, function( data ) {
 
         $('#dirble_loading').addClass('hide');
         if (data.length == 20) $('#next').removeClass('hide');
@@ -1003,7 +1013,7 @@ function dirble_load_stations() {
             click: function() {
                 var _this = $(this);
 
-                $.getJSON( "http://api.dirble.com/v2/station/"+$(this).attr("radioid")+"?token=2e223c9909593b94fc6577361a", function( data ) {
+                $.getJSON( "http://api.dirble.com/v2/station/"+$(this).attr("radioid")+"?token="+TOKEN, function( data ) {
 
                     socket.send("MPD_API_ADD_TRACK," + data.streams[0].stream);
                     $('.top-right').notify({
@@ -1021,7 +1031,7 @@ function dirble_load_stations() {
                 "<span class=\"glyphicon glyphicon-play\"></span></a>").find('a').click(function(e) {
                     e.stopPropagation();
 
-                    $.getJSON( "http://api.dirble.com/v2/station/"+_this.attr("radioid")+"?token=2e223c9909593b94fc6577361a", function( data ) {
+                    $.getJSON( "http://api.dirble.com/v2/station/"+_this.attr("radioid")+"?token="+TOKEN, function( data ) {
 
                         socket.send("MPD_API_ADD_PLAY_TRACK," + data.streams[0].stream);
                         $('.top-right').notify({
@@ -1042,7 +1052,7 @@ function dirble_load_stations() {
             click: function() {
                 var _this = $(this);
 
-                $.getJSON( "http://api.dirble.com/v2/station/"+$(this).attr("radioid")+"?token=2e223c9909593b94fc6577361a", function( data ) {
+                $.getJSON( "http://api.dirble.com/v2/station/"+$(this).attr("radioid")+"?token="+TOKEN, function( data ) {
 
                     socket.send("MPD_API_ADD_TRACK," + data.streams[0].stream);
                     $('.top-right').notify({
@@ -1060,7 +1070,7 @@ function dirble_load_stations() {
                 "<span class=\"glyphicon glyphicon-play\"></span></a>").find('a').click(function(e) {
                     e.stopPropagation();
 
-                    $.getJSON( "http://api.dirble.com/v2/station/"+_this.attr("radioid")+"?token=2e223c9909593b94fc6577361a", function( data ) {
+                    $.getJSON( "http://api.dirble.com/v2/station/"+_this.attr("radioid")+"?token="+TOKEN, function( data ) {
 
                         socket.send("MPD_API_ADD_PLAY_TRACK," + data.streams[0].stream);
                         $('.top-right').notify({

@@ -50,7 +50,12 @@ To run ympd with SSL support:
 - tell ympd to use a webport using SSL and where to find the certificate: 
 ```
 # ./ympd -w "ssl://8081:/path/to/ssl.pem"
-```
+
+Dirble support
+--------------
+
+1. Get an API-key from http://dirble.com
+2. Add the key at ```var TOKEN = "";```, in ```mpd.js```.
 
 Copyright
 ---------
