@@ -84,3 +84,7 @@ td:last-child, td:first-child {
   z-index: 9999;
   margin: 5px 0px;
 }
+
+button {
+  overflow: hidden;
+}
