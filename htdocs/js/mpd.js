@@ -28,6 +28,7 @@ var MAX_ELEMENTS_PER_PAGE = 512;
 var dirble_selected_cat = "";
 var dirble_catid = "";
 var dirble_page = 1;
+var isTouch = Modernizr.touch ? 1 : 0;
 
 var app = $.sammy(function() {
 
@@ -227,24 +228,33 @@ function webSocketConnect() {
                         $('#next').removeClass('hide');
                     if(pagination > 0)
                         $('#prev').removeClass('hide');
+                    if ( isTouch ) {
+                        $('#salamisandwich > tbody > tr > td:last-child').append(
+                                    "<a class=\"pull-right btn-group-hover\" href=\"#/\" " +
+                                        "onclick=\"socket.send('MPD_API_RM_TRACK,' + $(this).parents('tr').attr('trackid')); $(this).parents('tr').remove();\">" +
+                                "<span class=\"glyphicon glyphicon-trash\"></span></a>");
+                    } else {
+                        $('#salamisandwich > tbody > tr').on({
+                            mouseover: function(){
+                                if($(this).children().last().has("a").length == 0)
+                                    $(this).children().last().append(
+                                        "<a class=\"pull-right btn-group-hover\" href=\"#/\" " +
+                                            "onclick=\"socket.send('MPD_API_RM_TRACK," + $(this).attr("trackid") +"'); $(this).parents('tr').remove();\">" +
+                                    "<span class=\"glyphicon glyphicon-trash\"></span></a>")
+                                .find('a').fadeTo('fast',1);
+                            },
+                            mouseleave: function(){
+                                $(this).children().last().find("a").stop().remove();
+                            }
+                        });
+                    };
 
                     $('#salamisandwich > tbody > tr').on({
-                        mouseover: function(){
-                            if($(this).children().last().has("a").length == 0)
-                                $(this).children().last().append(
-                                    "<a class=\"pull-right btn-group-hover\" href=\"#/\" " +
-                                        "onclick=\"socket.send('MPD_API_RM_TRACK," + $(this).attr("trackid") +"'); $(this).parents('tr').remove();\">" +
-                                "<span class=\"glyphicon glyphicon-trash\"></span></a>")
-                            .find('a').fadeTo('fast',1);
-                        },
                         click: function() {
                             $('#salamisandwich > tbody > tr').removeClass('active');
                             socket.send('MPD_API_PLAY_TRACK,'+$(this).attr('trackid'));
                             $(this).addClass('active');
                         },
-                        mouseleave: function(){
-                            $(this).children().last().find("a").stop().remove();
-                        }
                     });
                     break;
                 case "search":
@@ -306,7 +316,7 @@ function webSocketConnect() {
                     }
 
                     function appendClickableIcon(appendTo, onClickAction, glyphicon) {
-                        $(appendTo).children().last().append(
+                        $(appendTo).append(
                             "<a role=\"button\" class=\"pull-right btn-group-hover\">" +
                             "<span class=\"glyphicon glyphicon-" + glyphicon + "\"></span></a>")
                             .find('a').click(function(e) {
@@ -319,13 +329,23 @@ function webSocketConnect() {
                             }).fadeTo('fast',1);
                     }
 
+                    if ( isTouch ) {
+                        appendClickableIcon($("#salamisandwich > tbody > tr.dir > td:last-child"), 'MPD_API_ADD_TRACK', 'plus');
+                        appendClickableIcon($("#salamisandwich > tbody > tr.song > td:last-child"), 'MPD_API_ADD_TRACK', 'play');
+                    } else {
+                        $('#salamisandwich > tbody > tr').on({
+                            mouseenter: function() {
+                                if($(this).is(".dir")) 
+                                    appendClickableIcon($(this).children().last(), 'MPD_API_ADD_TRACK', 'plus');
+                                else if($(this).is(".song"))
+                                    appendClickableIcon($(this).children().last(), 'MPD_API_ADD_PLAY_TRACK', 'play');
+                            },
+                            mouseleave: function(){
+                                $(this).children().last().find("a").stop().remove();
+                            }
+                        });
+                    };
                     $('#salamisandwich > tbody > tr').on({
-                        mouseenter: function() {
-                            if($(this).is(".dir")) 
-                                appendClickableIcon($(this), 'MPD_API_ADD_TRACK', 'plus');
-                            else if($(this).is(".song"))
-                                appendClickableIcon($(this), 'MPD_API_ADD_PLAY_TRACK', 'play');
-                        },
                         click: function() {
                             switch($(this).attr('class')) {
                                 case 'dir':
@@ -348,9 +368,6 @@ function webSocketConnect() {
                                     }).show();
                                     break;
                             }
-                        },
-                        mouseleave: function(){
-                            $(this).children().last().find("a").stop().remove();
                         }
                     });
 
