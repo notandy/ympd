@@ -36,6 +36,11 @@ Usage: ./ympd [OPTION]...
  --help                     this help
 ```
 
+Dirble support
+--------------
+
+1. Get an API-key from http://dirble.com
+2. Add the key at ```var TOKEN = "";```, in ```mpd.js```.
 
 Copyright
 ---------
