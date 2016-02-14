@@ -40,7 +40,7 @@ file(GLOB RESOURCES
     RELATIVE ${PROJECT_SOURCE_DIR}
     htdocs/js/*
     htdocs/assets/*
-    htdocs/css/*.min.css
+    htdocs/css/*.css
     htdocs/fonts/*
     htdocs/index.html
     htdocs/player.html
