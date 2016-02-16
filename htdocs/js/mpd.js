@@ -372,6 +372,8 @@ function webSocketConnect() {
                             case "playlist":
                                 $('#salamisandwich > tbody').append(
                                     "<tr uri=\"" + encodeURI(obj.data[item].plist) + "\" class=\"plist\">" +
+									"<td><span class=\"glyphicon glyphicon-list\"></span></td>" +
+									"<td><a>" + basename(obj.data[item].plist) + "</a></td>" +
                                     "<td></td><td></td>" +
                                     "<td></td><td></td></tr>"
                                 );
