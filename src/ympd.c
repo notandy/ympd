@@ -118,7 +118,7 @@ int main(int argc, char **argv)
                         " -p, --port <port>\t\tconnect to mpd at port [6600]\n"
                         " -w, --webport [ip:]<port>\tlisten interface/port for webserver [8080]\n"
                         " -u, --user <username>\t\tdrop priviliges to user after socket bind\n"
-                        " -V, --version\t\t\tget version\n"
+                        " -v, --version\t\t\tget version\n"
                         " --help\t\t\t\tthis help\n"
                         , argv[0]);
                 return EXIT_FAILURE;
