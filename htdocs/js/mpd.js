@@ -68,7 +68,7 @@ var app = $.sammy(function() {
 			rootPagination = pagination;
 		}
         current_app = 'browse';
-		if (browsepath && !browsepath.match(/<[A-Z]-[A-Z]>/)) {
+		if (browsepath && !browsepath.match(/\[[A-Z-]{3}\]/)) {
 			$('#quicknav').addClass('hide');
 		} else {
 			$('#quicknav').removeClass('hide');
@@ -78,7 +78,7 @@ var app = $.sammy(function() {
         $('#dirble_panel').addClass('hide');
         socket.send('MPD_API_GET_BROWSE,'+pagination+','+(browsepath ? browsepath : "/"));
         // Don't add all songs from root
-        if (browsepath && !browsepath.match(/<[A-Z]-[A-Z]>/)) {
+        if (browsepath && !browsepath.match(/\[[A-Z-]{3}\]/)) {
             var add_all_songs = $('#add-all-songs');
             add_all_songs.off(); // remove previous binds
             add_all_songs.on('click', function() {
@@ -590,13 +590,22 @@ var updatePlayIcon = function(state)
     if(state == 1) { // stop
         $("#play-icon").addClass("glyphicon-play");
         $('#track-icon').addClass("glyphicon-stop");
-    } else if(state == 2) { // pause
+		$('#progressbar').slider(0);
+    } else if(state == 2) { // playing
         $("#play-icon").addClass("glyphicon-pause");
         $('#track-icon').addClass("glyphicon-play");
-    } else { // play
+    } else { // paused
         $("#play-icon").addClass("glyphicon-play");
         $('#track-icon').addClass("glyphicon-pause");
     }
+}
+
+function clearPlaylist() {
+	socket.send('MPD_API_RM_ALL');
+	$('#currenttrack').text('');
+	$('#artist').text('');
+	$('#album').text('');
+	$('#counter').text('');
 }
 
 function updateDB() {
