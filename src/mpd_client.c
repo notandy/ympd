@@ -201,6 +201,20 @@ out_play_track:
 out_playlist:
             free(p_charbuf);
             break;
+		case MPD_API_RM_PLAYLIST:
+			p_charbuf = strdup(c->content);
+			if(strcmp(strtok(p_charbuf, ","), "MPD_API_RM_PLAYLIST"))
+				goto out_rm_playlist;
+
+			if((token = strtok(NULL, ",")) == NULL)
+				goto out_rm_playlist;
+
+			free(p_charbuf);
+			p_charbuf = strdup(c->content);
+			mpd_run_rm(mpd.conn, get_arg1(p_charbuf));
+out_rm_playlist:
+			free(p_charbuf);
+			break;
         case MPD_API_SAVE_QUEUE:
             p_charbuf = strdup(c->content);
             if(strcmp(strtok(p_charbuf, ","), "MPD_API_SAVE_QUEUE"))
@@ -586,10 +600,15 @@ int mpd_put_browse(char *buffer, char *path, unsigned int offset)
 
 	char quickStart = 0;
 	char quickEnd;
-	// Looking for <A-C>
-	if(strlen(path) == 5 && *path == '<' && path[strlen(path) - 1] == '>') {
+	char quickList = 0;
+	// Looking for [A-C]
+	// special case [LST] for playlists only
+	if(strlen(path) == 5 && *path == '[' && path[strlen(path) - 1] == ']') {
 		quickStart = path[1];
 		quickEnd = path[3];
+		if(!strcmp("[LST]", path)) {
+			quickList = 1;
+		}
 		strcpy(path, "/");
 	}
 
@@ -603,28 +622,48 @@ int mpd_put_browse(char *buffer, char *path, unsigned int offset)
         const struct mpd_directory *dir;
         const struct mpd_playlist *pl;
 
-		if(quickStart == 0) {
-			if(offset > entity_count)
-			{
-				mpd_entity_free(entity);
-				entity_count++;
-				continue;
-			}
-			else if(offset + MAX_ELEMENTS_PER_PAGE - 1 < entity_count)
-			{
-				mpd_entity_free(entity);
-				cur += json_emit_raw_str(cur, end  - cur, "{\"type\":\"wrap\",\"count\":");
-				cur += json_emit_int(cur, end - cur, entity_count);
-				cur += json_emit_raw_str(cur, end  - cur, "} ");
-				break;
-			}
-		} else {
-			dir = mpd_entity_get_directory(entity);
-			const char *dirPath = mpd_directory_get_path(dir);
-			if(*dirPath < quickStart || *dirPath > quickEnd) {
+		if(quickList) {
+			if(mpd_entity_get_type(entity) != MPD_ENTITY_TYPE_PLAYLIST) {
 				mpd_entity_free(entity);
 				continue;
 			}
+		}
+		else if(quickStart) {
+			const char *name;
+
+			switch (mpd_entity_get_type(entity)) {
+				case MPD_ENTITY_TYPE_SONG:
+					name = mpd_get_title(mpd_entity_get_song(entity));
+					break;
+				case MPD_ENTITY_TYPE_DIRECTORY:
+					name = mpd_directory_get_path(mpd_entity_get_directory(entity));
+					break;
+				case MPD_ENTITY_TYPE_PLAYLIST:
+					name = mpd_playlist_get_path(mpd_entity_get_playlist(entity));
+					break;
+				default:
+					mpd_entity_free(entity);
+					continue;
+			}
+			if(*name < quickStart || *name > quickEnd) {
+				mpd_entity_free(entity);
+				continue;
+			}
+		}
+
+		if(offset > entity_count)
+		{
+			mpd_entity_free(entity);
+			entity_count++;
+			continue;
+		}
+		else if(offset + MAX_ELEMENTS_PER_PAGE - 1 < entity_count)
+		{
+			mpd_entity_free(entity);
+			cur += json_emit_raw_str(cur, end  - cur, "{\"type\":\"wrap\",\"count\":");
+			cur += json_emit_int(cur, end - cur, entity_count);
+			cur += json_emit_raw_str(cur, end  - cur, "} ");
+			break;
 		}
 
         switch (mpd_entity_get_type(entity)) {

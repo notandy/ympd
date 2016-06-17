@@ -87,7 +87,7 @@ var app = $.sammy(function() {
             add_all_songs.show();
         }
 
-        $('#panel-heading').text("Browse database: "+browsepath);
+        $('#panel-heading').text("Browse: "+browsepath);
         var path_array = browsepath.split('/');
         var full_path = "";
         $.each(path_array, function(index, chunk) {
@@ -332,23 +332,34 @@ function webSocketConnect() {
                             .find('a').click(function(e) {
                                 e.stopPropagation();
                                 socket.send(onClickAction + "," + decodeURI($(this).parents("tr").attr("uri")));
-                            $('.top-right').notify({
-                                message:{
-                                    text: $('td:nth-child(2)', $(this).parents("tr")).text() + " added"
-                                } }).show();
+								var msg;
+								if($(this).parents("tr").attr("class") == 'plist') {
+									msg = ' deleted';
+									$('#salamisandwich').find("tr:gt(0)").remove();
+									socket.send('MPD_API_GET_BROWSE,'+pagination+','+(browsepath ? browsepath : "/"));
+								} else {
+									msg = ' added';
+								}
+								$('.top-right').notify({
+									message:{
+										text: $('td:nth-child(2)', $(this).parents("tr")).text() + msg
+									} }).show();
                             }).fadeTo('fast',1);
                     }
 
                     if ( isTouch ) {
                         appendClickableIcon($("#salamisandwich > tbody > tr.dir > td:last-child"), 'MPD_API_ADD_TRACK', 'plus');
                         appendClickableIcon($("#salamisandwich > tbody > tr.song > td:last-child"), 'MPD_API_ADD_TRACK', 'play');
+                        appendClickableIcon($("#salamisandwich > tbody > tr.plist > td:last-child"), 'MPD_API_RM_PLAYLIST', 'trash');
                     } else {
                         $('#salamisandwich > tbody > tr').on({
                             mouseenter: function() {
                                 if($(this).is(".dir")) 
                                     appendClickableIcon($(this).children().last(), 'MPD_API_ADD_TRACK', 'plus');
                                 else if($(this).is(".song"))
-                                    appendClickableIcon($(this).children().last(), 'MPD_API_ADD_PLAY_TRACK', 'play');
+                                    appendClickableIcon($(this).children().last(), 'MPD_API_ADD_PLAY_TRACK', 'play')
+								else if($(this).is(".plist"))
+									appendClickableIcon($(this).children().last(), 'MPD_API_RM_PLAYLIST', 'trash');
                             },
                             mouseleave: function(){
                                 $(this).children().last().find("a").stop().remove();
@@ -671,7 +682,11 @@ $('#search').submit(function () {
 
 $('.quicknav-btn').on('click', function(e) {
 	if (current_app == 'browse') {
-		app.setLocation('#/browse/0/%3C'+$(this).text()+'%3E');
+		var text = $(this).text();
+		if(text == 'Playlists') {
+			text = 'LST';
+		}
+		app.setLocation('#/browse/0/%5B'+text+'%5D');
 	}
 	e.preventDefault();
 });
