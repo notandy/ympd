@@ -335,8 +335,7 @@ function webSocketConnect() {
 								var msg;
 								if($(this).parents("tr").attr("class") == 'plist') {
 									msg = ' deleted';
-									$('#salamisandwich').find("tr:gt(0)").remove();
-									socket.send('MPD_API_GET_BROWSE,'+pagination+','+(browsepath ? browsepath : "/"));
+									$(this).parents("tr").remove();
 								} else {
 									msg = ' added';
 								}
