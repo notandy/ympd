@@ -29,6 +29,8 @@
 #include "mpd_client.h"
 #include "config.h"
 
+const char *template = 0;
+
 extern char *optarg;
 
 int force_exit = 0;
@@ -85,12 +87,13 @@ int main(int argc, char **argv)
         {"port",         required_argument, 0, 'p'},
         {"webport",      required_argument, 0, 'w'},
         {"user",         required_argument, 0, 'u'},
+        {"artwork",      required_argument, 0, 'a'},
         {"version",      no_argument,       0, 'v'},
         {"help",         no_argument,       0,  0 },
         {0,              0,                 0,  0 }
     };
 
-    while((n = getopt_long(argc, argv, "h:p:w:u:v",
+    while((n = getopt_long(argc, argv, "h:p:w:u:a:v",
                 long_options, &option_index)) != -1) {
         switch (n) {
             case 'h':
@@ -105,6 +108,9 @@ int main(int argc, char **argv)
             case 'u':
                 run_as_user = strdup(optarg);
                 break;
+            case 'a':
+                template = strdup(optarg);
+                break;
             case 'v':
                 fprintf(stdout, "ympd  %d.%d.%d\n"
                         "Copyright (C) 2014 Andrew Karpow <andy@ndyk.de>\n"
@@ -117,17 +123,12 @@ int main(int argc, char **argv)
                         " -h, --host <host>\t\tconnect to mpd at host [localhost]\n"
                         " -p, --port <port>\t\tconnect to mpd at port [6600]\n"
                         " -w, --webport [ip:]<port>\tlisten interface/port for webserver [8080]\n"
+                        " -a, --artwork [url template] for artwork fetch\n"
                         " -u, --user <username>\t\tdrop priviliges to user after socket bind\n"
                         " -V, --version\t\t\tget version\n"
                         " --help\t\t\t\tthis help\n"
                         , argv[0]);
                 return EXIT_FAILURE;
-        }
-
-        if(error_msg)
-        {
-            fprintf(stderr, "Mongoose error: %s\n", error_msg);
-            return EXIT_FAILURE;
         }
     }
 

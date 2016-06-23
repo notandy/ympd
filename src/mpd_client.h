@@ -100,6 +100,13 @@ struct t_mpd_client_session {
     unsigned queue_version;
 };
 
+struct t_meta {
+    const char *artist;
+    const char *album;
+    const char *track;
+    const char *title;
+};
+
 void mpd_poll(struct mg_server *s);
 int callback_mpd(struct mg_connection *c);
 int mpd_close_handler(struct mg_connection *c);

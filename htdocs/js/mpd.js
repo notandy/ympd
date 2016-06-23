@@ -495,6 +495,12 @@ function webSocketConnect() {
                         $('#artist').text(obj.data.artist);
                         notification += obj.data.artist + "<br />";
                     }
+                    if(obj.data.artwork) {
+						var artworkUrl = encodeURI(obj.data.artwork);
+						$('#artwork').attr('src', artworkUrl).on('error', function() {
+							$(this).attr('src', '/img/cover.jpg');
+						});
+                    }
 
                     if ($.cookie("notification") === "true")
                         songNotify(obj.data.title, obj.data.artist, obj.data.album );
@@ -605,6 +611,7 @@ function clearPlaylist() {
 	$('#artist').text('');
 	$('#album').text('');
 	$('#counter').text('');
+	$('#artwork').attr('src', '/img/cover.jpg');
 }
 
 function updateDB() {
