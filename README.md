@@ -48,6 +48,7 @@ The available substitutions are:
  %a - Album
  %T - Title
  %t - track
+ %% - %
 ```
 
 SSL Support
