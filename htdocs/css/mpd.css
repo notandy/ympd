@@ -1,6 +1,11 @@
 body {
   padding-top: 50px;
   padding-bottom: 50px;
+  background-color: #ddccdd;
+}
+
+.panel {
+	background-color: #ffffee;
 }
 
 .starter-template {
@@ -35,7 +40,7 @@ body {
 #artwork {
     width: 100px;
     height: 100px;
-    border: 1px solid black;
+    border: 1px solid #cccccc;
 }
 
 .btn-group-hover {
