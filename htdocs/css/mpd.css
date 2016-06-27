@@ -8,6 +8,10 @@ body {
 	background-color: #ffffee;
 }
 
+.quicknav-btn {
+    background-color: #428bca;
+}
+
 .starter-template {
   padding: 40px 15px;
 }
