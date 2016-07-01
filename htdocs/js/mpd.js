@@ -229,7 +229,7 @@ function webSocketConnect() {
 
                         $('#salamisandwich > tbody').append(
                             "<tr trackid=\"" + obj.data[song].id + "\"><td>" + (obj.data[song].pos + 1) + "</td>" +
-                                "<td>"+ obj.data[song].title +"</td>" + 
+                                "<td>"+ obj.data[song].title + " / " + obj.data[song].artist + "</td>" + 
                                 "<td>"+ minutes + ":" + (seconds < 10 ? '0' : '') + seconds +
                         "</td><td></td></tr>");
                     }

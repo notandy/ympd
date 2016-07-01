@@ -76,7 +76,7 @@ char *parse_templ(const char *templ, struct t_meta data) {
                 //strcpy(bptr, dptr);
                 //bptr += strlen(dptr);
 				while(*dptr != 0) {
-					if(*dptr == '/') {
+					if(*dptr == '/' || *dptr == '?') {
 						*bptr = '_';
 					} else {
 						*bptr = *dptr;
@@ -645,6 +645,8 @@ int mpd_put_queue(char *buffer, unsigned int offset)
             cur += json_emit_int(cur, end - cur, mpd_song_get_duration(song));
             cur += json_emit_raw_str(cur, end - cur, ",\"title\":");
             cur += json_emit_quoted_str(cur, end - cur, mpd_get_title(song));
+			cur += json_emit_raw_str(cur, end - cur, ",\"artist\":");
+			cur += json_emit_quoted_str(cur, end - cur, mpd_song_get_tag(song, MPD_TAG_ARTIST, 0));
             cur += json_emit_raw_str(cur, end - cur, "},");
         }
         mpd_entity_free(entity);
