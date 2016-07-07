@@ -46,6 +46,7 @@ var app = $.sammy(function() {
         $('#nav_links > li').removeClass('active');
         $('.page-btn').addClass('hide');
         $('#add-all-songs').hide();
+        $('#search > div > input').val('');
         pagination = 0;
         browsepath = '';
     }
@@ -99,6 +100,8 @@ var app = $.sammy(function() {
 
     this.get(/\#\/search\/(.*)/, function() {
         current_app = 'search';
+		$('#quicknav').addClass('hide');
+        $('#breadcrump').removeClass('hide').empty().append("<li>Search Results</li>");
         $('#salamisandwich').find("tr:gt(0)").remove();
         var searchstr = this.params['splat'][0];
 
@@ -139,6 +142,30 @@ $(document).ready(function(){
     else
         if ($.cookie("notification") === "true")
             $('#btnnotify').addClass("active")
+
+	var vampire = dragula({
+		moves: function(el, source, handle, sibling) {
+			if(current_app == 'queue') {
+				return true;
+			} else {
+				return false;
+			}
+		}
+	});
+	vampire.containers.push($('#salamisandwich > tbody')[0]);
+	vampire.on('drop', function(el, target, source, sibling) {
+		var moveFrom = el.firstChild.textContent - 1;
+		var moveTo = target.children.length - 1;
+		if(sibling) {
+			moveTo = sibling.firstChild.textContent - 2;
+		}
+		if(moveTo < 0) {
+			moveTo = 0;
+		}
+		socket.send('MPD_API_MOVE_TRACK,'+moveFrom+','+moveTo);
+	});
+
+	console.log('ready');
 });
 
 
@@ -184,6 +211,8 @@ function webSocketConnect() {
                                 "<td>"+ minutes + ":" + (seconds < 10 ? '0' : '') + seconds +
                         "</td><td></td></tr>");
                     }
+
+					$('#salamisandwich > tbody > tr').addClass('queue-track');
 
                     if(obj.data[obj.data.length-1].pos + 1 >= pagination + MAX_ELEMENTS_PER_PAGE)
                         $('#next').removeClass('hide');

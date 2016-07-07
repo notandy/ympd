@@ -41,6 +41,11 @@ body {
   margin-right: -10px;
 }
 
+.queue-track {
+  cursor: move;
+  cursor: -webkit-grab;
+}
+
 #artwork {
     width: 100px;
     height: 100px;

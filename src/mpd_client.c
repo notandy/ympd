@@ -253,6 +253,11 @@ out_add_track:
 out_insert_track:
             free(p_charbuf);
             break;
+		case MPD_API_MOVE_TRACK:
+            if(sscanf(c->content, "MPD_API_MOVE_TRACK,%u,%u", &uint_buf, &uint_buf_2)) {
+                mpd_run_move(mpd.conn, uint_buf, uint_buf_2);
+			}
+			break;
         case MPD_API_ADD_PLAYLIST:
             p_charbuf = strdup(c->content);
             if(strcmp(strtok(p_charbuf, ","), "MPD_API_ADD_PLAYLIST"))
