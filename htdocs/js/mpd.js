@@ -26,9 +26,6 @@ var browsepath;
 var lastSongTitle = "";
 var current_song = new Object();
 var MAX_ELEMENTS_PER_PAGE = 50;
-var dirble_selected_cat = "";
-var dirble_catid = "";
-var dirble_page = 1;
 var isTouch = Modernizr.touch ? 1 : 0;
 
 var app = $.sammy(function() {
@@ -302,7 +299,7 @@ function webSocketConnect() {
 
                     if ( isTouch ) {
                         appendClickableIcon($("#salamisandwich > tbody > tr.dir > td:last-child"), 'MPD_API_ADD_TRACK', 'plus');
-                        appendClickableIcon($("#salamisandwich > tbody > tr.song > td:last-child"), 'MPD_API_ADD_TRACK', 'play');
+                        appendClickableIcon($("#salamisandwich > tbody > tr.song > td:last-child"), 'MPD_API_INSERT_TRACK', 'play');
                         appendClickableIcon($("#salamisandwich > tbody > tr.plist > td:last-child"), 'MPD_API_RM_PLAYLIST', 'trash');
                     } else {
                         $('#salamisandwich > tbody > tr').on({
@@ -310,7 +307,7 @@ function webSocketConnect() {
                                 if($(this).is(".dir")) 
                                     appendClickableIcon($(this).children().last(), 'MPD_API_ADD_TRACK', 'plus');
                                 else if($(this).is(".song"))
-                                    appendClickableIcon($(this).children().last(), 'MPD_API_ADD_PLAY_TRACK', 'play')
+                                    appendClickableIcon($(this).children().last(), 'MPD_API_INSERT_TRACK', 'play')
 								else if($(this).is(".plist"))
 									appendClickableIcon($(this).children().last(), 'MPD_API_RM_PLAYLIST', 'trash');
                             },

@@ -41,7 +41,7 @@
     X(MPD_API_GET_BROWSE) \
     X(MPD_API_GET_MPDHOST) \
     X(MPD_API_ADD_TRACK) \
-    X(MPD_API_ADD_PLAY_TRACK) \
+    X(MPD_API_INSERT_TRACK) \
     X(MPD_API_ADD_PLAYLIST) \
 	X(MPD_API_RM_PLAYLIST) \
     X(MPD_API_PLAY_TRACK) \
@@ -105,6 +105,7 @@ struct t_meta {
     const char *album;
     const char *track;
     const char *title;
+	const char *uri;
 };
 
 void mpd_poll(struct mg_server *s);

@@ -49,6 +49,7 @@ char *parse_templ(const char *templ, struct t_meta data) {
     char *bptr = buffer;
     const char *dptr;
 
+	int is_path = 0;
     while(*templ != 0) {
         dptr = 0;
         if(*templ == '%') {
@@ -65,6 +66,10 @@ char *parse_templ(const char *templ, struct t_meta data) {
                 case 'T':
                     dptr = data.title;
                     break;
+				case 'P':
+					dptr = data.uri;
+					is_path = 1;
+					break;
                 case '%':
                     *bptr++ = *templ;
                     templ += 2;
@@ -73,21 +78,26 @@ char *parse_templ(const char *templ, struct t_meta data) {
                     printf("Unrecognised token %c\n", *(templ + 1));
             }
             if(dptr != 0) {
-                //strcpy(bptr, dptr);
-                //bptr += strlen(dptr);
-				while(*dptr != 0) {
-					if(*dptr == '/' || *dptr == '?') {
-						*bptr = '_';
-					} else {
-						*bptr = *dptr;
+				if(is_path) {
+					char *pptr = strdup(dptr);
+					char *dir = dirname(pptr);
+					while(*dir != 0) {
+						*bptr++ = *dir++;
 					}
-					bptr++;
-					dptr++;
+					free(pptr);
+				} else {
+					while(*dptr != 0) {
+						if(*dptr == '/' || *dptr == '?') {
+							*bptr = '_';
+						} else {
+							*bptr = *dptr;
+						}
+						bptr++;
+						dptr++;
+					}
 				}
-                templ += 2;
-            } else {
-                templ += 2;
-            }
+			}
+			templ += 2;
         } else {
             *bptr++ = *templ++;
         }
@@ -226,20 +236,21 @@ out_browse:
 out_add_track:
             free(p_charbuf);
             break;
-        case MPD_API_ADD_PLAY_TRACK:
+        case MPD_API_INSERT_TRACK:
             p_charbuf = strdup(c->content);
-            if(strcmp(strtok(p_charbuf, ","), "MPD_API_ADD_PLAY_TRACK"))
-                goto out_play_track;
+            if(strcmp(strtok(p_charbuf, ","), "MPD_API_INSERT_TRACK"))
+                goto out_insert_track;
 
             if((token = strtok(NULL, ",")) == NULL)
-                goto out_play_track;
+                goto out_insert_track;
 
 			free(p_charbuf);
             p_charbuf = strdup(c->content);
-            int_buf = mpd_run_add_id(mpd.conn, get_arg1(p_charbuf));
-            if(int_buf != -1)
-                mpd_run_play_id(mpd.conn, int_buf);
-out_play_track:
+			struct mpd_status *status = mpd_run_status(mpd.conn);
+			int playing_pos = mpd_status_get_song_pos(status) + 1;
+			mpd_status_free(status);
+			mpd_run_add_id_to(mpd.conn, get_arg1(p_charbuf), playing_pos);
+out_insert_track:
             free(p_charbuf);
             break;
         case MPD_API_ADD_PLAYLIST:
@@ -590,6 +601,7 @@ int mpd_put_current_song(char *buffer)
     data.artist = mpd_song_get_tag(song, MPD_TAG_ARTIST, 0);
     data.album = mpd_song_get_tag(song, MPD_TAG_ALBUM, 0);
     data.track = mpd_song_get_tag(song, MPD_TAG_TRACK, 0);
+	data.uri = mpd_song_get_uri(song);
 
     cur += json_emit_raw_str(cur, end - cur, "{\"type\": \"song_change\", \"data\":{\"pos\":");
     cur += json_emit_int(cur, end - cur, mpd_song_get_pos(song));
