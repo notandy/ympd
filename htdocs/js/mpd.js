@@ -278,11 +278,15 @@ function webSocketConnect() {
                             case "song":
                                 var minutes = Math.floor(obj.data[item].duration / 60);
                                 var seconds = obj.data[item].duration - minutes * 60;
+								var name = obj.data[item].title;
+								if(current_app == 'search') {
+									name += ' / ' + obj.data[item].artist;
+								}
 
                                 $('#salamisandwich > tbody').append(
                                     "<tr uri=\"" + encodeURI(obj.data[item].uri) + "\" class=\"song\">" +
                                     "<td><span class=\"glyphicon glyphicon-music\"></span></td>" +
-                                    "<td>" + obj.data[item].title +"</td>" +
+                                    "<td>" + name +"</td>" +
                                     "<td>"+ minutes + ":" + (seconds < 10 ? '0' : '') + seconds +
                                     "</td><td></td></tr>"
                                 );
