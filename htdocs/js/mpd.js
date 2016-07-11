@@ -157,7 +157,10 @@ $(document).ready(function(){
 		var moveFrom = el.firstChild.textContent - 1;
 		var moveTo = target.children.length - 1;
 		if(sibling) {
-			moveTo = sibling.firstChild.textContent - 2;
+			moveTo = sibling.firstChild.textContent - 1;
+			if(moveTo > moveFrom) {
+				moveTo--;
+			}
 		}
 		if(moveTo < 0) {
 			moveTo = 0;
@@ -280,7 +283,7 @@ function webSocketConnect() {
                                 var seconds = obj.data[item].duration - minutes * 60;
 								var name = obj.data[item].title;
 								if(current_app == 'search') {
-									name += ' / ' + obj.data[item].artist;
+									name += ' / ' + obj.data[item].album + ' / ' + obj.data[item].artist;
 								}
 
                                 $('#salamisandwich > tbody').append(

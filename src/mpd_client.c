@@ -823,6 +823,8 @@ int mpd_search(char *buffer, char *searchstr)
             cur += json_emit_quoted_str(cur, end - cur, mpd_get_title(song));
 			cur += json_emit_raw_str(cur, end - cur, ",\"artist\":");
 			cur += json_emit_quoted_str(cur, end - cur, mpd_song_get_tag(song, MPD_TAG_ARTIST, 0));
+			cur += json_emit_raw_str(cur, end - cur, ",\"album\":");
+			cur += json_emit_quoted_str(cur, end - cur, mpd_song_get_tag(song, MPD_TAG_ALBUM, 0));
             cur += json_emit_raw_str(cur, end - cur, "},");
             mpd_song_free(song);
 
