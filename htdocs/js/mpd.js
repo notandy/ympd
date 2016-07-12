@@ -65,6 +65,7 @@ var app = $.sammy(function() {
 			rootPagination = pagination;
 		}
         current_app = 'browse';
+		$('#browse').addClass('active');
 		if (browsepath && !browsepath.match(/\[[A-Z-]{3}\]/)) {
 			$('#quicknav').addClass('hide');
 		} else {
@@ -100,6 +101,7 @@ var app = $.sammy(function() {
 
     this.get(/\#\/search\/(.*)/, function() {
         current_app = 'search';
+        $('#nav_links > li').removeClass('active');
 		$('#quicknav').addClass('hide');
         $('#breadcrump').removeClass('hide').empty().append("<li>Search Results</li>");
         $('#salamisandwich').find("tr:gt(0)").remove();
@@ -467,7 +469,6 @@ function webSocketConnect() {
                         socket.send('MPD_API_GET_QUEUE,'+pagination);
                     break;
                 case "song_change":
-
                     $('#album').text("");
                     $('#artist').text("");
 
