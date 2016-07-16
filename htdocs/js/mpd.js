@@ -80,6 +80,10 @@ var app = $.sammy(function() {
             add_all_songs.off(); // remove previous binds
             add_all_songs.on('click', function() {
                 socket.send('MPD_API_ADD_TRACK,'+browsepath);
+				$('.top-right').notify({
+					message:{
+						text: browsepath + ' added'
+				}}).show();
             });
             add_all_songs.show();
         }
