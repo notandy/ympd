@@ -37,6 +37,7 @@
 #define GEN_ENUM(X) X,
 #define GEN_STR(X) #X,
 #define MPD_CMDS(X) \
+	X(MPD_API_GET_STATS) \
     X(MPD_API_GET_QUEUE) \
     X(MPD_API_GET_BROWSE) \
     X(MPD_API_GET_MPDHOST) \

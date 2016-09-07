@@ -360,6 +360,23 @@ out_set_pass:
             free(p_charbuf);
             break;
 #endif
+		case MPD_API_GET_STATS:
+			{
+				struct mpd_stats *stats = mpd_run_stats(mpd.conn);
+				unsigned int artists = mpd_stats_get_number_of_artists(stats);
+				unsigned int albums = mpd_stats_get_number_of_albums(stats);
+				unsigned int songs = mpd_stats_get_number_of_songs(stats);
+				unsigned long db_update = mpd_stats_get_db_update_time(stats);
+				unsigned long total_time = mpd_stats_get_db_play_time(stats);
+				n = snprintf(mpd.buf, MAX_SIZE, "{\"type\":\"mpdstats\", \"data\":"
+					"{\"artists\": %u, \"albums\": %u, \"songs\": %u, "
+					"\"update\": %lu, \"ttime\": %lu}}", artists, albums, songs, db_update, total_time);
+				mpd_stats_free(stats);
+			}
+			break;
+		default:
+			printf("Unknown token %d\n", cmd_id);
+			break;
     }
 
     if(mpd.conn_state == MPD_CONNECTED && mpd_connection_get_error(mpd.conn) != MPD_ERROR_SUCCESS)

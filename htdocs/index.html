@@ -35,7 +35,7 @@
       <div class="collapse navbar-collapse">
 
         <ul id="nav_links" class="nav navbar-nav">
-          <li id="queue"><a href="#/">Queue</a></li>
+          <li id="queue"><a href="#/0">Queue</a></li>
           <li id="browse"><a href="#/browse/0/">Browse</a></li>
           <li><a href="#" data-toggle="modal" data-target="#addstream">Add Stream</a></li>
           <li><a href="#" data-toggle="modal" data-target="#settings" onclick="getHost();">Settings</a></li>
@@ -134,6 +134,15 @@
             <tbody>
             </tbody>
           </table>
+
+		<!-- Welcome page -->
+		<div id="welcome">
+			<div><span class="stats">Artists</span><span id="stat_artists" class="stats"></span></div>
+			<div><span class="stats">Albums</span><span id="stat_albums" class="stats"></span></div>
+			<div><span class="stats">Songs</span><span id="stat_songs" class="stats"></span></div>
+			<div><span class="stats">Total play time</span><span id="stat_ttime" class="stats"></span></div>
+			<div><span class="stats">Last DB update</span><span id="stat_update" class="stats"></span></div>
+		</div>
 
         </div><!-- /.panel -->
         <ul class="pager">

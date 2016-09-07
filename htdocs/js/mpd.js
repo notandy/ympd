@@ -33,6 +33,7 @@ var app = $.sammy(function() {
     function runBrowse() {
         current_app = 'queue';
 
+		$('#welcome').addClass('hide');
 		$('#quicknav').addClass('hide');
         $('#breadcrump').addClass('hide');
         $('#salamisandwich').removeClass('hide').find("tr:gt(0)").remove();
@@ -65,6 +66,7 @@ var app = $.sammy(function() {
 			rootPagination = pagination;
 		}
         current_app = 'browse';
+		$('#welcome').addClass('hide');
 		$('#browse').addClass('active');
 		if (browsepath && !browsepath.match(/\[[A-Z-]{3}\]/)) {
 			$('#quicknav').addClass('hide');
@@ -107,7 +109,9 @@ var app = $.sammy(function() {
         current_app = 'search';
         $('#nav_links > li').removeClass('active');
 		$('#quicknav').addClass('hide');
+		$('#welcome').addClass('hide');
         $('#breadcrump').removeClass('hide').empty().append("<li>Search Results</li>");
+        $('#salamisandwich').removeClass('hide');
         $('#salamisandwich').find("tr:gt(0)").remove();
         var searchstr = this.params['splat'][0];
 
@@ -118,7 +122,13 @@ var app = $.sammy(function() {
     });
 
     this.get("/", function(context) {
-        context.redirect("#/0");
+		prepare();
+		current_app = 'welcome';
+		$('#quicknav').addClass('hide');
+		$('#salamisandwich').addClass('hide');
+		$('#welcome').removeClass('hide');
+		$('#breadcrump').removeClass('hide').empty().append("<li>Welcome</li>");
+        socket.send('MPD_API_GET_STATS');
     });
 });
 
@@ -509,6 +519,22 @@ function webSocketConnect() {
                     if(obj.data.passwort_set)
                         $('#mpd_password_set').removeClass('hide');
                     break;
+				case "mpdstats":
+					$('#stat_artists').text(obj.data.artists);
+					$('#stat_albums').text(obj.data.albums);
+					$('#stat_songs').text(obj.data.songs);
+					var update = new Date(obj.data.update * 1000);
+					$('#stat_update').text(update.toString());
+					var ttime = obj.data.ttime;
+					var days = Math.floor(ttime / 86400);
+					ttime -= days * 86400;
+					var hours = Math.floor(ttime / 3600) % 24;
+					ttime -= hours * 3600;
+					var mins = Math.floor(ttime / 60) % 60;
+					ttime -= mins * 60;
+					var secs = ttime % 60;
+					$('#stat_ttime').text(days + ' days ' + hours + ' hours ' + mins + ' mins ' + secs + ' secs');
+					break;
                 case "error":
                     $('.top-right').notify({
                         message:{text: obj.data},

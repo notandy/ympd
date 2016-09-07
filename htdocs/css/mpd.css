@@ -109,3 +109,16 @@ td:last-child, td:first-child {
 button {
   overflow: hidden;
 }
+
+#welcome {
+	margin: 20px;
+	padding: 5px;
+	border: 1px solid #ddccdd;
+}
+
+.stats {
+	padding: 5px;
+	display: inline-block;
+	margin: 0px;
+}
+
