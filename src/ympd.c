@@ -80,10 +80,13 @@ int main(int argc, char **argv)
     mpd.port = 6600;
     strcpy(mpd.host, "127.0.0.1");
 
+    strcpy(dirble_api_token, "2e223c9909593b94fc6577361a");
+
     static struct option long_options[] = {
         {"host",         required_argument, 0, 'h'},
         {"port",         required_argument, 0, 'p'},
         {"webport",      required_argument, 0, 'w'},
+        {"dirbletoken",  required_argument, 0, 'd'},
         {"user",         required_argument, 0, 'u'},
         {"version",      no_argument,       0, 'v'},
         {"help",         no_argument,       0,  0 },
@@ -102,6 +105,9 @@ int main(int argc, char **argv)
             case 'w':
                 webport = strdup(optarg);
                 break;
+            case 'd':
+                strncpy(dirble_api_token, optarg, sizeof(dirble_api_token));
+                break;
             case 'u':
                 run_as_user = strdup(optarg);
                 break;
@@ -118,6 +124,7 @@ int main(int argc, char **argv)
                         " -p, --port <port>\t\tconnect to mpd at port [6600]\n"
                         " -w, --webport [ip:]<port>\tlisten interface/port for webserver [8080]\n"
                         " -u, --user <username>\t\tdrop priviliges to user after socket bind\n"
+                        " -d, --dirbletoken <apitoken>\tDirble API token\n"
                         " -V, --version\t\t\tget version\n"
                         " --help\t\t\t\tthis help\n"
                         , argv[0]);
