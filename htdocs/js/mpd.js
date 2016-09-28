@@ -239,7 +239,7 @@ function webSocketConnect() {
                         $('#prev').removeClass('hide');
                     if ( isTouch ) {
                         $('#salamisandwich > tbody > tr > td:last-child').append(
-                                    "<a class=\"pull-right btn-group-hover\" href=\"#/\" " +
+                                    "<a class=\"pull-right btn-group-hover\" href=\"#/0\" " +
                                         "onclick=\"socket.send('MPD_API_RM_TRACK,' + $(this).parents('tr').attr('trackid')); $(this).parents('tr').remove();\">" +
                                 "<span class=\"glyphicon glyphicon-trash\"></span></a>");
                     } else {
@@ -247,7 +247,7 @@ function webSocketConnect() {
                             mouseover: function(){
                                 if($(this).children().last().has("a").length == 0)
                                     $(this).children().last().append(
-                                        "<a class=\"pull-right btn-group-hover\" href=\"#/\" " +
+                                        "<a class=\"pull-right btn-group-hover\" href=\"#/0\" " +
                                             "onclick=\"socket.send('MPD_API_RM_TRACK," + $(this).attr("trackid") +"'); $(this).parents('tr').remove();\">" +
                                     "<span class=\"glyphicon glyphicon-trash\"></span></a>")
                                 .find('a').fadeTo('fast',1);
