@@ -144,10 +144,20 @@ int callback_mpd(struct mg_connection *c)
             break;
 	case MPD_API_SCHEDULE_SLEEP:
 	    if(sscanf(c->content, "MPD_API_SCHEDULE_SLEEP,%u", &uint_buf))
-		printf("MPD_API_SLEEP,%d\n", uint_buf);
+		printf("MPD_API_SCHEDULE_SLEEP,%d\n", uint_buf);
+	    break;
 	case MPD_API_SCHEDULE_ALARM:
-	    if(sscanf(c->content, "MPD_API_SCHEDULE_ALARM,%u", &uint_buf))
-		printf("MPD_API_ALARM,%d\n", uint_buf);
+	    if(sscanf(c->content, "MPD_API_SCHEDULE_ALARM,%u,%u", &uint_buf, &uint_buf_2))
+		printf("MPD_API_SCHEDULE_ALARM,%d,%d\n", uint_buf, uint_buf_2);
+	    break;
+	case MPD_API_SCHEDULE_LIST:
+	    if(sscanf(c->content, "MPD_API_SCHEDULE_LIST"))
+		printf("MPD_API_SCHEDULE_LIST\n");
+	    break;
+	case MPD_API_SCHEDULE_CANCEL:
+	    if(sscanf(c->content, "MPD_API_SCHEDULE_CANCEL,%u", &uint_buf))
+		printf("MPD_API_SCHEDULE_CANCEL,%d\n", uint_buf);
+	    break;
         case MPD_API_GET_BROWSE:
             p_charbuf = strdup(c->content);
             if(strcmp(strtok(p_charbuf, ","), "MPD_API_GET_BROWSE"))
