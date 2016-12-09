@@ -142,6 +142,12 @@ int callback_mpd(struct mg_connection *c)
             if(sscanf(c->content, "MPD_API_GET_QUEUE,%u", &uint_buf))
                 n = mpd_put_queue(mpd.buf, uint_buf);
             break;
+	case MPD_API_SLEEP:
+	    if(sscanf(c->content, "MPD_API_SLEEP,%u", &uint_buf))
+		printf("MPD_API_SLEEP,%d\n", uint_buf);
+	case MPD_API_ALARM:
+	    if(sscanf(c->content, "MPD_API_ALARM,%u", &uint_buf))
+		printf("MPD_API_ALARM,%d\n", uint_buf);
         case MPD_API_GET_BROWSE:
             p_charbuf = strdup(c->content);
             if(strcmp(strtok(p_charbuf, ","), "MPD_API_GET_BROWSE"))
