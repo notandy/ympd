@@ -143,17 +143,18 @@ int callback_mpd(struct mg_connection *c)
                 n = mpd_put_queue(mpd.buf, uint_buf);
             break;
 	case MPD_API_SCHEDULE_SLEEP:
-	    printf("content: %s\n",c->content);
 	    if(sscanf(c->content, "MPD_API_SCHEDULE_SLEEP,%u,%u", &uint_buf, &uint_buf_2) && uint_buf < 24 && uint_buf_2 < 60){
 		char message[12];
 		sprintf(message, "sleep %d:%d",uint_buf,uint_buf_2);
-		printf("MPD_API_SCHEDULE_SLEEP,%d,%d\n", uint_buf,uint_buf_2);
 		mpd_run_send_message(mpd.conn, "scheduler", message);
 	    }
 	    break;
 	case MPD_API_SCHEDULE_ALARM:
-	    if(sscanf(c->content, "MPD_API_SCHEDULE_ALARM,%u,%u", &uint_buf, &uint_buf_2))
-		printf("MPD_API_SCHEDULE_ALARM,%d,%d\n", uint_buf, uint_buf_2);
+	    if(sscanf(c->content, "MPD_API_SCHEDULE_ALARM,%u,%u", &uint_buf, &uint_buf_2) && uint_buf < 24 && uint_buf_2 < 60){
+		char message[12];
+		sprintf(message, "alarm %d:%d",uint_buf,uint_buf_2);
+		mpd_run_send_message(mpd.conn, "scheduler", message);
+	    }
 	    break;
 	case MPD_API_SCHEDULE_LIST:
 	    if(sscanf(c->content, "MPD_API_SCHEDULE_LIST"))
