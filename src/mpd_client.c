@@ -157,8 +157,7 @@ int callback_mpd(struct mg_connection *c)
 	    }
 	    break;
 	case MPD_API_SCHEDULE_LIST:
-	    if(sscanf(c->content, "MPD_API_SCHEDULE_LIST"))
-		printf("MPD_API_SCHEDULE_LIST\n");
+	    mpd_run_send_message(mpd.conn, "scheduler", "list");
 	    break;
 	case MPD_API_SCHEDULE_CANCEL:
 	    if(sscanf(c->content, "MPD_API_SCHEDULE_CANCEL,%u", &uint_buf) && uint_buf < 100){
