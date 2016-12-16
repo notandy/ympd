@@ -727,7 +727,6 @@ int mpd_put_schedule_list(char* buffer)
     if(len < MAX_SIZE)
     {
         strcpy(buffer, mpd_message_get_text(scheduleListMessage));
-	printf("%s\n",buffer);
     }
 
     mpd_message_free(scheduleListMessage);
