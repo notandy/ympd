@@ -688,7 +688,7 @@ int mpd_put_browse(char *buffer, char *path, unsigned int offset)
 int mpd_put_schedule_list(char* buffer)
 {
     //request the schedule list
-    mpd_run_send_message(mpd.conn, "scheduler", "list");
+    mpd_run_send_message(mpd.conn, "scheduler", "list_json");
 
     //wait for the response
     mpd_run_idle_mask(mpd.conn, MPD_IDLE_MESSAGE);
@@ -723,12 +723,16 @@ int mpd_put_schedule_list(char* buffer)
         return 0;
 
     //parse the content of the message
-    printf("%s\n",mpd_message_get_text(scheduleListMessage));
+    size_t len=strlen(mpd_message_get_text(scheduleListMessage));
+    if(len < MAX_SIZE)
+    {
+        strcpy(buffer, mpd_message_get_text(scheduleListMessage));
+	printf("%s\n",buffer);
+    }
 
-    //free the message object
     mpd_message_free(scheduleListMessage);
 
-    return 0;
+    return len;
 }
 
 int mpd_search(char *buffer, char *searchstr)
