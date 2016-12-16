@@ -29,6 +29,7 @@
 
 /* forward declaration */
 static int mpd_notify_callback(struct mg_connection *c, enum mg_event ev);
+int mpd_put_schedule_list(char* buffer);
 
 const char * mpd_cmd_strs[] = {
     MPD_CMDS(GEN_STR)
@@ -157,7 +158,7 @@ int callback_mpd(struct mg_connection *c)
 	    }
 	    break;
 	case MPD_API_SCHEDULE_LIST:
-	    mpd_run_send_message(mpd.conn, "scheduler", "list");
+        n = mpd_put_schedule_list(mpd.buf);
 	    break;
 	case MPD_API_SCHEDULE_CANCEL:
 	    if(sscanf(c->content, "MPD_API_SCHEDULE_CANCEL,%u", &uint_buf) && uint_buf < 100){
@@ -682,6 +683,52 @@ int mpd_put_browse(char *buffer, char *path, unsigned int offset)
 
     cur += json_emit_raw_str(cur, end - cur, "]}");
     return cur - buffer;
+}
+
+int mpd_put_schedule_list(char* buffer)
+{
+    //request the schedule list
+    mpd_run_send_message(mpd.conn, "scheduler", "list");
+
+    //wait for the response
+    mpd_run_idle_mask(mpd.conn, MPD_IDLE_MESSAGE);
+
+    //parse all messages
+    mpd_send_read_messages(mpd.conn);
+
+    struct mpd_message* tmpMessage=mpd_recv_message(mpd.conn);
+    struct mpd_message* scheduleListMessage=NULL;
+    
+    while(tmpMessage){
+        //watch for the "scheduled" channel
+        if(strcmp(mpd_message_get_channel(tmpMessage),"scheduled"))
+        {
+            //channel is not "scheduled", discard it
+            mpd_message_free(tmpMessage);
+        }
+        else
+        {
+            //channel is "scheduled", remember it, overwriting previous messages
+            if(scheduleListMessage)
+                mpd_message_free(scheduleListMessage);
+
+            scheduleListMessage=tmpMessage;
+        }
+        //get the next message
+        tmpMessage=mpd_recv_message(mpd.conn);
+    }
+
+    //check if any valid message was received
+    if(!scheduleListMessage)
+        return 0;
+
+    //parse the content of the message
+    printf("%s\n",mpd_message_get_text(scheduleListMessage));
+
+    //free the message object
+    mpd_message_free(scheduleListMessage);
+
+    return 0;
 }
 
 int mpd_search(char *buffer, char *searchstr)
