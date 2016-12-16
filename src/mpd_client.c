@@ -411,6 +411,10 @@ void mpd_poll(struct mg_server *s)
             fprintf(stderr, "MPD connected.\n");
             mpd_connection_set_timeout(mpd.conn, 10000);
             mpd.conn_state = MPD_CONNECTED;
+	    
+	    //subscribe to channels
+	    mpd_run_subscribe(mpd.conn,"scheduled");
+
             /* write outputs */
             mpd.buf_size = mpd_put_outputs(mpd.buf, 1);
             for (struct mg_connection *c = mg_next(s, NULL); c != NULL; c = mg_next(s, c))
