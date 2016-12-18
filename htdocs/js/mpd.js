@@ -48,6 +48,7 @@ var app = $.sammy(function() {
         $('.page-btn').addClass('hide');
         $('#add-all-songs').hide();
         $('#dirble_panel').addClass('hide');
+        $('#mpdScheduler_panel').addClass('hide');
         pagination = 0;
         browsepath = '';
     }
@@ -145,6 +146,19 @@ var app = $.sammy(function() {
         $('#dirble').addClass('active');
 
         dirble_load_categories();
+    });
+
+    this.get(/\#\/mpdScheduler\//, function() {
+        prepare();
+        current_app = 'mpdScheduler';
+        $('#breadcrump').addClass('hide');
+        $('#salamisandwich').addClass('hide');
+        $('#mpdScheduler_panel').removeClass('hide');
+
+        $('#panel-heading').text("Alarms");
+        $('#mpdScheduler').addClass('active');
+
+        socket.send('MPD_API_SCHEDULE_LIST');
     });
 
     this.get("/", function(context) {
@@ -498,6 +512,26 @@ function webSocketConnect() {
                         message:{text: obj.data},
                         type: "danger",
                     }).show();
+                    break;
+                case "scheduleList":
+                    $('#mpdScheduler_panel > table > tbody').empty();
+                    if (!obj.data || !obj.data.length) {
+                        $('#mpdScheduler_panel > table > tbody').append(
+                            "<tr><td colspan='3'><em>No jobs</em></td></tr>"
+                        );
+                    }
+                    obj.data.forEach(function(job) {
+                        $('#mpdScheduler_panel > table > tbody').append(
+                            "<tr data-index=\"" + job.index + "\">" + 
+                                "<td>" + job.job + "</td>" +
+                                "<td>"+ job.time +"</td>" + 
+                                "<td><a class=\"pull-right btn-group-hover\" href=\"#/\" " +
+                                        "onclick=\"socket.send('MPD_API_SCHEDULE_CANCEL,' + $(this).parents('tr').data('index')); $(this).parents('tr').remove();return false;\">" +
+                                "<span class=\"glyphicon glyphicon-trash\"></span></a></td>" +
+                            "</tr>"
+                        );
+                    });
+                    break;
                 default:
                     break;
             }
