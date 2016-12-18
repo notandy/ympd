@@ -37,7 +37,6 @@ var app = $.sammy(function() {
 
         $('#breadcrump').addClass('hide');
         $('#salamisandwich').removeClass('hide').find("tr:gt(0)").remove();
-        $('#dirble_panel').addClass('hide');
         socket.send('MPD_API_GET_QUEUE,'+pagination);
 
         $('#panel-heading').text("Queue");
@@ -48,6 +47,7 @@ var app = $.sammy(function() {
         $('#nav_links > li').removeClass('active');
         $('.page-btn').addClass('hide');
         $('#add-all-songs').hide();
+        $('#dirble_panel').addClass('hide');
         pagination = 0;
         browsepath = '';
     }
