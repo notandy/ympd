@@ -143,30 +143,35 @@ int callback_mpd(struct mg_connection *c)
             if(sscanf(c->content, "MPD_API_GET_QUEUE,%u", &uint_buf))
                 n = mpd_put_queue(mpd.buf, uint_buf);
             break;
-	case MPD_API_SCHEDULE_SLEEP:
-	    if(sscanf(c->content, "MPD_API_SCHEDULE_SLEEP,%u,%u", &uint_buf, &uint_buf_2) && uint_buf < 24 && uint_buf_2 < 60){
-		char message[12];
-		sprintf(message, "sleep %d:%d",uint_buf,uint_buf_2);
-		mpd_run_send_message(mpd.conn, "scheduler", message);
-	    }
-	    break;
-	case MPD_API_SCHEDULE_ALARM:
-	    if(sscanf(c->content, "MPD_API_SCHEDULE_ALARM,%u,%u", &uint_buf, &uint_buf_2) && uint_buf < 24 && uint_buf_2 < 60){
-		char message[12];
-		sprintf(message, "alarm %d:%d",uint_buf,uint_buf_2);
-		mpd_run_send_message(mpd.conn, "scheduler", message);
-	    }
-	    break;
-	case MPD_API_SCHEDULE_LIST:
-        n = mpd_put_schedule_list(mpd.buf);
-	    break;
-	case MPD_API_SCHEDULE_CANCEL:
-	    if(sscanf(c->content, "MPD_API_SCHEDULE_CANCEL,%u", &uint_buf) && uint_buf < 100){
-		char message[11];
-		sprintf(message, "cancel %d",uint_buf);
-		mpd_run_send_message(mpd.conn, "scheduler", message);
-	    }
-	    break;
+        case MPD_API_SCHEDULE_SLEEP:
+            if(sscanf(c->content, "MPD_API_SCHEDULE_SLEEP,%u,%u", &uint_buf, &uint_buf_2) && uint_buf < 24 && uint_buf_2 < 60){
+            char message[12];
+            sprintf(message, "sleep %d:%d",uint_buf,uint_buf_2);
+            mpd_run_send_message(mpd.conn, "scheduler", message);
+            }
+            break;
+        case MPD_API_SCHEDULE_ALARM:
+            if(sscanf(c->content, "MPD_API_SCHEDULE_ALARM,%u,%u", &uint_buf, &uint_buf_2) && uint_buf < 24 && uint_buf_2 < 60){
+            char message[12];
+            sprintf(message, "alarm %d:%d",uint_buf,uint_buf_2);
+            mpd_run_send_message(mpd.conn, "scheduler", message);
+            }
+            break;
+        case MPD_API_SCHEDULE_LIST:
+            n = mpd_put_schedule_list(mpd.buf);
+            break;
+        case MPD_API_SCHEDULE_CANCEL:
+            p_charbuf = strdup(c->content);
+            if(!strcmp(strtok(p_charbuf,","), "MPD_API_SCHEDULE_CANCEL")){
+                char* uuid=strtok(NULL,",");    
+                if(uuid && strlen(uuid) < 40 && strtok(NULL,",") == NULL){
+                    char message[45];
+                    sprintf(message,"cancel_uuid %s",uuid);
+                    mpd_run_send_message(mpd.conn, "scheduler", message);
+                }
+            }
+            free(p_charbuf);
+            break;
         case MPD_API_GET_BROWSE:
             p_charbuf = strdup(c->content);
             if(strcmp(strtok(p_charbuf, ","), "MPD_API_GET_BROWSE"))
