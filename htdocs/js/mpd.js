@@ -522,11 +522,11 @@ function webSocketConnect() {
                     }
                     obj.data.forEach(function(job) {
                         $('#mpdScheduler_panel > table > tbody').append(
-                            "<tr data-index=\"" + job.index + "\">" + 
+                            "<tr data-uuid=\"" + job.uuid + "\">" + 
                                 "<td>" + job.job + "</td>" +
                                 "<td>"+ job.time +"</td>" + 
                                 "<td><a class=\"pull-right btn-group-hover\" href=\"#/\" " +
-                                        "onclick=\"socket.send('MPD_API_SCHEDULE_CANCEL,' + $(this).parents('tr').data('index')); $(this).parents('tr').remove();return false;\">" +
+                                        "onclick=\"socket.send('MPD_API_SCHEDULE_CANCEL,' + $(this).parents('tr').data('uuid')); $(this).parents('tr').remove();return false;\">" +
                                 "<span class=\"glyphicon glyphicon-trash\"></span></a></td>" +
                             "</tr>"
                         );
