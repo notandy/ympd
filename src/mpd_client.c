@@ -165,7 +165,7 @@ int callback_mpd(struct mg_connection *c)
             if(!strcmp(strtok(p_charbuf,","), "MPD_API_SCHEDULE_CANCEL")){
                 char* uuid=strtok(NULL,",");    
                 if(uuid && strlen(uuid) < 40 && strtok(NULL,",") == NULL){
-                    char message[45];
+                    char message[64];
                     sprintf(message,"cancel_uuid %s",uuid);
                     mpd_run_send_message(mpd.conn, "scheduler", message);
                 }
