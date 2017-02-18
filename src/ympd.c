@@ -87,10 +87,11 @@ int main(int argc, char **argv)
         {"user",         required_argument, 0, 'u'},
         {"version",      no_argument,       0, 'v'},
         {"help",         no_argument,       0,  0 },
+        {"mpdpass",      required_argument, 0, 'm'},
         {0,              0,                 0,  0 }
     };
 
-    while((n = getopt_long(argc, argv, "h:p:w:u:v",
+    while((n = getopt_long(argc, argv, "h:p:w:u:v:m",
                 long_options, &option_index)) != -1) {
         switch (n) {
             case 'h':
@@ -104,6 +105,9 @@ int main(int argc, char **argv)
                 break;
             case 'u':
                 run_as_user = strdup(optarg);
+                break;
+            case 'm':
+                mpd.password = strdup(optarg);
                 break;
             case 'v':
                 fprintf(stdout, "ympd  %d.%d.%d\n"
