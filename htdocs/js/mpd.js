@@ -515,11 +515,6 @@ function webSocketConnect() {
                     break;
                 case "scheduleList":
                     $('#mpdScheduler_panel > table > tbody').empty();
-                    if (!obj.data || !obj.data.length) {
-                        $('#mpdScheduler_panel > table > tbody').append(
-                            "<tr><td colspan='3'><em>No jobs</em></td></tr>"
-                        );
-                    }
                     obj.data.forEach(function(job) {
                         $('#mpdScheduler_panel > table > tbody').append(
                             "<tr data-uuid=\"" + job.uuid + "\">" + 

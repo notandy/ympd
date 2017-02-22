@@ -88,3 +88,10 @@ td:last-child, td:first-child {
 button {
   overflow: hidden;
 }
+
+#mpdScheduler_panel .table tbody:empty::after {
+  content: "No Jobs";
+  display: block;
+  padding: 8px;
+  font-style: italic;
+}
