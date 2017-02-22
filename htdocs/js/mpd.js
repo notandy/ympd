@@ -160,7 +160,7 @@ var app = $.sammy(function() {
 
         socket.send('MPD_API_SCHEDULE_LIST');
 
-        $('#mpdScheduler_addAlarm').on('submit', function () {
+        $('#mpdScheduler_addAlarm form').on('submit', function () {
             var time = $('#mpdScheduler_addAlarm_time').val().split(':').map(function (num) {
                 return parseInt(num);
             });
@@ -177,6 +177,18 @@ var app = $.sammy(function() {
             } else {
                 $("#mpdScheduler_addAlarm .form-group").addClass('has-error');
             }
+
+            return false;
+        });
+
+        $('#mpdScheduler_addSleep button').on('click', function () {
+            var mins = parseInt($(this).data('minutes'));
+
+            // This will break if local time not equal to server time (e.g. different timezone)
+            var alarmTime = new Date(Date.now() + mins * 60000);
+
+            socket.send('MPD_API_SCHEDULE_SLEEP,' + alarmTime.getHours() + ',' + alarmTime.getMinutes());
+            socket.send('MPD_API_SCHEDULE_LIST');
 
             return false;
         });
