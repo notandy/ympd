@@ -159,6 +159,27 @@ var app = $.sammy(function() {
         $('#mpdScheduler').addClass('active');
 
         socket.send('MPD_API_SCHEDULE_LIST');
+
+        $('#mpdScheduler_addAlarm').on('submit', function () {
+            var time = $('#mpdScheduler_addAlarm_time').val().split(':').map(function (num) {
+                return parseInt(num);
+            });
+
+            if (time.length == 2 && time[0] < 24 && time[1] < 60) {
+                var hours = time[0];
+                var mins = time[1];
+
+                $("#mpdScheduler_addAlarm .form-group").removeClass('has-error');
+                $('#mpdScheduler_addAlarm_time').val('');
+
+                socket.send('MPD_API_SCHEDULE_ALARM,' + hours + ',' + mins);
+                socket.send('MPD_API_SCHEDULE_LIST');
+            } else {
+                $("#mpdScheduler_addAlarm .form-group").addClass('has-error');
+            }
+
+            return false;
+        });
     });
 
     this.get("/", function(context) {
