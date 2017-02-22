@@ -35,6 +35,7 @@
         <ul id="nav_links" class="nav navbar-nav">
           <li id="queue"><a href="#/">Queue</a></li>
           <li id="browse"><a href="#/browse/0/">Browse database</a></li>
+          <li id="mpdScheduler"><a href="#/mpdScheduler/">Jobs</a></li>
           <li id="dirble"><a href="#/dirble/">Dirble</a></li>
           <li><a href="#" data-toggle="modal" data-target="#addstream">Add Stream</a></li>
           <li><a href="#" data-toggle="modal" data-target="#settings" onclick="getHost();">Settings</a></li>
@@ -42,7 +43,7 @@
 
         <div class="btn-toolbar navbar-btn navbar-right" role="toolbar">
           <div class="btn-group">
-            <button type="button" class="btn btn-default" onclick="socket.send('MPD_API_SET_PREV');">
+            <button type="button" class="btn btn-default" onclick="socket.send('MPD_API_SCHEDULE_LIST');">
               <span class="glyphicon glyphicon-backward"></span>
             </button>
             <button type="button" class="btn btn-default" onclick="socket.send('MPD_API_SET_STOP');">
@@ -51,7 +52,7 @@
             <button type="button" class="btn btn-default" onclick="clickPlay();">
               <span id="play-icon" class="glyphicon glyphicon-pause"></span>
             </button>
-            <button type="button" class="btn btn-default" onclick="socket.send('MPD_API_SET_NEXT');">
+            <button type="button" class="btn btn-default" onclick="socket.send('MPD_API_SCHEDULE_ALARM,6,45');">
               <span class="glyphicon glyphicon-forward"></span>
             </button>
           </div>
@@ -138,6 +139,45 @@
                 <tbody>
                 </tbody>
             </table>
+        </div>
+
+        <div id="mpdScheduler_panel">
+            <table class="table table-hover">
+                <thead>
+                  <tr>
+                      <th>Name</th><th>Time</th><th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+
+            <div class="panel-body">
+
+              <div class="panel panel-default" id="mpdScheduler_addAlarm">
+                <div class="panel-heading"><h3 class="panel-title">Add alarm</h3></div>
+                <div class="panel-body">
+                  <form class="form-inline">
+                    <div class="form-group">
+                      <label for="mpdScheduler_addAlarm_time">Time</label>
+                      <input type="time" class="form-control" id="mpdScheduler_addAlarm_time" placeholder="hh:mm">
+                    </div>
+                    <button type="submit" class="btn btn-default">Add Alarm</button>
+                  </form>
+                </div>
+              </div>
+
+              <div class="panel panel-default" id="mpdScheduler_addSleep">
+                <div class="panel-heading"><h3 class="panel-title">Set sleep timer</h3></div>
+                <div class="panel-body">
+                  <button type="submit" class="btn btn-default" data-minutes="15">5 Minutes</button>
+                  <button type="submit" class="btn btn-default" data-minutes="15">15 Minutes</button>
+                  <button type="submit" class="btn btn-default" data-minutes="30">30 Minutes</button>
+                  <button type="submit" class="btn btn-default" data-minutes="60">1 Hour</button>
+                </div>
+              </div>
+
+            </div>
         </div>
 
         </div><!-- /.panel -->

@@ -37,7 +37,6 @@ var app = $.sammy(function() {
 
         $('#breadcrump').addClass('hide');
         $('#salamisandwich').removeClass('hide').find("tr:gt(0)").remove();
-        $('#dirble_panel').addClass('hide');
         socket.send('MPD_API_GET_QUEUE,'+pagination);
 
         $('#panel-heading').text("Queue");
@@ -48,6 +47,8 @@ var app = $.sammy(function() {
         $('#nav_links > li').removeClass('active');
         $('.page-btn').addClass('hide');
         $('#add-all-songs').hide();
+        $('#dirble_panel').addClass('hide');
+        $('#mpdScheduler_panel').addClass('hide');
         pagination = 0;
         browsepath = '';
     }
@@ -145,6 +146,52 @@ var app = $.sammy(function() {
         $('#dirble').addClass('active');
 
         dirble_load_categories();
+    });
+
+    this.get(/\#\/mpdScheduler\//, function() {
+        prepare();
+        current_app = 'mpdScheduler';
+        $('#breadcrump').addClass('hide');
+        $('#salamisandwich').addClass('hide');
+        $('#mpdScheduler_panel').removeClass('hide');
+
+        $('#panel-heading').text("Alarms");
+        $('#mpdScheduler').addClass('active');
+
+        socket.send('MPD_API_SCHEDULE_LIST');
+
+        $('#mpdScheduler_addAlarm form').on('submit', function () {
+            var time = $('#mpdScheduler_addAlarm_time').val().split(':').map(function (num) {
+                return parseInt(num);
+            });
+
+            if (time.length == 2 && time[0] < 24 && time[1] < 60) {
+                var hours = time[0];
+                var mins = time[1];
+
+                $("#mpdScheduler_addAlarm .form-group").removeClass('has-error');
+                $('#mpdScheduler_addAlarm_time').val('');
+
+                socket.send('MPD_API_SCHEDULE_ALARM,' + hours + ',' + mins);
+                socket.send('MPD_API_SCHEDULE_LIST');
+            } else {
+                $("#mpdScheduler_addAlarm .form-group").addClass('has-error');
+            }
+
+            return false;
+        });
+
+        $('#mpdScheduler_addSleep button').on('click', function () {
+            var mins = parseInt($(this).data('minutes'));
+
+            // This will break if local time not equal to server time (e.g. different timezone)
+            var alarmTime = new Date(Date.now() + mins * 60000);
+
+            socket.send('MPD_API_SCHEDULE_SLEEP,' + alarmTime.getHours() + ',' + alarmTime.getMinutes());
+            socket.send('MPD_API_SCHEDULE_LIST');
+
+            return false;
+        });
     });
 
     this.get("/", function(context) {
@@ -498,6 +545,21 @@ function webSocketConnect() {
                         message:{text: obj.data},
                         type: "danger",
                     }).show();
+                    break;
+                case "scheduleList":
+                    $('#mpdScheduler_panel > table > tbody').empty();
+                    obj.data.forEach(function(job) {
+                        $('#mpdScheduler_panel > table > tbody').append(
+                            "<tr data-uuid=\"" + job.uuid + "\">" + 
+                                "<td>" + job.job + "</td>" +
+                                "<td>"+ job.time +"</td>" + 
+                                "<td><a class=\"pull-right btn-group-hover\" href=\"#/\" " +
+                                        "onclick=\"socket.send('MPD_API_SCHEDULE_CANCEL,' + $(this).parents('tr').data('uuid')); $(this).parents('tr').remove();return false;\">" +
+                                "<span class=\"glyphicon glyphicon-trash\"></span></a></td>" +
+                            "</tr>"
+                        );
+                    });
+                    break;
                 default:
                     break;
             }
