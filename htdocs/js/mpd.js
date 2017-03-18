@@ -621,6 +621,7 @@ function get_appropriate_ws_url()
 {
     var pcol;
     var u = document.URL;
+    var separator;
 
     /*
     /* We open the websocket encrypted if this page came on an
@@ -638,7 +639,13 @@ function get_appropriate_ws_url()
 
     u = u.split('#');
 
-    return pcol + u[0] + "/ws";
+    if (/\/$/.test(u[0])) {
+        separator = "";
+    } else {
+        separator = "/";
+    }
+
+    return pcol + u[0] + separator + "ws";
 }
 
 var updateVolumeIcon = function(volume)
