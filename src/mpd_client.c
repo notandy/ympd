@@ -229,6 +229,27 @@ out_save_queue:
 out_search:
             free(p_charbuf);
             break;
+        case MPD_API_SEND_MESSAGE:
+            p_charbuf = strdup(c->content);
+            if(strcmp(strtok(p_charbuf, ","), "MPD_API_SEND_MESSAGE"))
+				goto out_send_message;
+
+            if((token = strtok(NULL, ",")) == NULL)
+                goto out_send_message;
+
+			free(p_charbuf);
+            p_charbuf = strdup(get_arg1(c->content));
+
+            if ( strtok(p_charbuf, ",") == NULL )
+                goto out_send_message;
+
+            if ( (token = strtok(NULL, ",")) == NULL )
+                goto out_send_message;
+
+			mpd_run_send_message(mpd.conn, p_charbuf, token);
+out_send_message:
+            free(p_charbuf);
+            break;
 #ifdef WITH_MPD_HOST_CHANGE
         /* Commands allowed when disconnected from MPD server */
         case MPD_API_SET_MPDHOST:
