@@ -50,6 +50,7 @@ To run ympd with SSL support:
 - tell ympd to use a webport using SSL and where to find the certificate: 
 ```
 # ./ympd -w "ssl://8081:/path/to/ssl.pem"
+```
 
 Dirble support
 --------------
