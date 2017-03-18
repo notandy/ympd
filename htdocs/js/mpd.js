@@ -466,6 +466,8 @@ function webSocketConnect() {
                     $('#album').text("");
                     $('#artist').text("");
 
+					$('#btnlove').removeClass("active");
+
                     $('#currenttrack').text(" " + obj.data.title);
                     var notification = "<strong><h4>" + obj.data.title + "</h4></strong>";
 
@@ -596,6 +598,14 @@ function clickPlay() {
 
 function basename(path) {
     return path.split('/').reverse()[0];
+}
+
+function clickLove() {
+    socket.send("MPD_API_SEND_MESSAGE,mpdas," + ($('#btnlove').hasClass('active') ? "unlove" : "love"));
+	if ( $('#btnlove').hasClass('active') )
+		$('#btnlove').removeClass("active");
+	else
+		$('#btnlove').addClass("active");
 }
 
 $('#btnrandom').on('click', function (e) {
