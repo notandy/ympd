@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <libgen.h>
 #include <mpd/client.h>
+#include <mpd/message.h>
 
 #include "mpd_client.h"
 #include "config.h"
