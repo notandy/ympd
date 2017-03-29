@@ -91,7 +91,7 @@ int main(int argc, char **argv)
         {0,              0,                 0,  0 }
     };
 
-    while((n = getopt_long(argc, argv, "h:p:w:u:v:m",
+    while((n = getopt_long(argc, argv, "h:p:w:u:vm:",
                 long_options, &option_index)) != -1) {
         switch (n) {
             case 'h':
