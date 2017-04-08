@@ -93,6 +93,10 @@ int callback_mpd(struct mg_connection *c)
             if(sscanf(c->content, "MPD_API_RM_TRACK,%u", &uint_buf))
                 mpd_run_delete_id(mpd.conn, uint_buf);
             break;
+        case MPD_API_RM_RANGE:
+            if(sscanf(c->content, "MPD_API_RM_RANGE,%u,%u", &uint_buf, &uint_buf_2))
+                mpd_run_delete_range(mpd.conn, uint_buf, uint_buf_2);
+            break;
         case MPD_API_PLAY_TRACK:
             if(sscanf(c->content, "MPD_API_PLAY_TRACK,%u", &uint_buf))
                 mpd_run_play_id(mpd.conn, uint_buf);
