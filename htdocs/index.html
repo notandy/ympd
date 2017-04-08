@@ -188,6 +188,21 @@
           <div id="btn-outputs-block" class="btn-group-vertical btn-block btn-group-lg">
           </div>
 
+          <div id="trashmode" class="btn-group-vertical btn-block btn-group-lg" data-toggle="radio">
+            <button id="btntrashmodeup" type="button" class="btn btn-default">
+              <span class="glyphicon glyphicon-chevron-up"></span>
+              <span class="glyphicon glyphicon-trash"></span> up &nbsp;&nbsp;&nbsp;
+            </button>
+            <button id="btntrashmodesingle" type="button" class="btn btn-default active">
+              <span class="glyphicon glyphicon-star-empty"></span>
+              <span class="glyphicon glyphicon-trash"></span> single
+            </button>
+            <button id="btntrashmodedown" type="button" class="btn btn-default">
+              <span class="glyphicon glyphicon-chevron-down"></span>
+              <span class="glyphicon glyphicon-trash"></span> down&nbsp;
+            </button>
+          </div>
+
           <div id="btn-responsive-block" class="btn-group-vertical btn-block btn-group-lg">
             <button type="button" class="btn btn-default" onclick="socket.send('MPD_API_RM_ALL');">
               <span class="glyphicon glyphicon-trash"></span> Clear queue
@@ -197,11 +212,11 @@
             </a>
           </div>
 
-  	      <div id="btn-responsive-block" class="btn-group-vertical btn-block btn-group-lg" data-toggle="buttons">
-  	        <button type="button" class="btn btn-default" id="btnnotify">
-  		     <span class="glyphicon glyphicon-comment"></span> Notifications
-  	        </button>
-  	      </div>
+            <div id="btn-responsive-block" class="btn-group-vertical btn-block btn-group-lg" data-toggle="buttons">
+              <button type="button" class="btn btn-default" id="btnnotify">
+               <span class="glyphicon glyphicon-comment"></span> Notifications
+              </button>
+            </div>
         </div>
       </div><!-- /.col-md-2 -->
     </div><!-- /.row -->

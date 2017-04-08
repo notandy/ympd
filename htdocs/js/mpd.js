@@ -303,20 +303,32 @@ function webSocketConnect() {
                     if ( isTouch ) {
                         $('#salamisandwich > tbody > tr > td:last-child').append(
                                     "<a class=\"pull-right btn-group-hover\" href=\"#/\" " +
-                                        "onclick=\"socket.send('MPD_API_RM_TRACK,' + $(this).parents('tr').attr('trackid')); $(this).parents('tr').remove();\">" +
+                                        "onclick=\"trash($(this).parents('tr'));\">" +
                                 "<span class=\"glyphicon glyphicon-trash\"></span></a>");
                     } else {
                         $('#salamisandwich > tbody > tr').on({
                             mouseover: function(){
+                                var doomed = $(this);
+                                if ( $('#btntrashmodeup').hasClass('active') )
+                                    doomed = $("#salamisandwich > tbody > tr:lt(" + ($(this).index() + 1) + ")");
+                                if ( $('#btntrashmodedown').hasClass('active') )
+                                    doomed = $("#salamisandwich > tbody > tr:gt(" + ($(this).index() - 1) + ")");
+                                $.each(doomed, function(){
                                 if($(this).children().last().has("a").length == 0)
                                     $(this).children().last().append(
                                         "<a class=\"pull-right btn-group-hover\" href=\"#/\" " +
-                                            "onclick=\"socket.send('MPD_API_RM_TRACK," + $(this).attr("trackid") +"'); $(this).parents('tr').remove();\">" +
+                                            "onclick=\"trash($(this).parents('tr'));\">" +
                                     "<span class=\"glyphicon glyphicon-trash\"></span></a>")
                                 .find('a').fadeTo('fast',1);
+                                });
                             },
                             mouseleave: function(){
-                                $(this).children().last().find("a").stop().remove();
+                                var doomed = $(this);
+                                if ( $('#btntrashmodeup').hasClass('active') )
+                                    doomed = $("#salamisandwich > tbody > tr:lt(" + ($(this).index() + 1) + ")");
+                                if ( $('#btntrashmodedown').hasClass('active') )
+                                    doomed = $("#salamisandwich > tbody > tr:gt(" + ($(this).index() - 1) + ")");
+                                $.each(doomed, function(){$(this).children().last().find("a").stop().remove();});
                             }
                         });
                     };
@@ -757,6 +769,19 @@ function setLocalStream(mpdhost) {
     $("#mpdstream").change();
 }
 
+function trash(tr) {
+    if ( $('#btntrashmodeup').hasClass('active') ) {
+        socket.send('MPD_API_RM_RANGE,0,' + (tr.index() + 1));
+        tr.remove();
+    } else if ( $('#btntrashmodesingle').hasClass('active') ) {
+        socket.send('MPD_API_RM_TRACK,' + tr.attr('trackid'));
+        tr.remove();
+    } else if ( $('#btntrashmodedown').hasClass('active') ) {
+        socket.send('MPD_API_RM_RANGE,' + tr.index() + ',-1');
+        tr.remove();
+    };
+}
+
 function basename(path) {
     return path.split('/').reverse()[0];
 }
@@ -790,6 +815,11 @@ $('#btnrepeat').on('click', function (e) {
 function toggleoutput(button, id) {
     socket.send("MPD_API_TOGGLE_OUTPUT,"+id+"," + ($(button).hasClass('active') ? 0 : 1));
 }
+
+$('#trashmode').children("button").on('click', function(e) {
+    $('#trashmode').children("button").removeClass("active");
+    $(this).addClass("active");
+});
 
 $('#btnnotify').on('click', function (e) {
     if($.cookie("notification") === "true") {
@@ -866,7 +896,7 @@ $('.page-btn').on('click', function (e) {
 
 function addStream() {
     if($('#streamurl').val().length > 0) {
-    	socket.send('MPD_API_ADD_TRACK,'+$('#streamurl').val());
+        socket.send('MPD_API_ADD_TRACK,'+$('#streamurl').val());
     }
     $('#streamurl').val("");
     $('#addstream').modal('hide');
@@ -874,7 +904,7 @@ function addStream() {
 
 function saveQueue() {
     if($('#playlistname').val().length > 0) {
-    	socket.send('MPD_API_SAVE_QUEUE,'+$('#playlistname').val());
+        socket.send('MPD_API_SAVE_QUEUE,'+$('#playlistname').val());
     }
     $('#savequeue').modal('hide');
 }
@@ -927,7 +957,7 @@ function songNotify(title, artist, album) {
     if(typeof album != 'undefined' && album.length > 0)
         textNotification += "\n " + album;
 
-	var notification = new Notification(title, {icon: 'assets/favicon.ico', body: textNotification});
+    var notification = new Notification(title, {icon: 'assets/favicon.ico', body: textNotification});
     setTimeout(function(notification) {
         notification.close();
     }, 3000, notification);
