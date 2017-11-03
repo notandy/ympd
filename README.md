@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/notandy/ympd.svg)](https://travis-ci.org/notandy/ympd)
 ympd
 ====
 

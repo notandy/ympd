@@ -51,7 +51,7 @@ static int server_callback(struct mg_connection *c, enum mg_event ev) {
                 else
                     return MG_TRUE;
             } else
-#ifdef WITH_DYNAMIC_SERVING
+#ifdef WITH_DYNAMIC_ASSETS
                 return MG_FALSE;
 #else
                 return callback_http(c);
@@ -70,10 +70,10 @@ int main(int argc, char **argv)
     unsigned int current_timer = 0, last_timer = 0;
     char *run_as_user = NULL;
     char const *error_msg = NULL;
+    char *webport = "8080";
 
     atexit(bye);
-    error_msg = mg_set_option(server, "listening_port", "8080");
-#ifdef WITH_DYNAMIC_SERVING
+#ifdef WITH_DYNAMIC_ASSETS
     mg_set_option(server, "document_root", SRC_PATH);
 #endif
 
@@ -100,7 +100,7 @@ int main(int argc, char **argv)
                 mpd.port = atoi(optarg);
                 break;
             case 'w':
-                error_msg = mg_set_option(server, "listening_port", optarg);
+                webport = strdup(optarg);
                 break;
             case 'u':
                 run_as_user = strdup(optarg);
@@ -131,9 +131,14 @@ int main(int argc, char **argv)
         }
     }
 
+    error_msg = mg_set_option(server, "listening_port", webport);
+    if(error_msg) {
+        fprintf(stderr, "Mongoose error: %s\n", error_msg);
+        return EXIT_FAILURE;
+    }
+
     /* drop privilges at last to ensure proper port binding */
-    if(run_as_user != NULL)
-    {
+    if(run_as_user != NULL) {
         error_msg = mg_set_option(server, "run_as_user", run_as_user);
         free(run_as_user);
         if(error_msg)

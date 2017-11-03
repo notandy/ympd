@@ -18,12 +18,16 @@
 
 var socket;
 var last_state;
+var last_outputs;
 var current_app;
 var pagination = 0;
 var browsepath;
 var lastSongTitle = "";
 var current_song = new Object();
 var MAX_ELEMENTS_PER_PAGE = 512;
+var dirble_selected_cat = "";
+var dirble_catid = "";
+var dirble_page = 1;
 
 var app = $.sammy(function() {
 
@@ -31,7 +35,8 @@ var app = $.sammy(function() {
         current_app = 'queue';
 
         $('#breadcrump').addClass('hide');
-        $('#salamisandwich').find("tr:gt(0)").remove();
+        $('#salamisandwich').removeClass('hide').find("tr:gt(0)").remove();
+        $('#dirble_panel').addClass('hide');
         socket.send('MPD_API_GET_QUEUE,'+pagination);
 
         $('#panel-heading').text("Queue");
@@ -41,6 +46,7 @@ var app = $.sammy(function() {
     function prepare() {
         $('#nav_links > li').removeClass('active');
         $('.page-btn').addClass('hide');
+        $('#add-all-songs').hide();
         pagination = 0;
         browsepath = '';
     }
@@ -57,8 +63,18 @@ var app = $.sammy(function() {
         pagination = parseInt(this.params['splat'][0]);
         current_app = 'browse';
         $('#breadcrump').removeClass('hide').empty().append("<li><a href=\"#/browse/0/\">root</a></li>");
-        $('#salamisandwich').find("tr:gt(0)").remove();
+        $('#salamisandwich').removeClass('hide').find("tr:gt(0)").remove();
+        $('#dirble_panel').addClass('hide');
         socket.send('MPD_API_GET_BROWSE,'+pagination+','+(browsepath ? browsepath : "/"));
+        // Don't add all songs from root
+        if (browsepath) {
+            var add_all_songs = $('#add-all-songs');
+            add_all_songs.off(); // remove previous binds
+            add_all_songs.on('click', function() {
+                socket.send('MPD_API_ADD_TRACK,'+browsepath);
+            });
+            add_all_songs.show();
+        }
 
         $('#panel-heading').text("Browse database: "+browsepath);
         var path_array = browsepath.split('/');
@@ -79,12 +95,55 @@ var app = $.sammy(function() {
     this.get(/\#\/search\/(.*)/, function() {
         current_app = 'search';
         $('#salamisandwich').find("tr:gt(0)").remove();
+        $('#dirble_panel').addClass('hide');
         var searchstr = this.params['splat'][0];
 
         $('#search > div > input').val(searchstr);
         socket.send('MPD_API_SEARCH,' + searchstr);
 
         $('#panel-heading').text("Search: "+searchstr);
+    });
+
+
+    this.get(/\#\/dirble\/(\d+)\/(\d+)/, function() {
+        prepare();
+        current_app = 'dirble';
+        $('#breadcrump').removeClass('hide').empty().append("<li><a href=\"#/dirble/\">Categories</a></li><li>"+dirble_selected_cat+"</li>");
+        $('#salamisandwich').addClass('hide');
+        $('#dirble_panel').removeClass('hide');
+        $('#dirble_loading').removeClass('hide');
+        $('#dirble_left').find("tr:gt(0)").remove();
+        $('#dirble_right').find("tr:gt(0)").remove();
+
+        $('#panel-heading').text("Dirble");
+        $('#dirble').addClass('active');
+
+        $('#next').addClass('hide');
+
+        if (this.params['splat'][1] > 1) $('#prev').removeClass('hide');
+        else $('#prev').addClass('hide');
+
+        dirble_catid = this.params['splat'][0];
+        dirble_page = this.params['splat'][1];
+
+        dirble_load_stations();
+    });
+
+
+    this.get(/\#\/dirble\//, function() {
+        prepare();
+        current_app = 'dirble';
+        $('#breadcrump').removeClass('hide').empty().append("<li>Categories</li>");
+        $('#salamisandwich').addClass('hide');
+        $('#dirble_panel').removeClass('hide');
+        $('#dirble_loading').removeClass('hide');
+        $('#dirble_left').find("tr:gt(0)").remove();
+        $('#dirble_right').find("tr:gt(0)").remove();
+
+        $('#panel-heading').text("Dirble");
+        $('#dirble').addClass('active');
+
+        dirble_load_categories();
     });
 
     this.get("/", function(context) {
@@ -104,6 +163,13 @@ $(document).ready(function(){
             var seekVal = Math.ceil(current_song.totalTime*(data.val/100));
             socket.send("MPD_API_SET_SEEK,"+current_song.currentSongId+","+seekVal);
         }
+    });
+
+    $('#addstream').on('shown.bs.modal', function () {
+        $('#streamurl').focus();
+     })
+    $('#addstream form').on('submit', function (e) {
+        addStream();
     });
 
     if(!notificationsSupported())
@@ -130,6 +196,8 @@ function webSocketConnect() {
             }).show();
 
             app.run();
+            /* emit initial request for output names */
+            socket.send("MPD_API_GET_OUTPUTS");
         }
 
         socket.onmessage = function got_packet(msg) {
@@ -158,7 +226,7 @@ function webSocketConnect() {
                         "</td><td></td></tr>");
                     }
 
-                    if(obj.data[obj.data.length-1].pos + 1 >= pagination + MAX_ELEMENTS_PER_PAGE)
+                    if(obj.data.length && obj.data[obj.data.length-1].pos + 1 >= pagination + MAX_ELEMENTS_PER_PAGE)
                         $('#next').removeClass('hide');
                     if(pagination > 0)
                         $('#prev').removeClass('hide');
@@ -181,6 +249,22 @@ function webSocketConnect() {
                             $(this).children().last().find("a").stop().remove();
                         }
                     });
+                    //Helper function to keep table row from collapsing when being sorted
+                    var fixHelperModified = function(e, tr) {
+                      var $originals = tr.children();
+                      var $helper = tr.clone();
+                      $helper.children().each(function(index)
+                      {
+                        $(this).width($originals.eq(index).width())
+                      });
+                      return $helper;
+                    };
+                    
+                    //Make queue table sortable
+                    $("#salamisandwich > tbody").sortable({
+                      helper: fixHelperModified,
+                      stop: function(event,ui) {renumber_table('#salamisandwich',ui.item)}
+                    }).disableSelection();
                     break;
                 case "search":
                     $('#wait').modal('hide');
@@ -188,23 +272,42 @@ function webSocketConnect() {
                     if(current_app !== 'browse' && current_app !== 'search')
                         break;
 
+                    /* The use of encodeURI() below might seem useless, but it's not. It prevents
+                     * some browsers, such as Safari, from changing the normalization form of the
+                     * URI from NFD to NFC, breaking our link with MPD.
+                     */
+                    if ($('#salamisandwich > tbody').is(':ui-sortable')) {
+                        $('#salamisandwich > tbody').sortable('destroy');
+                    }
                     for (var item in obj.data) {
                         switch(obj.data[item].type) {
                             case "directory":
                                 $('#salamisandwich > tbody').append(
+<<<<<<< HEAD
                                     "<tr uri=\"" + obj.data[item].dir + "\" class=\"dir\">" +
                                     "<td><span class=\"glyphicon glyphicon-folder-open\"></span></td>" + 
                                     "<td><a>" + basename(obj.data[item].dir) + "</a></td>" + 
                                     "<td></td><td></td>" +
+=======
+                                    "<tr uri=\"" + encodeURI(obj.data[item].dir) + "\" class=\"dir\">" +
+                                    "<td><span class=\"glyphicon glyphicon-folder-open\"></span></td>" +
+                                    "<td><a>" + basename(obj.data[item].dir) + "</a></td>" +
+>>>>>>> 5234e97d5eb6159ef8ce3652cd19e4eee0bec7dd
                                     "<td></td><td></td></tr>"
                                 );
                                 break;
                             case "playlist":
                                 $('#salamisandwich > tbody').append(
+<<<<<<< HEAD
                                     "<tr uri=\"" + obj.data[item].plist + "\" class=\"plist\">" +
                                     "<td><span class=\"glyphicon glyphicon-list\"></span></td>" + 
                                     "<td><a>" + basename(obj.data[item].plist) + "</a></td>" +
                                     "<td></td><td></td>" +
+=======
+                                    "<tr uri=\"" + encodeURI(obj.data[item].plist) + "\" class=\"plist\">" +
+                                    "<td><span class=\"glyphicon glyphicon-list\"></span></td>" +
+                                    "<td><a>" + basename(obj.data[item].plist) + "</a></td>" +
+>>>>>>> 5234e97d5eb6159ef8ce3652cd19e4eee0bec7dd
                                     "<td></td><td></td></tr>"
                                 );
                                 break;
@@ -213,12 +316,19 @@ function webSocketConnect() {
                                 var seconds = obj.data[item].duration - minutes * 60;
 
                                 $('#salamisandwich > tbody').append(
+<<<<<<< HEAD
                                     "<tr uri=\"" + obj.data[item].uri + "\" class=\"song\">" +
                                     "<td><span class=\"glyphicon glyphicon-music\"></span></td>" + 
                                     "<td>" + obj.data[item].title  + "</td>" +
                                     "<td>" + obj.data[item].album  + "</td>" +
                                     "<td>" + obj.data[item].artist + "</td>" + 
                                     "<td>" + minutes + ":" + (seconds < 10 ? '0' : '') + seconds +
+=======
+                                    "<tr uri=\"" + encodeURI(obj.data[item].uri) + "\" class=\"song\">" +
+                                    "<td><span class=\"glyphicon glyphicon-music\"></span></td>" +
+                                    "<td>" + obj.data[item].title +"</td>" +
+                                    "<td>"+ minutes + ":" + (seconds < 10 ? '0' : '') + seconds +
+>>>>>>> 5234e97d5eb6159ef8ce3652cd19e4eee0bec7dd
                                     "</td><td></td></tr>"
                                 );
                                 break;
@@ -246,7 +356,7 @@ function webSocketConnect() {
                             "<span class=\"glyphicon glyphicon-" + glyphicon + "\"></span></a>")
                             .find('a').click(function(e) {
                                 e.stopPropagation();
-                                socket.send(onClickAction + "," + $(this).parents("tr").attr("uri"));
+                                socket.send(onClickAction + "," + decodeURI($(this).parents("tr").attr("uri")));
                             $('.top-right').notify({
                                 message:{
                                     text: $('td:nth-child(2)', $(this).parents("tr")).text() + " added"
@@ -267,7 +377,7 @@ function webSocketConnect() {
                                     app.setLocation("#/browse/0/"+$(this).attr("uri"));
                                     break;
                                 case 'song':
-                                    socket.send("MPD_API_ADD_TRACK," + $(this).attr("uri"));
+                                    socket.send("MPD_API_ADD_TRACK," + decodeURI($(this).attr("uri")));
                                     $('.top-right').notify({
                                         message:{
                                             text: $('td:nth-child(2)', this).text() + " added"
@@ -275,7 +385,7 @@ function webSocketConnect() {
                                     }).show();
                                     break;
                                 case 'plist':
-                                    socket.send("MPD_API_ADD_PLAYLIST," + $(this).attr("uri"));
+                                    socket.send("MPD_API_ADD_PLAYLIST," + decodeURI($(this).attr("uri")));
                                     $('.top-right').notify({
                                         message:{
                                             text: "Playlist " + $('td:nth-child(2)', this).text() + " added"
@@ -332,12 +442,37 @@ function webSocketConnect() {
                     else
                         $('#btnsingle').removeClass("active");
 
+                    if(obj.data.crossfade)
+                        $('#btncrossfade').addClass("active")
+                    else
+                        $('#btncrossfade').removeClass("active");
+
                     if(obj.data.repeat)
                         $('#btnrepeat').addClass("active")
                     else
                         $('#btnrepeat').removeClass("active");
 
                     last_state = obj;
+                    break;
+                case "outputnames":
+                    $('#btn-outputs-block button').remove();
+                    $.each(obj.data, function(id, name){
+                        var btn = $('<button id="btnoutput'+id+'" class="btn btn-default" onclick="toggleoutput(this, '+id+')"><span class="glyphicon glyphicon-volume-up"></span> '+name+'</button>');
+                        btn.appendTo($('#btn-outputs-block'));
+                    });
+                    /* remove cache, since the buttons have been recreated */
+                    last_outputs = '';
+                    break;
+                case "outputs":
+                    if(JSON.stringify(obj) === JSON.stringify(last_outputs))
+                        break;
+                    $.each(obj.data, function(id, enabled){
+                        if (enabled)
+                        $('#btnoutput'+id).addClass("active");
+                        else
+                        $('#btnoutput'+id).removeClass("active");
+                    });
+                    last_outputs = obj;
                     break;
                 case "disconnected":
                     if($('.top-right').has('div').length == 0)
@@ -352,6 +487,10 @@ function webSocketConnect() {
                         socket.send('MPD_API_GET_QUEUE,'+pagination);
                     break;
                 case "song_change":
+
+                    $('#album').text("");
+                    $('#artist').text("");
+
                     $('#currenttrack').text(" " + obj.data.title);
                     var notification = "<strong><h4>" + obj.data.title + "</h4></strong>";
 
@@ -426,9 +565,9 @@ function get_appropriate_ws_url()
             u = u.substr(7);
     }
 
-    u = u.split('/');
+    u = u.split('#');
 
-    return pcol + u[0];
+    return pcol + u[0] + "/ws";
 }
 
 var updateVolumeIcon = function(volume)
@@ -480,6 +619,16 @@ function clickPlay() {
         socket.send('MPD_API_SET_PAUSE');
 }
 
+function renumber_table(tableID,item) {
+    was = item.children("td").first().text();//Check if first item exists!
+    is = item.index() + 1;//maybe add pagination
+
+    if (was != is) {
+        socket.send("MPD_API_MOVE_TRACK," + was + "," + is);
+        socket.send('MPD_API_GET_QUEUE,'+pagination);
+    }
+}
+
 function basename(path) {
     return path.split('/').reverse()[0];
 }
@@ -495,9 +644,16 @@ $('#btnconsume').on('click', function (e) {
 $('#btnsingle').on('click', function (e) {
     socket.send("MPD_API_TOGGLE_SINGLE," + ($(this).hasClass('active') ? 0 : 1));
 });
+$('#btncrossfade').on('click', function(e) {
+    socket.send("MPD_API_TOGGLE_CROSSFADE," + ($(this).hasClass('active') ? 0 : 1));
+});
 $('#btnrepeat').on('click', function (e) {
     socket.send("MPD_API_TOGGLE_REPEAT," + ($(this).hasClass('active') ? 0 : 1));
 });
+
+function toggleoutput(button, id) {
+    socket.send("MPD_API_TOGGLE_OUTPUT,"+id+"," + ($(button).hasClass('active') ? 0 : 1));
+}
 
 $('#btnnotify').on('click', function (e) {
     if($.cookie("notification") === "true") {
@@ -544,12 +700,16 @@ $('.page-btn').on('click', function (e) {
 
     switch ($(this).text()) {
         case "Next":
-            pagination += MAX_ELEMENTS_PER_PAGE;
+            if (current_app == "dirble") dirble_page++;
+            else pagination += MAX_ELEMENTS_PER_PAGE;
             break;
         case "Previous":
-            pagination -= MAX_ELEMENTS_PER_PAGE;
-            if(pagination <= 0)
-                pagination = 0;
+            if (current_app == "dirble") dirble_page--
+            else {
+                pagination -= MAX_ELEMENTS_PER_PAGE;
+                if(pagination <= 0)
+                    pagination = 0;
+            }
             break;
     }
 
@@ -560,9 +720,27 @@ $('.page-btn').on('click', function (e) {
         case "browse":
             app.setLocation('#/browse/'+pagination+'/'+browsepath);
             break;
+        case "dirble":
+            app.setLocation("#/dirble/"+dirble_catid+"/"+dirble_page);
+            break;
     }
     e.preventDefault();
 });
+
+function addStream() {
+    if($('#streamurl').val().length > 0) {
+    	socket.send('MPD_API_ADD_TRACK,'+$('#streamurl').val());
+    }
+    $('#streamurl').val("");
+    $('#addstream').modal('hide');
+}
+
+function saveQueue() {
+    if($('#playlistname').val().length > 0) {
+    	socket.send('MPD_API_SAVE_QUEUE,'+$('#playlistname').val());
+    }
+    $('#savequeue').modal('hide');
+}
 
 function confirmSettings() {
     if($('#mpd_pw').val().length + $('#mpd_pw_con').val().length > 0) {
@@ -615,4 +793,179 @@ function songNotify(title, artist, album) {
     setTimeout(function(notification) {
         notification.close();
     }, 3000, notification);
+}
+
+$(document).keydown(function(e){
+    if (e.target.tagName == 'INPUT') {
+        return;
+    }
+    switch (e.which) {
+        case 37: //left
+            socket.send('MPD_API_SET_PREV');
+            break;
+        case 39: //right
+            socket.send('MPD_API_SET_NEXT');
+            break;
+        case 32: //space
+            clickPlay();
+            break;
+        default:
+            return;
+    }
+    e.preventDefault();
+});
+
+function dirble_load_categories() {
+
+    dirble_page = 1;
+
+    $.getJSON( "http://api.dirble.com/v2/categories?token=2e223c9909593b94fc6577361a", function( data ) {
+
+        $('#dirble_loading').addClass('hide');
+
+        data = data.sort(function(a, b) {
+            return (a.title > b.title) ? 1 : 0;
+        });
+
+        var max = data.length - data.length%2;
+
+        for(i = 0; i < max; i+=2) {
+
+            $('#dirble_left > tbody').append(
+                "<tr><td catid=\""+data[i].id+"\">"+data[i].title+"</td></tr>"
+            );
+
+            $('#dirble_right > tbody').append(
+                "<tr><td catid=\""+data[i+1].id+"\">"+data[i+1].title+"</td></tr>"
+            );
+        }
+
+        if (max != data.length) {
+            $('#dirble_left > tbody').append(
+                "<tr><td catid=\""+data[max].id+"\">"+data[max].title+"</td></tr>"
+            );
+        }
+
+        $('#dirble_left > tbody > tr > td').on({
+            click: function() {
+                dirble_selected_cat = $(this).text();
+                dirble_catid = $(this).attr("catid");
+                app.setLocation("#/dirble/"+dirble_catid+"/"+dirble_page);
+            }
+        });
+
+        $('#dirble_right > tbody > tr > td').on({
+            click: function() {
+                dirble_selected_cat = $(this).text();
+                dirble_catid = $(this).attr("catid");
+                app.setLocation("#/dirble/"+dirble_catid+"/"+dirble_page);
+            }
+        });
+    });
+}
+
+
+function dirble_load_stations() {
+
+    $.getJSON( "http://api.dirble.com/v2/category/"+dirble_catid+"/stations?page="+dirble_page+"&per_page=20&token=2e223c9909593b94fc6577361a", function( data ) {
+
+        $('#dirble_loading').addClass('hide');
+        if (data.length == 20) $('#next').removeClass('hide');
+
+        var max = data.length - data.length%2;
+
+        for(i = 0; i < max; i+=2) {
+
+            $('#dirble_left > tbody').append(
+                "<tr><td radioid=\""+data[i].id+"\">"+data[i].name+"</td></tr>"
+            );
+            $('#dirble_right > tbody').append(
+                "<tr><td radioid=\""+data[i+1].id+"\">"+data[i+1].name+"</td></tr>"
+            );
+        }
+
+        if (max != data.length) {
+            $('#dirble_left > tbody').append(
+                "<tr><td radioid=\""+data[max].id+"\">"+data[max].name+"</td></tr>"
+            );
+        }
+
+        $('#dirble_left > tbody > tr > td').on({
+            click: function() {
+                var _this = $(this);
+
+                $.getJSON( "http://api.dirble.com/v2/station/"+$(this).attr("radioid")+"?token=2e223c9909593b94fc6577361a", function( data ) {
+
+                    socket.send("MPD_API_ADD_TRACK," + data.streams[0].stream);
+                    $('.top-right').notify({
+                        message:{
+                            text: _this.text() + " added"
+                        }
+                    }).show();
+                });
+            },
+            mouseenter: function() {
+                var _this = $(this);
+
+                $(this).last().append(
+                "<a role=\"button\" class=\"pull-right btn-group-hover\">" +
+                "<span class=\"glyphicon glyphicon-play\"></span></a>").find('a').click(function(e) {
+                    e.stopPropagation();
+
+                    $.getJSON( "http://api.dirble.com/v2/station/"+_this.attr("radioid")+"?token=2e223c9909593b94fc6577361a", function( data ) {
+
+                        socket.send("MPD_API_ADD_PLAY_TRACK," + data.streams[0].stream);
+                        $('.top-right').notify({
+                            message:{
+                                text: _this.text() + " added"
+                            }
+                        }).show();
+                    });
+                }).fadeTo('fast',1);
+            },
+
+            mouseleave: function(){
+                $(this).last().find("a").stop().remove();
+            }
+        });
+
+        $('#dirble_right> tbody > tr > td').on({
+            click: function() {
+                var _this = $(this);
+
+                $.getJSON( "http://api.dirble.com/v2/station/"+$(this).attr("radioid")+"?token=2e223c9909593b94fc6577361a", function( data ) {
+
+                    socket.send("MPD_API_ADD_TRACK," + data.streams[0].stream);
+                    $('.top-right').notify({
+                        message:{
+                            text: _this.text() + " added"
+                        }
+                    }).show();
+                });
+            },
+            mouseenter: function() {
+                var _this = $(this);
+
+                $(this).last().append(
+                "<a role=\"button\" class=\"pull-right btn-group-hover\">" +
+                "<span class=\"glyphicon glyphicon-play\"></span></a>").find('a').click(function(e) {
+                    e.stopPropagation();
+
+                    $.getJSON( "http://api.dirble.com/v2/station/"+_this.attr("radioid")+"?token=2e223c9909593b94fc6577361a", function( data ) {
+
+                        socket.send("MPD_API_ADD_PLAY_TRACK," + data.streams[0].stream);
+                        $('.top-right').notify({
+                            message:{
+                                text: _this.text() + " added"
+                            }
+                        }).show();
+                    });
+                }).fadeTo('fast',1);
+            },
+
+            mouseleave: function(){
+                $(this).last().find("a").stop().remove();
+            }
+        });
+    });
 }

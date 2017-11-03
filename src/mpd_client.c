@@ -27,6 +27,9 @@
 #include "config.h"
 #include "json_encode.h"
 
+/* forward declaration */
+static int mpd_notify_callback(struct mg_connection *c, enum mg_event ev);
+
 const char * mpd_cmd_strs[] = {
     MPD_CMDS(GEN_STR)
 };
@@ -46,7 +49,7 @@ int callback_mpd(struct mg_connection *c)
     size_t n = 0;
     unsigned int uint_buf, uint_buf_2;
     int int_buf;
-    char *p_charbuf = NULL;
+    char *p_charbuf = NULL, *token;
 
     if(cmd_id == -1)
         return MG_TRUE;
@@ -82,6 +85,14 @@ int callback_mpd(struct mg_connection *c)
             if(sscanf(c->content, "MPD_API_RM_TRACK,%u", &uint_buf))
                 mpd_run_delete_id(mpd.conn, uint_buf);
             break;
+        case MPD_API_MOVE_TRACK:
+            if (sscanf(c->content, "MPD_API_MOVE_TRACK,%u,%u", &uint_buf, &uint_buf_2) == 2)
+            {
+                uint_buf -= 1;
+                uint_buf_2 -= 1;
+                mpd_run_move(mpd.conn, uint_buf, uint_buf_2);
+            }
+            break;
         case MPD_API_PLAY_TRACK:
             if(sscanf(c->content, "MPD_API_PLAY_TRACK,%u", &uint_buf))
                 mpd_run_play_id(mpd.conn, uint_buf);
@@ -102,6 +113,23 @@ int callback_mpd(struct mg_connection *c)
             if(sscanf(c->content, "MPD_API_TOGGLE_SINGLE,%u", &uint_buf))
                 mpd_run_single(mpd.conn, uint_buf);
             break;
+        case MPD_API_TOGGLE_CROSSFADE:
+            if(sscanf(c->content, "MPD_API_TOGGLE_CROSSFADE,%u", &uint_buf))
+                mpd_run_crossfade(mpd.conn, uint_buf);
+            break;
+        case MPD_API_GET_OUTPUTS:
+            mpd.buf_size = mpd_put_outputs(mpd.buf, 1);
+            c->callback_param = NULL;
+            mpd_notify_callback(c, MG_POLL);
+            break;
+        case MPD_API_TOGGLE_OUTPUT:
+            if (sscanf(c->content, "MPD_API_TOGGLE_OUTPUT,%u,%u", &uint_buf, &uint_buf_2)) {
+                if (uint_buf_2)
+                    mpd_run_enable_output(mpd.conn, uint_buf);
+                else
+                    mpd_run_disable_output(mpd.conn, uint_buf);
+            }
+            break;
         case MPD_API_SET_VOLUME:
             if(sscanf(c->content, "MPD_API_SET_VOLUME,%ud", &uint_buf) && uint_buf <= 100)
                 mpd_run_set_volume(mpd.conn, uint_buf);
@@ -115,55 +143,101 @@ int callback_mpd(struct mg_connection *c)
                 n = mpd_put_queue(mpd.buf, uint_buf);
             break;
         case MPD_API_GET_BROWSE:
-            if(sscanf(c->content, "MPD_API_GET_BROWSE,%u,%m[^\t\n]", &uint_buf, &p_charbuf) && p_charbuf != NULL)
-            {
-                n = mpd_put_browse(mpd.buf, p_charbuf, uint_buf);
-                free(p_charbuf);
-            }
+            p_charbuf = strdup(c->content);
+            if(strcmp(strtok(p_charbuf, ","), "MPD_API_GET_BROWSE"))
+                goto out_browse;
+
+            uint_buf = strtoul(strtok(NULL, ","), NULL, 10);
+            if((token = strtok(NULL, ",")) == NULL)
+                goto out_browse;
+
+            n = mpd_put_browse(mpd.buf, token, uint_buf);
+out_browse:
+			free(p_charbuf);
             break;
         case MPD_API_ADD_TRACK:
-            if(sscanf(c->content, "MPD_API_ADD_TRACK,%m[^\t\n]", &p_charbuf) && p_charbuf != NULL)
-            {
-                mpd_run_add(mpd.conn, p_charbuf);
-                free(p_charbuf);
-            }
+            p_charbuf = strdup(c->content);
+            if(strcmp(strtok(p_charbuf, ","), "MPD_API_ADD_TRACK"))
+                goto out_add_track;
+
+            if((token = strtok(NULL, ",")) == NULL)
+                goto out_add_track;
+
+            mpd_run_add(mpd.conn, token);
+out_add_track:
+            free(p_charbuf);
             break;
         case MPD_API_ADD_PLAY_TRACK:
-            if(sscanf(c->content, "MPD_API_ADD_PLAY_TRACK,%m[^\t\n]", &p_charbuf) && p_charbuf != NULL)
-            {
-                int_buf = mpd_run_add_id(mpd.conn, p_charbuf);
-                if(int_buf != -1)
-                    mpd_run_play_id(mpd.conn, int_buf);
-                free(p_charbuf);
-            }
+            p_charbuf = strdup(c->content);
+            if(strcmp(strtok(p_charbuf, ","), "MPD_API_ADD_PLAY_TRACK"))
+                goto out_play_track;
+
+            if((token = strtok(NULL, ",")) == NULL)
+                goto out_play_track;
+
+            int_buf = mpd_run_add_id(mpd.conn, token);
+            if(int_buf != -1)
+                mpd_run_play_id(mpd.conn, int_buf);
+out_play_track:
+            free(p_charbuf);
             break;
         case MPD_API_ADD_PLAYLIST:
-            if(sscanf(c->content, "MPD_API_ADD_PLAYLIST,%m[^\t\n]", &p_charbuf) && p_charbuf != NULL)
-            {
-                mpd_run_load(mpd.conn, p_charbuf);
-                free(p_charbuf);
-            }
+            p_charbuf = strdup(c->content);
+            if(strcmp(strtok(p_charbuf, ","), "MPD_API_ADD_PLAYLIST"))
+                goto out_playlist;
+
+            if((token = strtok(NULL, ",")) == NULL)
+                goto out_playlist;
+
+            mpd_run_load(mpd.conn, token);
+out_playlist:
+            free(p_charbuf);
+            break;
+        case MPD_API_SAVE_QUEUE:
+            p_charbuf = strdup(c->content);
+            if(strcmp(strtok(p_charbuf, ","), "MPD_API_SAVE_QUEUE"))
+                goto out_save_queue;
+
+            if((token = strtok(NULL, ",")) == NULL)
+                goto out_save_queue;
+
+            mpd_run_save(mpd.conn, token);
+out_save_queue:
+            free(p_charbuf);
             break;
         case MPD_API_SEARCH:
-            if(sscanf(c->content, "MPD_API_SEARCH,%m[^\t\n]", &p_charbuf) && p_charbuf != NULL)
-            {
-                n = mpd_search(mpd.buf, p_charbuf);
-                free(p_charbuf);
-            }
+            p_charbuf = strdup(c->content);
+            if(strcmp(strtok(p_charbuf, ","), "MPD_API_SEARCH"))
+				goto out_search;
+
+            if((token = strtok(NULL, ",")) == NULL)
+                goto out_search;
+
+            n = mpd_search(mpd.buf, token);
+out_search:
+            free(p_charbuf);
             break;
 #ifdef WITH_MPD_HOST_CHANGE
         /* Commands allowed when disconnected from MPD server */
         case MPD_API_SET_MPDHOST:
             int_buf = 0;
-            if(sscanf(c->content, "MPD_API_SET_MPDHOST,%d,%m[^\t\n ]", &int_buf, &p_charbuf) && 
-                p_charbuf != NULL && int_buf > 0)
-            {
-                strncpy(mpd.host, p_charbuf, sizeof(mpd.host));
-                free(p_charbuf);
-                mpd.port = int_buf;
-                mpd.conn_state = MPD_RECONNECT;
-                return MG_TRUE;
-            }
+            p_charbuf = strdup(c->content);
+            if(strcmp(strtok(p_charbuf, ","), "MPD_API_SET_MPDHOST"))
+                goto out_host_change;
+
+            if((int_buf = strtol(strtok(NULL, ","), NULL, 10)) <= 0)
+                goto out_host_change;
+
+            if((token = strtok(NULL, ",")) == NULL)
+                goto out_host_change;
+
+            strncpy(mpd.host, token, sizeof(mpd.host));
+            mpd.port = int_buf;
+            mpd.conn_state = MPD_RECONNECT;
+            free(p_charbuf);
+            return MG_TRUE;
+out_host_change:
+            free(p_charbuf);
             break;
         case MPD_API_GET_MPDHOST:
             n = snprintf(mpd.buf, MAX_SIZE, "{\"type\":\"mpdhost\", \"data\": "
@@ -171,15 +245,22 @@ int callback_mpd(struct mg_connection *c)
                 "}", mpd.host, mpd.port, mpd.password ? "true" : "false");
             break;
         case MPD_API_SET_MPDPASS:
-            if(sscanf(c->content, "MPD_API_SET_MPDPASS,%m[^\t\n ]", &p_charbuf))
-            {
-                if(mpd.password)
-                    free(mpd.password);
+            p_charbuf = strdup(c->content);
+            if(strcmp(strtok(p_charbuf, ","), "MPD_API_SET_MPDPASS"))
+                goto out_set_pass;
 
-                mpd.password = p_charbuf;
-                mpd.conn_state = MPD_RECONNECT;
-                return MG_TRUE;
-            }
+            if((token = strtok(NULL, ",")) == NULL)
+                goto out_set_pass;
+
+            if(mpd.password)
+                free(mpd.password);
+
+            mpd.password = strdup(token);
+            mpd.conn_state = MPD_RECONNECT;
+            free(p_charbuf);
+            return MG_TRUE;
+out_set_pass:
+            free(p_charbuf);
             break;
 #endif
     }
@@ -270,8 +351,11 @@ void mpd_poll(struct mg_server *s)
 
             if (mpd_connection_get_error(mpd.conn) != MPD_ERROR_SUCCESS) {
                 fprintf(stderr, "MPD connection: %s\n", mpd_connection_get_error_message(mpd.conn));
-                mg_iterate_over_connections(s, mpd_notify_callback, 
-                    (void *)mpd_connection_get_error_message(mpd.conn));
+                for (struct mg_connection *c = mg_next(s, NULL); c != NULL; c = mg_next(s, c))
+                {
+                    c->callback_param = (void *)mpd_connection_get_error_message(mpd.conn);
+                    mpd_notify_callback(c, MG_POLL);
+                }
                 mpd.conn_state = MPD_FAILURE;
                 return;
             }
@@ -279,8 +363,11 @@ void mpd_poll(struct mg_server *s)
             if(mpd.password && !mpd_run_password(mpd.conn, mpd.password))
             {
                 fprintf(stderr, "MPD connection: %s\n", mpd_connection_get_error_message(mpd.conn));
-                mg_iterate_over_connections(s, mpd_notify_callback, 
-                    (void *)mpd_connection_get_error_message(mpd.conn));
+                for (struct mg_connection *c = mg_next(s, NULL); c != NULL; c = mg_next(s, c))
+                {
+                    c->callback_param = (void *)mpd_connection_get_error_message(mpd.conn);
+                    mpd_notify_callback(c, MG_POLL);
+                }
                 mpd.conn_state = MPD_FAILURE;
                 return;
             }
@@ -288,6 +375,13 @@ void mpd_poll(struct mg_server *s)
             fprintf(stderr, "MPD connected.\n");
             mpd_connection_set_timeout(mpd.conn, 10000);
             mpd.conn_state = MPD_CONNECTED;
+            /* write outputs */
+            mpd.buf_size = mpd_put_outputs(mpd.buf, 1);
+            for (struct mg_connection *c = mg_next(s, NULL); c != NULL; c = mg_next(s, c))
+            {
+                c->callback_param = NULL;
+                mpd_notify_callback(c, MG_POLL);
+            }
             break;
 
         case MPD_FAILURE:
@@ -303,7 +397,17 @@ void mpd_poll(struct mg_server *s)
 
         case MPD_CONNECTED:
             mpd.buf_size = mpd_put_state(mpd.buf, &mpd.song_id, &mpd.queue_version);
-            mg_iterate_over_connections(s, mpd_notify_callback, NULL);
+            for (struct mg_connection *c = mg_next(s, NULL); c != NULL; c = mg_next(s, c))
+            {
+                c->callback_param = NULL;
+                mpd_notify_callback(c, MG_POLL);
+            }
+            mpd.buf_size = mpd_put_outputs(mpd.buf, 0);
+            for (struct mg_connection *c = mg_next(s, NULL); c != NULL; c = mg_next(s, c))
+            {
+                c->callback_param = NULL;
+                mpd_notify_callback(c, MG_POLL);
+            }
             break;
     }
 }
@@ -371,7 +475,7 @@ int mpd_put_state(char *buffer, int *current_song_id, unsigned *queue_version)
     len = snprintf(buffer, MAX_SIZE,
         "{\"type\":\"state\", \"data\":{"
         " \"state\":%d, \"volume\":%d, \"repeat\":%d,"
-        " \"single\":%d, \"consume\":%d, \"random\":%d, "
+        " \"single\":%d, \"crossfade\":%d, \"consume\":%d, \"random\":%d, "
         " \"songpos\": %d, \"elapsedTime\": %d, \"totalTime\":%d, "
         " \"currentsongid\": %d"
         "}}", 
@@ -379,6 +483,7 @@ int mpd_put_state(char *buffer, int *current_song_id, unsigned *queue_version)
         mpd_status_get_volume(status), 
         mpd_status_get_repeat(status),
         mpd_status_get_single(status),
+        mpd_status_get_crossfade(status),
         mpd_status_get_consume(status),
         mpd_status_get_random(status),
         mpd_status_get_song_pos(status),
@@ -390,6 +495,39 @@ int mpd_put_state(char *buffer, int *current_song_id, unsigned *queue_version)
     *queue_version = mpd_status_get_queue_version(status);
     mpd_status_free(status);
     return len;
+}
+
+int mpd_put_outputs(char *buffer, int names)
+{
+    struct mpd_output *out;
+    int nout;
+    char *str, *strend;
+
+    str = buffer;
+    strend = buffer+MAX_SIZE;
+    str += snprintf(str, strend-str, "{\"type\":\"%s\", \"data\":{",
+            names ? "outputnames" : "outputs");
+
+    mpd_send_outputs(mpd.conn);
+    nout = 0;
+    while ((out = mpd_recv_output(mpd.conn)) != NULL) {
+        if (nout++)
+            *str++ = ',';
+        if (names)
+            str += snprintf(str, strend - str, " \"%d\":\"%s\"",
+                    mpd_output_get_id(out), mpd_output_get_name(out));
+        else
+            str += snprintf(str, strend-str, " \"%d\":%d",
+                    mpd_output_get_id(out), mpd_output_get_enabled(out));
+        mpd_output_free(out);
+    }
+    if (!mpd_response_finish(mpd.conn)) {
+        fprintf(stderr, "MPD outputs: %s\n", mpd_connection_get_error_message(mpd.conn));
+        mpd_connection_clear_error(mpd.conn);
+        return 0;
+    }
+    str += snprintf(str, strend-str, " }}");
+    return str-buffer;
 }
 
 int mpd_put_current_song(char *buffer)

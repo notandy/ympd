@@ -44,8 +44,10 @@
     X(MPD_API_ADD_PLAY_TRACK) \
     X(MPD_API_ADD_PLAYLIST) \
     X(MPD_API_PLAY_TRACK) \
+    X(MPD_API_SAVE_QUEUE) \
     X(MPD_API_RM_TRACK) \
     X(MPD_API_RM_ALL) \
+    X(MPD_API_MOVE_TRACK) \
     X(MPD_API_SEARCH) \
     X(MPD_API_SET_VOLUME) \
     X(MPD_API_SET_PAUSE) \
@@ -57,9 +59,12 @@
     X(MPD_API_SET_MPDHOST) \
     X(MPD_API_SET_MPDPASS) \
     X(MPD_API_UPDATE_DB) \
+    X(MPD_API_GET_OUTPUTS) \
+    X(MPD_API_TOGGLE_OUTPUT) \
     X(MPD_API_TOGGLE_RANDOM) \
     X(MPD_API_TOGGLE_CONSUME) \
     X(MPD_API_TOGGLE_SINGLE) \
+    X(MPD_API_TOGGLE_CROSSFADE) \
     X(MPD_API_TOGGLE_REPEAT)
 
 enum mpd_cmd_ids {
@@ -99,6 +104,7 @@ void mpd_poll(struct mg_server *s);
 int callback_mpd(struct mg_connection *c);
 int mpd_close_handler(struct mg_connection *c);
 int mpd_put_state(char *buffer, int *current_song_id, unsigned *queue_version);
+int mpd_put_outputs(char *buffer, int putnames);
 int mpd_put_current_song(char *buffer);
 int mpd_put_queue(char *buffer, unsigned int offset);
 int mpd_put_browse(char *buffer, char *path, unsigned int offset);
