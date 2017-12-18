@@ -1993,6 +1993,7 @@ select[multiple].input-lg {
   font-weight: normal;
   line-height: 1.428571429;
   text-align: center;
+  text-overflow: ellipsis;
   white-space: nowrap;
   vertical-align: middle;
   cursor: pointer;
@@ -2072,6 +2073,11 @@ fieldset[disabled] .btn-default.active {
 .btn-default .badge {
   color: #fff;
   background-color: #333;
+}
+.btn-label {
+  margin-left: 8px;
+  text-overflow: ellipsis;
+  vertical-align: middle;
 }
 .btn-primary {
   color: #fff;
@@ -2370,14 +2376,13 @@ input[type="button"].btn-block {
   src: url('../fonts/glyphicons-halflings-regular.eot');
   src: url('../fonts/glyphicons-halflings-regular.eot?#iefix') format('embedded-opentype'), url('../fonts/glyphicons-halflings-regular.woff') format('woff'), url('../fonts/glyphicons-halflings-regular.ttf') format('truetype'), url('../fonts/glyphicons-halflings-regular.svg#glyphicons_halflingsregular') format('svg');
 }
+#currenttrack {
+  vertical-align: middle;
+}
 .glyphicon {
-  position: relative;
-  top: 1px;
   display: inline-block;
   font-family: 'Glyphicons Halflings';
-  font-style: normal;
-  font-weight: normal;
-  line-height: 1;
+  vertical-align: middle;
 
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -2414,9 +2419,6 @@ input[type="button"].btn-block {
 }
 .glyphicon-heart:before {
   content: "\e005";
-}
-.glyphicon-star:before {
-  content: "\e006";
 }
 .glyphicon-star-empty:before {
   content: "\e007";
@@ -2457,9 +2459,6 @@ input[type="button"].btn-block {
 .glyphicon-cog:before {
   content: "\e019";
 }
-.glyphicon-trash:before {
-  content: "\e020";
-}
 .glyphicon-home:before {
   content: "\e021";
 }
@@ -2486,9 +2485,6 @@ input[type="button"].btn-block {
 }
 .glyphicon-play-circle:before {
   content: "\e029";
-}
-.glyphicon-repeat:before {
-  content: "\e030";
 }
 .glyphicon-refresh:before {
   content: "\e031";
@@ -2697,9 +2693,6 @@ input[type="button"].btn-block {
 .glyphicon-leaf:before {
   content: "\e103";
 }
-.glyphicon-fire:before {
-  content: "\e104";
-}
 .glyphicon-eye-open:before {
   content: "\e105";
 }
@@ -2714,12 +2707,6 @@ input[type="button"].btn-block {
 }
 .glyphicon-calendar:before {
   content: "\e109";
-}
-.glyphicon-random:before {
-  content: "\e110";
-}
-.glyphicon-comment:before {
-  content: "\e111";
 }
 .glyphicon-magnet:before {
   content: "\e112";
@@ -2817,9 +2804,6 @@ input[type="button"].btn-block {
 .glyphicon-heart-empty:before {
   content: "\e143";
 }
-.glyphicon-link:before {
-  content: "\e144";
-}
 .glyphicon-phone:before {
   content: "\e145";
 }
@@ -2879,9 +2863,6 @@ input[type="button"].btn-block {
 }
 .glyphicon-record:before {
   content: "\e165";
-}
-.glyphicon-save:before {
-  content: "\e166";
 }
 .glyphicon-open:before {
   content: "\e167";
@@ -3210,7 +3191,7 @@ input[type="button"].btn-block {
 }
 .btn-group-lg > .btn {
   padding: 10px 16px;
-  font-size: 18px;
+  font-size: 16px;
   line-height: 1.33;
   border-radius: 6px;
 }
