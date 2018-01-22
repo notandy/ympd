@@ -206,6 +206,7 @@ function webSocketConnect() {
                 return;
 
             var obj = JSON.parse(msg.data);
+            
 
             switch (obj.type) {
                 case "queue":
@@ -219,12 +220,14 @@ function webSocketConnect() {
 
                         $('#salamisandwich > tbody').append(
                             "<tr trackid=\"" + obj.data[song].id + "\"><td>" + (obj.data[song].pos + 1) + "</td>" +
-                                "<td>"+ obj.data[song].title +"</td>" + 
+                                "<td>"+ obj.data[song].title +"</td>" +
+                                "<td>"+ obj.data[song].album +"</td>" +
+                                "<td>"+ obj.data[song].artist +"</td>" + 
                                 "<td>"+ minutes + ":" + (seconds < 10 ? '0' : '') + seconds +
                         "</td><td></td></tr>");
                     }
 
-                    if(obj.data[obj.data.length-1].pos + 1 >= pagination + MAX_ELEMENTS_PER_PAGE)
+                    if(obj.data.length && obj.data[obj.data.length-1].pos + 1 >= pagination + MAX_ELEMENTS_PER_PAGE)
                         $('#next').removeClass('hide');
                     if(pagination > 0)
                         $('#prev').removeClass('hide');
@@ -256,6 +259,22 @@ function webSocketConnect() {
                             $(this).addClass('active');
                         },
                     });
+                    //Helper function to keep table row from collapsing when being sorted
+                    var fixHelperModified = function(e, tr) {
+                      var $originals = tr.children();
+                      var $helper = tr.clone();
+                      $helper.children().each(function(index)
+                      {
+                        $(this).width($originals.eq(index).width())
+                      });
+                      return $helper;
+                    };
+                    
+                    //Make queue table sortable
+                    $("#salamisandwich > tbody").sortable({
+                      helper: fixHelperModified,
+                      stop: function(event,ui) {renumber_table('#salamisandwich',ui.item)}
+                    }).disableSelection();
                     break;
                 case "search":
                     $('#wait').modal('hide');
@@ -267,21 +286,38 @@ function webSocketConnect() {
                      * some browsers, such as Safari, from changing the normalization form of the
                      * URI from NFD to NFC, breaking our link with MPD.
                      */
+                    if ($('#salamisandwich > tbody').is(':ui-sortable')) {
+                        $('#salamisandwich > tbody').sortable('destroy');
+                    }
                     for (var item in obj.data) {
                         switch(obj.data[item].type) {
                             case "directory":
                                 $('#salamisandwich > tbody').append(
+<<<<<<< HEAD
+                                    "<tr uri=\"" + obj.data[item].dir + "\" class=\"dir\">" +
+                                    "<td><span class=\"glyphicon glyphicon-folder-open\"></span></td>" + 
+                                    "<td><a>" + basename(obj.data[item].dir) + "</a></td>" + 
+                                    "<td></td><td></td>" +
+=======
                                     "<tr uri=\"" + encodeURI(obj.data[item].dir) + "\" class=\"dir\">" +
                                     "<td><span class=\"glyphicon glyphicon-folder-open\"></span></td>" +
                                     "<td><a>" + basename(obj.data[item].dir) + "</a></td>" +
+>>>>>>> 5234e97d5eb6159ef8ce3652cd19e4eee0bec7dd
                                     "<td></td><td></td></tr>"
                                 );
                                 break;
                             case "playlist":
                                 $('#salamisandwich > tbody').append(
+<<<<<<< HEAD
+                                    "<tr uri=\"" + obj.data[item].plist + "\" class=\"plist\">" +
+                                    "<td><span class=\"glyphicon glyphicon-list\"></span></td>" + 
+                                    "<td><a>" + basename(obj.data[item].plist) + "</a></td>" +
+                                    "<td></td><td></td>" +
+=======
                                     "<tr uri=\"" + encodeURI(obj.data[item].plist) + "\" class=\"plist\">" +
                                     "<td><span class=\"glyphicon glyphicon-list\"></span></td>" +
                                     "<td><a>" + basename(obj.data[item].plist) + "</a></td>" +
+>>>>>>> 5234e97d5eb6159ef8ce3652cd19e4eee0bec7dd
                                     "<td></td><td></td></tr>"
                                 );
                                 break;
@@ -290,10 +326,19 @@ function webSocketConnect() {
                                 var seconds = obj.data[item].duration - minutes * 60;
 
                                 $('#salamisandwich > tbody').append(
+<<<<<<< HEAD
+                                    "<tr uri=\"" + obj.data[item].uri + "\" class=\"song\">" +
+                                    "<td><span class=\"glyphicon glyphicon-music\"></span></td>" + 
+                                    "<td>" + obj.data[item].title  + "</td>" +
+                                    "<td>" + obj.data[item].album  + "</td>" +
+                                    "<td>" + obj.data[item].artist + "</td>" + 
+                                    "<td>" + minutes + ":" + (seconds < 10 ? '0' : '') + seconds +
+=======
                                     "<tr uri=\"" + encodeURI(obj.data[item].uri) + "\" class=\"song\">" +
                                     "<td><span class=\"glyphicon glyphicon-music\"></span></td>" +
                                     "<td>" + obj.data[item].title +"</td>" +
                                     "<td>"+ minutes + ":" + (seconds < 10 ? '0' : '') + seconds +
+>>>>>>> 5234e97d5eb6159ef8ce3652cd19e4eee0bec7dd
                                     "</td><td></td></tr>"
                                 );
                                 break;
@@ -592,6 +637,16 @@ function clickPlay() {
         socket.send('MPD_API_SET_PLAY');
     else
         socket.send('MPD_API_SET_PAUSE');
+}
+
+function renumber_table(tableID,item) {
+    was = item.children("td").first().text();//Check if first item exists!
+    is = item.index() + 1;//maybe add pagination
+
+    if (was != is) {
+        socket.send("MPD_API_MOVE_TRACK," + was + "," + is);
+        socket.send('MPD_API_GET_QUEUE,'+pagination);
+    }
 }
 
 function basename(path) {

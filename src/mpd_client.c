@@ -93,6 +93,14 @@ int callback_mpd(struct mg_connection *c)
             if(sscanf(c->content, "MPD_API_RM_TRACK,%u", &uint_buf))
                 mpd_run_delete_id(mpd.conn, uint_buf);
             break;
+        case MPD_API_MOVE_TRACK:
+            if (sscanf(c->content, "MPD_API_MOVE_TRACK,%u,%u", &uint_buf, &uint_buf_2) == 2)
+            {
+                uint_buf -= 1;
+                uint_buf_2 -= 1;
+                mpd_run_move(mpd.conn, uint_buf, uint_buf_2);
+            }
+            break;
         case MPD_API_PLAY_TRACK:
             if(sscanf(c->content, "MPD_API_PLAY_TRACK,%u", &uint_buf))
                 mpd_run_play_id(mpd.conn, uint_buf);
@@ -436,6 +444,42 @@ char* mpd_get_title(struct mpd_song const *song)
     return str;
 }
 
+char* mpd_get_album(struct mpd_song const *song)
+{
+    char *str;
+
+    str = (char *)mpd_song_get_tag(song, MPD_TAG_ALBUM, 0);
+    if(str == NULL){
+        str = basename((char *)mpd_song_get_uri(song));
+    }
+
+    return str;
+}
+
+char* mpd_get_artist(struct mpd_song const *song)
+{
+    char *str;
+
+    str = (char *)mpd_song_get_tag(song, MPD_TAG_ARTIST, 0);
+    if(str == NULL){
+        str = basename((char *)mpd_song_get_uri(song));
+    }
+
+    return str;
+}
+
+char* mpd_get_year(struct mpd_song const *song)
+{
+    char *str;
+
+    str = (char *)mpd_song_get_tag(song, MPD_TAG_DATE, 0);
+    if(str == NULL){
+        str = basename((char *)mpd_song_get_uri(song));
+    }
+
+    return str;
+}
+
 int mpd_put_state(char *buffer, int *current_song_id, unsigned *queue_version)
 {
     struct mpd_status *status;
@@ -563,6 +607,10 @@ int mpd_put_queue(char *buffer, unsigned int offset)
             cur += json_emit_int(cur, end - cur, mpd_song_get_pos(song));
             cur += json_emit_raw_str(cur, end - cur, ",\"duration\":");
             cur += json_emit_int(cur, end - cur, mpd_song_get_duration(song));
+            cur += json_emit_raw_str(cur, end - cur, ",\"artist\":");
+            cur += json_emit_quoted_str(cur, end - cur, mpd_get_artist(song));
+            cur += json_emit_raw_str(cur, end - cur, ",\"album\":");
+            cur += json_emit_quoted_str(cur, end - cur, mpd_get_album(song));
             cur += json_emit_raw_str(cur, end - cur, ",\"title\":");
             cur += json_emit_quoted_str(cur, end - cur, mpd_get_title(song));
             cur += json_emit_raw_str(cur, end - cur, "},");
@@ -617,6 +665,10 @@ int mpd_put_browse(char *buffer, char *path, unsigned int offset)
                 song = mpd_entity_get_song(entity);
                 cur += json_emit_raw_str(cur, end - cur, "{\"type\":\"song\",\"uri\":");
                 cur += json_emit_quoted_str(cur, end - cur, mpd_song_get_uri(song));
+                cur += json_emit_raw_str(cur, end - cur, ",\"album\":");
+                cur += json_emit_quoted_str(cur, end - cur, mpd_get_album(song));
+                cur += json_emit_raw_str(cur, end - cur, ",\"artist\":");
+                cur += json_emit_quoted_str(cur, end - cur, mpd_get_artist(song));
                 cur += json_emit_raw_str(cur, end - cur, ",\"duration\":");
                 cur += json_emit_int(cur, end - cur, mpd_song_get_duration(song));
                 cur += json_emit_raw_str(cur, end - cur, ",\"title\":");
@@ -675,6 +727,10 @@ int mpd_search(char *buffer, char *searchstr)
         while((song = mpd_recv_song(mpd.conn)) != NULL) {
             cur += json_emit_raw_str(cur, end - cur, "{\"type\":\"song\",\"uri\":");
             cur += json_emit_quoted_str(cur, end - cur, mpd_song_get_uri(song));
+            cur += json_emit_raw_str(cur, end - cur, ",\"album\":");
+            cur += json_emit_quoted_str(cur, end - cur, mpd_get_album(song));
+            cur += json_emit_raw_str(cur, end - cur, ",\"artist\":");
+            cur += json_emit_quoted_str(cur, end - cur, mpd_get_artist(song));
             cur += json_emit_raw_str(cur, end - cur, ",\"duration\":");
             cur += json_emit_int(cur, end - cur, mpd_song_get_duration(song));
             cur += json_emit_raw_str(cur, end - cur, ",\"title\":");
