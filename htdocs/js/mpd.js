@@ -1,6 +1,6 @@
 /* ympd
    (c) 2013-2014 Andrew Karpow <andy@ndyk.de>
-   This project's homepage is: http://www.ympd.org
+   This project's homepage is: https://www.ympd.org
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -30,6 +30,8 @@ var dirble_catid = "";
 var dirble_page = 1;
 var isTouch = Modernizr.touch ? 1 : 0;
 var filter = undefined;
+var dirble_api_token = "";
+var dirble_stations = false;
 
 var app = $.sammy(function() {
 
@@ -130,7 +132,13 @@ var app = $.sammy(function() {
         dirble_catid = this.params['splat'][0];
         dirble_page = this.params['splat'][1];
 
-        dirble_load_stations();
+        dirble_stations = true;
+
+        if(dirble_api_token) {
+            dirble_load_stations();
+        } else {
+            getDirbleApiToken();
+        }
     });
 
 
@@ -147,7 +155,13 @@ var app = $.sammy(function() {
         $('#panel-heading').text("Dirble");
         $('#dirble').addClass('active');
 
-        dirble_load_categories();
+        dirble_stations = false;
+
+        if(dirble_api_token) {
+            dirble_load_categories();
+        } else {
+            getDirbleApiToken();
+        }
     });
 
     this.get("/", function(context) {
@@ -546,6 +560,15 @@ function webSocketConnect() {
                     if(obj.data.passwort_set)
                         $('#mpd_password_set').removeClass('hide');
                     break;
+                case "dirbleapitoken":
+                    dirble_api_token = obj.data;
+                    
+                    if(dirble_stations) {
+                        dirble_load_stations();
+                    } else {
+                        dirble_load_categories();
+                    }
+                    break;
                 case "error":
                     $('.top-right').notify({
                         message:{text: obj.data},
@@ -748,6 +771,10 @@ function getHost() {
     $('#mpd_pw_con').keypress(onEnter);
 }
 
+function getDirbleApiToken() {
+    socket.send('MPD_API_GET_DIRBLEAPITOKEN');
+}
+
 $('#search').submit(function () {
     app.setLocation("#/search/"+$('#search > div > input').val());
     $('#wait').modal('show');
@@ -880,7 +907,7 @@ function dirble_load_categories() {
 
     dirble_page = 1;
 
-    $.getJSON( "http://api.dirble.com/v2/categories?token=2e223c9909593b94fc6577361a", function( data ) {
+    $.getJSON( "https://api.dirble.com/v2/categories?token=" + dirble_api_token, function( data ) {
 
         $('#dirble_loading').addClass('hide');
 
@@ -928,7 +955,7 @@ function dirble_load_categories() {
 
 function dirble_load_stations() {
 
-    $.getJSON( "http://api.dirble.com/v2/category/"+dirble_catid+"/stations?page="+dirble_page+"&per_page=20&token=2e223c9909593b94fc6577361a", function( data ) {
+    $.getJSON( "https://api.dirble.com/v2/category/"+dirble_catid+"/stations?page="+dirble_page+"&per_page=20&token=" + dirble_api_token, function( data ) {
 
         $('#dirble_loading').addClass('hide');
         if (data.length == 20) $('#next').removeClass('hide');
@@ -955,7 +982,7 @@ function dirble_load_stations() {
             click: function() {
                 var _this = $(this);
 
-                $.getJSON( "http://api.dirble.com/v2/station/"+$(this).attr("radioid")+"?token=2e223c9909593b94fc6577361a", function( data ) {
+                $.getJSON( "https://api.dirble.com/v2/station/"+$(this).attr("radioid")+"?token=" + dirble_api_token, function( data ) {
 
                     socket.send("MPD_API_ADD_TRACK," + data.streams[0].stream);
                     $('.top-right').notify({
@@ -973,7 +1000,7 @@ function dirble_load_stations() {
                 "<span class=\"glyphicon glyphicon-play\"></span></a>").find('a').click(function(e) {
                     e.stopPropagation();
 
-                    $.getJSON( "http://api.dirble.com/v2/station/"+_this.attr("radioid")+"?token=2e223c9909593b94fc6577361a", function( data ) {
+                    $.getJSON( "https://api.dirble.com/v2/station/"+_this.attr("radioid")+"?token=" + dirble_api_token, function( data ) {
 
                         socket.send("MPD_API_ADD_PLAY_TRACK," + data.streams[0].stream);
                         $('.top-right').notify({
@@ -994,7 +1021,7 @@ function dirble_load_stations() {
             click: function() {
                 var _this = $(this);
 
-                $.getJSON( "http://api.dirble.com/v2/station/"+$(this).attr("radioid")+"?token=2e223c9909593b94fc6577361a", function( data ) {
+                $.getJSON( "https://api.dirble.com/v2/station/"+$(this).attr("radioid")+"?token=" + dirble_api_token, function( data ) {
 
                     socket.send("MPD_API_ADD_TRACK," + data.streams[0].stream);
                     $('.top-right').notify({
@@ -1012,7 +1039,7 @@ function dirble_load_stations() {
                 "<span class=\"glyphicon glyphicon-play\"></span></a>").find('a').click(function(e) {
                     e.stopPropagation();
 
-                    $.getJSON( "http://api.dirble.com/v2/station/"+_this.attr("radioid")+"?token=2e223c9909593b94fc6577361a", function( data ) {
+                    $.getJSON( "https://api.dirble.com/v2/station/"+_this.attr("radioid")+"?token=" + dirble_api_token, function( data ) {
 
                         socket.send("MPD_API_ADD_PLAY_TRACK," + data.streams[0].stream);
                         $('.top-right').notify({
