@@ -29,6 +29,7 @@ var dirble_selected_cat = "";
 var dirble_catid = "";
 var dirble_page = 1;
 var isTouch = Modernizr.touch ? 1 : 0;
+var filter = undefined;
 
 var app = $.sammy(function() {
 
@@ -36,6 +37,7 @@ var app = $.sammy(function() {
         current_app = 'queue';
 
         $('#breadcrump').addClass('hide');
+        $('#filter').addClass('hide');
         $('#salamisandwich').removeClass('hide').find("tr:gt(0)").remove();
         $('#dirble_panel').addClass('hide');
         socket.send('MPD_API_GET_QUEUE,'+pagination);
@@ -63,7 +65,8 @@ var app = $.sammy(function() {
         browsepath = this.params['splat'][1];
         pagination = parseInt(this.params['splat'][0]);
         current_app = 'browse';
-        $('#breadcrump').removeClass('hide').empty().append("<li><a href=\"#/browse/0/\">root</a></li>");
+        $('#breadcrump').removeClass('hide').empty().append("<li><a href=\"#/browse/0/\" onclick=\"set_filter()\">root</a></li>");
+        $('#filter').removeClass('hide');
         $('#salamisandwich').removeClass('hide').find("tr:gt(0)").remove();
         $('#dirble_panel').addClass('hide');
         socket.send('MPD_API_GET_BROWSE,'+pagination+','+(browsepath ? browsepath : "/"));
@@ -178,6 +181,8 @@ $(document).ready(function(){
     else
         if ($.cookie("notification") === "true")
             $('#btnnotify').addClass("active")
+
+    add_filter();
 });
 
 
@@ -270,16 +275,31 @@ function webSocketConnect() {
                     for (var item in obj.data) {
                         switch(obj.data[item].type) {
                             case "directory":
+                                var clazz = 'dir';
+                                if (filter !== undefined) {
+                                    var first = obj.data[item].dir[0];
+                                    if (filter === "#" && isNaN(first)) {
+                                        clazz += ' hide';
+                                    } else if (filter >= "A" && filter <= "Z" && first.toUpperCase() !== filter) {
+                                        clazz += ' hide';
+                                    } else if (filter === "||") {
+                                        clazz += ' hide';
+                                    }
+                                }
                                 $('#salamisandwich > tbody').append(
-                                    "<tr uri=\"" + encodeURI(obj.data[item].dir) + "\" class=\"dir\">" +
+                                    "<tr uri=\"" + encodeURI(obj.data[item].dir) + "\" class=\"" + clazz + "\">" +
                                     "<td><span class=\"glyphicon glyphicon-folder-open\"></span></td>" +
                                     "<td><a>" + basename(obj.data[item].dir) + "</a></td>" +
                                     "<td></td><td></td></tr>"
                                 );
                                 break;
                             case "playlist":
+                                var clazz = 'plist';
+                                if (filter !== "||") {
+                                    clazz += ' hide';
+                                }
                                 $('#salamisandwich > tbody').append(
-                                    "<tr uri=\"" + encodeURI(obj.data[item].plist) + "\" class=\"plist\">" +
+                                    "<tr uri=\"" + encodeURI(obj.data[item].plist) + "\" class=\"" + clazz + "\">" +
                                     "<td><span class=\"glyphicon glyphicon-list\"></span></td>" +
                                     "<td><a>" + basename(obj.data[item].plist) + "</a></td>" +
                                     "<td></td><td></td></tr>"
@@ -933,4 +953,57 @@ function dirble_load_stations() {
             }
         });
     });
+}
+
+function set_filter (c) {
+    filter = c;
+
+    $.each($('#salamisandwich > tbody > tr.dir'), function(i, line) {
+        var first = $(line).attr('uri')[0];
+
+        if (filter === undefined) {
+            $(line).removeClass('hide');
+        }
+
+        else if (filter === "#") {
+            if (!isNaN(first)) {
+                $(line).removeClass('hide');
+            } else {
+                $(line).addClass('hide');
+            }
+        }
+
+        else if (filter >= "A" && filter <= "Z") {
+            if (first.toUpperCase() === filter) {
+                $(line).removeClass('hide');
+            } else {
+                $(line).addClass('hide');
+            }
+        }
+
+        else if (filter === "||") {
+            $(line).addClass('hide');
+        }
+    });
+
+    $.each($('#salamisandwich > tbody > tr.plist'), function(i, line) {
+        if (filter === undefined) {
+            $(line).removeClass('hide');
+        } else if (filter === "||") {
+            $(line).removeClass('hide');
+        } else {
+            $(line).addClass('hide');
+        }
+    });
+}
+
+function add_filter () {
+    $('#filter').append('&nbsp;<a onclick="set_filter(\'#\')" href="#/browse/0/">#</a>');
+
+    for (i = 65; i <= 90; i++) {
+        var c = String.fromCharCode(i);
+        $('#filter').append('&nbsp;<a onclick="set_filter(\'' + c + '\')" href="#/browse/0/">' + c + '</a>');
+    }
+
+    $('#filter').append('&nbsp;<a onclick="set_filter(\'||\')" href="#/browse/0/" class="glyphicon glyphicon-list"></a>');
 }
