@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <libgen.h>
 #include <mpd/client.h>
+#include <mpd/message.h>
 
 #include "mpd_client.h"
 #include "config.h"
@@ -239,6 +240,27 @@ out_save_queue:
             p_charbuf = strdup(c->content);
             n = mpd_search(mpd.buf, get_arg1(p_charbuf));
 out_search:
+            free(p_charbuf);
+            break;
+        case MPD_API_SEND_MESSAGE:
+            p_charbuf = strdup(c->content);
+            if(strcmp(strtok(p_charbuf, ","), "MPD_API_SEND_MESSAGE"))
+				goto out_send_message;
+
+            if((token = strtok(NULL, ",")) == NULL)
+                goto out_send_message;
+
+			free(p_charbuf);
+            p_charbuf = strdup(get_arg1(c->content));
+
+            if ( strtok(p_charbuf, ",") == NULL )
+                goto out_send_message;
+
+            if ( (token = strtok(NULL, ",")) == NULL )
+                goto out_send_message;
+
+			mpd_run_send_message(mpd.conn, p_charbuf, token);
+out_send_message:
             free(p_charbuf);
             break;
 #ifdef WITH_MPD_HOST_CHANGE
