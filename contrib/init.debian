@@ -35,7 +35,7 @@ WEB_PORT=8080
 # Load the VERBOSE setting and other rcS variables
 [ -f /etc/default/rcS ] && . /etc/default/rcS
 
-DAEMON_OPT="--user $YMPD_USER --webport $WEB_PORT --host $MPD_HOST --port $MPD_PORT"
+DAEMON_OPT="--user $YMPD_USER --mpdpass '$MPD_PASSWORD' --webport $WEB_PORT --host $MPD_HOST --port $MPD_PORT"
 
 do_start()
 {
