@@ -27,6 +27,8 @@
 #include "config.h"
 #include "json_encode.h"
 
+extern const char *template;
+
 /* forward declaration */
 static int mpd_notify_callback(struct mg_connection *c, enum mg_event ev);
 
@@ -40,6 +42,69 @@ char * get_arg1 (char *p) {
 
 char * get_arg2 (char *p) {
 	return get_arg1(get_arg1(p));
+}
+
+char *parse_templ(const char *templ, struct t_meta data) {
+    static char buffer[1024];
+    char *bptr = buffer;
+    const char *dptr;
+
+	int is_path = 0;
+    while(*templ != 0) {
+        dptr = 0;
+        if(*templ == '%') {
+            switch(*(templ + 1)) {
+                case 'A':
+                    dptr = data.artist;
+                    break;
+                case 'a':
+                    dptr = data.album;
+                    break;
+                case 't':
+                    dptr = data.track;
+                    break;
+                case 'T':
+                    dptr = data.title;
+                    break;
+				case 'P':
+					dptr = data.uri;
+					is_path = 1;
+					break;
+                case '%':
+                    *bptr++ = *templ;
+                    templ += 2;
+                    break;
+                default:
+                    printf("Unrecognised token %c\n", *(templ + 1));
+            }
+            if(dptr != 0) {
+				if(is_path) {
+					char *pptr = strdup(dptr);
+					char *dir = dirname(pptr);
+					while(*dir != 0) {
+						*bptr++ = *dir++;
+					}
+					free(pptr);
+				} else {
+					while(*dptr != 0) {
+						if(*dptr == '/' || *dptr == '?') {
+							*bptr = '_';
+						} else {
+							*bptr = *dptr;
+						}
+						bptr++;
+						dptr++;
+					}
+				}
+			}
+			templ += 2;
+        } else {
+            *bptr++ = *templ++;
+        }
+    }
+	*bptr = 0;
+
+    return buffer;
 }
 
 static inline enum mpd_cmd_ids get_cmd_id(char *cmd)
@@ -171,22 +236,28 @@ out_browse:
 out_add_track:
             free(p_charbuf);
             break;
-        case MPD_API_ADD_PLAY_TRACK:
+        case MPD_API_INSERT_TRACK:
             p_charbuf = strdup(c->content);
-            if(strcmp(strtok(p_charbuf, ","), "MPD_API_ADD_PLAY_TRACK"))
-                goto out_play_track;
+            if(strcmp(strtok(p_charbuf, ","), "MPD_API_INSERT_TRACK"))
+                goto out_insert_track;
 
             if((token = strtok(NULL, ",")) == NULL)
-                goto out_play_track;
+                goto out_insert_track;
 
 			free(p_charbuf);
             p_charbuf = strdup(c->content);
-            int_buf = mpd_run_add_id(mpd.conn, get_arg1(p_charbuf));
-            if(int_buf != -1)
-                mpd_run_play_id(mpd.conn, int_buf);
-out_play_track:
+			struct mpd_status *status = mpd_run_status(mpd.conn);
+			int playing_pos = mpd_status_get_song_pos(status) + 1;
+			mpd_status_free(status);
+			mpd_run_add_id_to(mpd.conn, get_arg1(p_charbuf), playing_pos);
+out_insert_track:
             free(p_charbuf);
             break;
+		case MPD_API_MOVE_TRACK:
+            if(sscanf(c->content, "MPD_API_MOVE_TRACK,%u,%u", &uint_buf, &uint_buf_2)) {
+                mpd_run_move(mpd.conn, uint_buf, uint_buf_2);
+			}
+			break;
         case MPD_API_ADD_PLAYLIST:
             p_charbuf = strdup(c->content);
             if(strcmp(strtok(p_charbuf, ","), "MPD_API_ADD_PLAYLIST"))
@@ -201,6 +272,20 @@ out_play_track:
 out_playlist:
             free(p_charbuf);
             break;
+		case MPD_API_RM_PLAYLIST:
+			p_charbuf = strdup(c->content);
+			if(strcmp(strtok(p_charbuf, ","), "MPD_API_RM_PLAYLIST"))
+				goto out_rm_playlist;
+
+			if((token = strtok(NULL, ",")) == NULL)
+				goto out_rm_playlist;
+
+			free(p_charbuf);
+			p_charbuf = strdup(c->content);
+			mpd_run_rm(mpd.conn, get_arg1(p_charbuf));
+out_rm_playlist:
+			free(p_charbuf);
+			break;
         case MPD_API_SAVE_QUEUE:
             p_charbuf = strdup(c->content);
             if(strcmp(strtok(p_charbuf, ","), "MPD_API_SAVE_QUEUE"))
@@ -275,6 +360,23 @@ out_set_pass:
             free(p_charbuf);
             break;
 #endif
+		case MPD_API_GET_STATS:
+			{
+				struct mpd_stats *stats = mpd_run_stats(mpd.conn);
+				unsigned int artists = mpd_stats_get_number_of_artists(stats);
+				unsigned int albums = mpd_stats_get_number_of_albums(stats);
+				unsigned int songs = mpd_stats_get_number_of_songs(stats);
+				unsigned long db_update = mpd_stats_get_db_update_time(stats);
+				unsigned long total_time = mpd_stats_get_db_play_time(stats);
+				n = snprintf(mpd.buf, MAX_SIZE, "{\"type\":\"mpdstats\", \"data\":"
+					"{\"artists\": %u, \"albums\": %u, \"songs\": %u, "
+					"\"update\": %lu, \"ttime\": %lu}}", artists, albums, songs, db_update, total_time);
+				mpd_stats_free(stats);
+			}
+			break;
+		default:
+			printf("Unknown token %d\n", cmd_id);
+			break;
     }
 
     if(mpd.conn_state == MPD_CONNECTED && mpd_connection_get_error(mpd.conn) != MPD_ERROR_SUCCESS)
@@ -511,26 +613,38 @@ int mpd_put_current_song(char *buffer)
     char *cur = buffer;
     const char *end = buffer + MAX_SIZE;
     struct mpd_song *song;
+    struct t_meta data;
 
     song = mpd_run_current_song(mpd.conn);
     if(song == NULL)
         return 0;
 
+    data.title = mpd_get_title(song);
+    data.artist = mpd_song_get_tag(song, MPD_TAG_ARTIST, 0);
+    data.album = mpd_song_get_tag(song, MPD_TAG_ALBUM, 0);
+    data.track = mpd_song_get_tag(song, MPD_TAG_TRACK, 0);
+	data.uri = mpd_song_get_uri(song);
+
     cur += json_emit_raw_str(cur, end - cur, "{\"type\": \"song_change\", \"data\":{\"pos\":");
     cur += json_emit_int(cur, end - cur, mpd_song_get_pos(song));
     cur += json_emit_raw_str(cur, end - cur, ",\"title\":");
-    cur += json_emit_quoted_str(cur, end - cur, mpd_get_title(song));
+    cur += json_emit_quoted_str(cur, end - cur, data.title);
 
-    if(mpd_song_get_tag(song, MPD_TAG_ARTIST, 0) != NULL)
+    if(data.artist != NULL)
     {
         cur += json_emit_raw_str(cur, end - cur, ",\"artist\":");
-        cur += json_emit_quoted_str(cur, end - cur, mpd_song_get_tag(song, MPD_TAG_ARTIST, 0));
+        cur += json_emit_quoted_str(cur, end - cur, data.artist);
     }
 
-    if(mpd_song_get_tag(song, MPD_TAG_ALBUM, 0) != NULL)
+    if(data.album != NULL)
     {
         cur += json_emit_raw_str(cur, end - cur, ",\"album\":");
-        cur += json_emit_quoted_str(cur, end - cur, mpd_song_get_tag(song, MPD_TAG_ALBUM, 0));
+        cur += json_emit_quoted_str(cur, end - cur, data.album);
+    }
+
+    if(template != 0) {
+        cur += json_emit_raw_str(cur, end - cur, ",\"artwork\":");
+        cur += json_emit_quoted_str(cur, end - cur, parse_templ(template, data));
     }
 
     cur += json_emit_raw_str(cur, end - cur, "}}");
@@ -565,6 +679,8 @@ int mpd_put_queue(char *buffer, unsigned int offset)
             cur += json_emit_int(cur, end - cur, mpd_song_get_duration(song));
             cur += json_emit_raw_str(cur, end - cur, ",\"title\":");
             cur += json_emit_quoted_str(cur, end - cur, mpd_get_title(song));
+			cur += json_emit_raw_str(cur, end - cur, ",\"artist\":");
+			cur += json_emit_quoted_str(cur, end - cur, mpd_song_get_tag(song, MPD_TAG_ARTIST, 0));
             cur += json_emit_raw_str(cur, end - cur, "},");
         }
         mpd_entity_free(entity);
@@ -584,6 +700,20 @@ int mpd_put_browse(char *buffer, char *path, unsigned int offset)
     struct mpd_entity *entity;
     unsigned int entity_count = 0;
 
+	char quickStart = 0;
+	char quickEnd;
+	char quickList = 0;
+	// Looking for [A-C]
+	// special case [LST] for playlists only
+	if(strlen(path) == 5 && *path == '[' && path[strlen(path) - 1] == ']') {
+		quickStart = path[1];
+		quickEnd = path[3];
+		if(!strcmp("[LST]", path)) {
+			quickList = 1;
+		}
+		strcpy(path, "/");
+	}
+
     if (!mpd_send_list_meta(mpd.conn, path))
         RETURN_ERROR_AND_RECOVER("mpd_send_list_meta");
 
@@ -594,20 +724,49 @@ int mpd_put_browse(char *buffer, char *path, unsigned int offset)
         const struct mpd_directory *dir;
         const struct mpd_playlist *pl;
 
-        if(offset > entity_count)
-        {
-            mpd_entity_free(entity);
-            entity_count++;
-            continue;
-        }
-        else if(offset + MAX_ELEMENTS_PER_PAGE - 1 < entity_count)
-        {
-            mpd_entity_free(entity);
-            cur += json_emit_raw_str(cur, end  - cur, "{\"type\":\"wrap\",\"count\":");
-            cur += json_emit_int(cur, end - cur, entity_count);
-            cur += json_emit_raw_str(cur, end  - cur, "} ");
-            break;
-        }
+		if(quickList) {
+			if(mpd_entity_get_type(entity) != MPD_ENTITY_TYPE_PLAYLIST) {
+				mpd_entity_free(entity);
+				continue;
+			}
+		}
+		else if(quickStart) {
+			const char *name;
+
+			switch (mpd_entity_get_type(entity)) {
+				case MPD_ENTITY_TYPE_SONG:
+					name = mpd_get_title(mpd_entity_get_song(entity));
+					break;
+				case MPD_ENTITY_TYPE_DIRECTORY:
+					name = mpd_directory_get_path(mpd_entity_get_directory(entity));
+					break;
+				case MPD_ENTITY_TYPE_PLAYLIST:
+					name = mpd_playlist_get_path(mpd_entity_get_playlist(entity));
+					break;
+				default:
+					mpd_entity_free(entity);
+					continue;
+			}
+			if(*name < quickStart || *name > quickEnd) {
+				mpd_entity_free(entity);
+				continue;
+			}
+		}
+
+		if(offset > entity_count)
+		{
+			mpd_entity_free(entity);
+			entity_count++;
+			continue;
+		}
+		else if(offset + MAX_ELEMENTS_PER_PAGE - 1 < entity_count)
+		{
+			mpd_entity_free(entity);
+			cur += json_emit_raw_str(cur, end  - cur, "{\"type\":\"wrap\",\"count\":");
+			cur += json_emit_int(cur, end - cur, entity_count);
+			cur += json_emit_raw_str(cur, end  - cur, "} ");
+			break;
+		}
 
         switch (mpd_entity_get_type(entity)) {
             case MPD_ENTITY_TYPE_UNKNOWN:
@@ -679,6 +838,10 @@ int mpd_search(char *buffer, char *searchstr)
             cur += json_emit_int(cur, end - cur, mpd_song_get_duration(song));
             cur += json_emit_raw_str(cur, end - cur, ",\"title\":");
             cur += json_emit_quoted_str(cur, end - cur, mpd_get_title(song));
+			cur += json_emit_raw_str(cur, end - cur, ",\"artist\":");
+			cur += json_emit_quoted_str(cur, end - cur, mpd_song_get_tag(song, MPD_TAG_ARTIST, 0));
+			cur += json_emit_raw_str(cur, end - cur, ",\"album\":");
+			cur += json_emit_quoted_str(cur, end - cur, mpd_song_get_tag(song, MPD_TAG_ALBUM, 0));
             cur += json_emit_raw_str(cur, end - cur, "},");
             mpd_song_free(song);
 

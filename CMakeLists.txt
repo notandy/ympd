@@ -42,6 +42,7 @@ file(GLOB RESOURCES
     htdocs/assets/*
     htdocs/css/*.css
     htdocs/fonts/*
+	htdocs/img/*
     htdocs/index.html
 )
 

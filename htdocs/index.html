@@ -12,6 +12,8 @@
   <!-- Bootstrap core CSS -->
   <link href="css/bootstrap.css" rel="stylesheet">
   <link href="css/bootstrap-theme.css" rel="stylesheet">
+  <!-- Dragula -->
+  <link href="css/dragula.min.css" rel="stylesheet">
 
   <!-- Custom styles for this template -->
   <link href="css/mpd.css" rel="stylesheet">
@@ -33,9 +35,8 @@
       <div class="collapse navbar-collapse">
 
         <ul id="nav_links" class="nav navbar-nav">
-          <li id="queue"><a href="#/">Queue</a></li>
-          <li id="browse"><a href="#/browse/0/">Browse database</a></li>
-          <li id="dirble"><a href="#/dirble/">Dirble</a></li>
+          <li id="queue"><a href="#/0">Queue</a></li>
+          <li id="browse"><a href="#/browse/0/">Browse</a></li>
           <li><a href="#" data-toggle="modal" data-target="#addstream">Add Stream</a></li>
           <li><a href="#" data-toggle="modal" data-target="#settings" onclick="getHost();">Settings</a></li>
         </ul>
@@ -82,6 +83,9 @@
           <div class="panel-heading"><b id="panel-heading">Queue</b></div>
           <div class="panel-body">
             <h1>
+                <span>
+                    <img id="artwork" src="img/cover.jpg" />
+                </span>
               <span id="track-icon" onclick="clickPlay();" class="glyphicon glyphicon-play"></span>
               <span id="currenttrack"></span>
             </h1>
@@ -95,6 +99,19 @@
 
 
           </div><!-- /.panel-body -->
+
+		  <div id="quicknav" class="hide">
+			<button type="button" class="btn quicknav-btn">A-C</button>
+			<button type="button" class="btn quicknav-btn">D-F</button>
+			<button type="button" class="btn quicknav-btn">G-I</button>
+			<button type="button" class="btn quicknav-btn">J-L</button>
+			<button type="button" class="btn quicknav-btn">M-O</button>
+			<button type="button" class="btn quicknav-btn">P-R</button>
+			<button type="button" class="btn quicknav-btn">S-U</button>
+			<button type="button" class="btn quicknav-btn">V-X</button>
+			<button type="button" class="btn quicknav-btn">Y-Z</button>
+			<button type="button" class="btn quicknav-btn">Playlists</button>
+		  </div>
 
           <ol id="breadcrump" class="breadcrumb">
           </ol>
@@ -118,27 +135,14 @@
             </tbody>
           </table>
 
-          <div id="dirble_panel">
-            <p id="dirble_loading" style="font-size:16px;font-weight:bold;margin-left:4em;">Loading...</p>
-            <table style="float:right; width:44%; margin-right:4%;" id="dirble_right" class="table table-hover">
-                <thead>
-                <tr>
-                    <th></th>
-                </tr>
-                </thead>
-                <tbody>
-                </tbody>
-            </table>
-            <table style="width:44%; margin-left:4%;" id="dirble_left" class="table table-hover">
-                <thead>
-                <tr>
-                    <th></th>
-                </tr>
-                </thead>
-                <tbody>
-                </tbody>
-            </table>
-        </div>
+		<!-- Welcome page -->
+		<div id="welcome">
+			<div><span class="stats">Artists</span><span id="stat_artists" class="stats"></span></div>
+			<div><span class="stats">Albums</span><span id="stat_albums" class="stats"></span></div>
+			<div><span class="stats">Songs</span><span id="stat_songs" class="stats"></span></div>
+			<div><span class="stats">Total play time</span><span id="stat_ttime" class="stats"></span></div>
+			<div><span class="stats">Last DB update</span><span id="stat_update" class="stats"></span></div>
+		</div>
 
         </div><!-- /.panel -->
         <ul class="pager">
@@ -170,7 +174,7 @@
           </div>
 
           <div id="btn-responsive-block" class="btn-group-vertical btn-block btn-group-lg">
-            <button type="button" class="btn btn-default" onclick="socket.send('MPD_API_RM_ALL');">
+            <button type="button" class="btn btn-default" onclick="clearPlaylist();">
               <span class="glyphicon glyphicon-trash"></span> Clear queue
             </button>
             <a href="#" data-toggle="modal" data-target="#savequeue" class="btn btn-default">
@@ -329,6 +333,7 @@
   <script src="js/bootstrap-notify.js"></script>
   <script src="js/bootstrap-slider.js"></script>
   <script src="js/sammy.js"></script>
+  <script src="js/dragula.min.js"></script>
   <script src="js/mpd.js"></script>
 </body>
 </html>

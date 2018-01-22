@@ -21,13 +21,11 @@ var last_state;
 var last_outputs;
 var current_app;
 var pagination = 0;
+var rootPagination = 0;
 var browsepath;
 var lastSongTitle = "";
 var current_song = new Object();
-var MAX_ELEMENTS_PER_PAGE = 512;
-var dirble_selected_cat = "";
-var dirble_catid = "";
-var dirble_page = 1;
+var MAX_ELEMENTS_PER_PAGE = 50;
 var isTouch = Modernizr.touch ? 1 : 0;
 
 var app = $.sammy(function() {
@@ -35,9 +33,10 @@ var app = $.sammy(function() {
     function runBrowse() {
         current_app = 'queue';
 
+		$('#welcome').addClass('hide');
+		$('#quicknav').addClass('hide');
         $('#breadcrump').addClass('hide');
         $('#salamisandwich').removeClass('hide').find("tr:gt(0)").remove();
-        $('#dirble_panel').addClass('hide');
         socket.send('MPD_API_GET_QUEUE,'+pagination);
 
         $('#panel-heading').text("Queue");
@@ -48,6 +47,7 @@ var app = $.sammy(function() {
         $('#nav_links > li').removeClass('active');
         $('.page-btn').addClass('hide');
         $('#add-all-songs').hide();
+        $('#search > div > input').val('');
         pagination = 0;
         browsepath = '';
     }
@@ -62,22 +62,35 @@ var app = $.sammy(function() {
         prepare();
         browsepath = this.params['splat'][1];
         pagination = parseInt(this.params['splat'][0]);
+		if (!browsepath || browsepath.length == 0) {
+			rootPagination = pagination;
+		}
         current_app = 'browse';
-        $('#breadcrump').removeClass('hide').empty().append("<li><a href=\"#/browse/0/\">root</a></li>");
+		$('#welcome').addClass('hide');
+		$('#browse').addClass('active');
+		if (browsepath && !browsepath.match(/\[[A-Z-]{3}\]/)) {
+			$('#quicknav').addClass('hide');
+		} else {
+			$('#quicknav').removeClass('hide');
+		}
+        $('#breadcrump').removeClass('hide').empty().append("<li><a href=\"#/browse/" + rootPagination + "/\">root</a></li>");
         $('#salamisandwich').removeClass('hide').find("tr:gt(0)").remove();
-        $('#dirble_panel').addClass('hide');
         socket.send('MPD_API_GET_BROWSE,'+pagination+','+(browsepath ? browsepath : "/"));
         // Don't add all songs from root
-        if (browsepath) {
+        if (browsepath && !browsepath.match(/\[[A-Z-]{3}\]/)) {
             var add_all_songs = $('#add-all-songs');
             add_all_songs.off(); // remove previous binds
             add_all_songs.on('click', function() {
                 socket.send('MPD_API_ADD_TRACK,'+browsepath);
+				$('.top-right').notify({
+					message:{
+						text: browsepath + ' added'
+				}}).show();
             });
             add_all_songs.show();
         }
 
-        $('#panel-heading').text("Browse database: "+browsepath);
+        $('#panel-heading').text("Browse: "+browsepath);
         var path_array = browsepath.split('/');
         var full_path = "";
         $.each(path_array, function(index, chunk) {
@@ -90,13 +103,16 @@ var app = $.sammy(function() {
             $('#breadcrump').append("<li><a href=\"#/browse/0/" + full_path + "\">"+chunk+"</a></li>");
             full_path += "/";
         });
-        $('#browse').addClass('active');
     });
 
     this.get(/\#\/search\/(.*)/, function() {
         current_app = 'search';
+        $('#nav_links > li').removeClass('active');
+		$('#quicknav').addClass('hide');
+		$('#welcome').addClass('hide');
+        $('#breadcrump').removeClass('hide').empty().append("<li>Search Results</li>");
+        $('#salamisandwich').removeClass('hide');
         $('#salamisandwich').find("tr:gt(0)").remove();
-        $('#dirble_panel').addClass('hide');
         var searchstr = this.params['splat'][0];
 
         $('#search > div > input').val(searchstr);
@@ -105,50 +121,14 @@ var app = $.sammy(function() {
         $('#panel-heading').text("Search: "+searchstr);
     });
 
-
-    this.get(/\#\/dirble\/(\d+)\/(\d+)/, function() {
-        prepare();
-        current_app = 'dirble';
-        $('#breadcrump').removeClass('hide').empty().append("<li><a href=\"#/dirble/\">Categories</a></li><li>"+dirble_selected_cat+"</li>");
-        $('#salamisandwich').addClass('hide');
-        $('#dirble_panel').removeClass('hide');
-        $('#dirble_loading').removeClass('hide');
-        $('#dirble_left').find("tr:gt(0)").remove();
-        $('#dirble_right').find("tr:gt(0)").remove();
-
-        $('#panel-heading').text("Dirble");
-        $('#dirble').addClass('active');
-
-        $('#next').addClass('hide');
-
-        if (this.params['splat'][1] > 1) $('#prev').removeClass('hide');
-        else $('#prev').addClass('hide');
-
-        dirble_catid = this.params['splat'][0];
-        dirble_page = this.params['splat'][1];
-
-        dirble_load_stations();
-    });
-
-
-    this.get(/\#\/dirble\//, function() {
-        prepare();
-        current_app = 'dirble';
-        $('#breadcrump').removeClass('hide').empty().append("<li>Categories</li>");
-        $('#salamisandwich').addClass('hide');
-        $('#dirble_panel').removeClass('hide');
-        $('#dirble_loading').removeClass('hide');
-        $('#dirble_left').find("tr:gt(0)").remove();
-        $('#dirble_right').find("tr:gt(0)").remove();
-
-        $('#panel-heading').text("Dirble");
-        $('#dirble').addClass('active');
-
-        dirble_load_categories();
-    });
-
     this.get("/", function(context) {
-        context.redirect("#/0");
+		prepare();
+		current_app = 'welcome';
+		$('#quicknav').addClass('hide');
+		$('#salamisandwich').addClass('hide');
+		$('#welcome').removeClass('hide');
+		$('#breadcrump').removeClass('hide').empty().append("<li>Welcome</li>");
+        socket.send('MPD_API_GET_STATS');
     });
 });
 
@@ -178,6 +158,33 @@ $(document).ready(function(){
     else
         if ($.cookie("notification") === "true")
             $('#btnnotify').addClass("active")
+
+	var vampire = dragula({
+		moves: function(el, source, handle, sibling) {
+			if(current_app == 'queue') {
+				return true;
+			} else {
+				return false;
+			}
+		}
+	});
+	vampire.containers.push($('#salamisandwich > tbody')[0]);
+	vampire.on('drop', function(el, target, source, sibling) {
+		var moveFrom = el.firstChild.textContent - 1;
+		var moveTo = target.children.length - 1;
+		if(sibling) {
+			moveTo = sibling.firstChild.textContent - 1;
+			if(moveTo > moveFrom) {
+				moveTo--;
+			}
+		}
+		if(moveTo < 0) {
+			moveTo = 0;
+		}
+		socket.send('MPD_API_MOVE_TRACK,'+moveFrom+','+moveTo);
+	});
+
+	console.log('ready');
 });
 
 
@@ -219,10 +226,12 @@ function webSocketConnect() {
 
                         $('#salamisandwich > tbody').append(
                             "<tr trackid=\"" + obj.data[song].id + "\"><td>" + (obj.data[song].pos + 1) + "</td>" +
-                                "<td>"+ obj.data[song].title +"</td>" + 
+                                "<td>"+ obj.data[song].title + " / " + obj.data[song].artist + "</td>" + 
                                 "<td>"+ minutes + ":" + (seconds < 10 ? '0' : '') + seconds +
                         "</td><td></td></tr>");
                     }
+
+					$('#salamisandwich > tbody > tr').addClass('queue-track');
 
                     if(obj.data[obj.data.length-1].pos + 1 >= pagination + MAX_ELEMENTS_PER_PAGE)
                         $('#next').removeClass('hide');
@@ -230,7 +239,7 @@ function webSocketConnect() {
                         $('#prev').removeClass('hide');
                     if ( isTouch ) {
                         $('#salamisandwich > tbody > tr > td:last-child').append(
-                                    "<a class=\"pull-right btn-group-hover\" href=\"#/\" " +
+                                    "<a class=\"pull-right btn-group-hover\" href=\"#/0\" " +
                                         "onclick=\"socket.send('MPD_API_RM_TRACK,' + $(this).parents('tr').attr('trackid')); $(this).parents('tr').remove();\">" +
                                 "<span class=\"glyphicon glyphicon-trash\"></span></a>");
                     } else {
@@ -238,7 +247,7 @@ function webSocketConnect() {
                             mouseover: function(){
                                 if($(this).children().last().has("a").length == 0)
                                     $(this).children().last().append(
-                                        "<a class=\"pull-right btn-group-hover\" href=\"#/\" " +
+                                        "<a class=\"pull-right btn-group-hover\" href=\"#/0\" " +
                                             "onclick=\"socket.send('MPD_API_RM_TRACK," + $(this).attr("trackid") +"'); $(this).parents('tr').remove();\">" +
                                     "<span class=\"glyphicon glyphicon-trash\"></span></a>")
                                 .find('a').fadeTo('fast',1);
@@ -288,11 +297,15 @@ function webSocketConnect() {
                             case "song":
                                 var minutes = Math.floor(obj.data[item].duration / 60);
                                 var seconds = obj.data[item].duration - minutes * 60;
+								var name = obj.data[item].title;
+								if(current_app == 'search') {
+									name += ' / ' + obj.data[item].album + ' / ' + obj.data[item].artist;
+								}
 
                                 $('#salamisandwich > tbody').append(
                                     "<tr uri=\"" + encodeURI(obj.data[item].uri) + "\" class=\"song\">" +
                                     "<td><span class=\"glyphicon glyphicon-music\"></span></td>" +
-                                    "<td>" + obj.data[item].title +"</td>" +
+                                    "<td>" + name +"</td>" +
                                     "<td>"+ minutes + ":" + (seconds < 10 ? '0' : '') + seconds +
                                     "</td><td></td></tr>"
                                 );
@@ -322,23 +335,33 @@ function webSocketConnect() {
                             .find('a').click(function(e) {
                                 e.stopPropagation();
                                 socket.send(onClickAction + "," + decodeURI($(this).parents("tr").attr("uri")));
-                            $('.top-right').notify({
-                                message:{
-                                    text: $('td:nth-child(2)', $(this).parents("tr")).text() + " added"
-                                } }).show();
+								var msg;
+								if($(this).parents("tr").attr("class") == 'plist') {
+									msg = ' deleted';
+									$(this).parents("tr").remove();
+								} else {
+									msg = ' added';
+								}
+								$('.top-right').notify({
+									message:{
+										text: $('td:nth-child(2)', $(this).parents("tr")).text() + msg
+									} }).show();
                             }).fadeTo('fast',1);
                     }
 
                     if ( isTouch ) {
                         appendClickableIcon($("#salamisandwich > tbody > tr.dir > td:last-child"), 'MPD_API_ADD_TRACK', 'plus');
-                        appendClickableIcon($("#salamisandwich > tbody > tr.song > td:last-child"), 'MPD_API_ADD_TRACK', 'play');
+                        appendClickableIcon($("#salamisandwich > tbody > tr.song > td:last-child"), 'MPD_API_INSERT_TRACK', 'play');
+                        appendClickableIcon($("#salamisandwich > tbody > tr.plist > td:last-child"), 'MPD_API_RM_PLAYLIST', 'trash');
                     } else {
                         $('#salamisandwich > tbody > tr').on({
                             mouseenter: function() {
                                 if($(this).is(".dir")) 
                                     appendClickableIcon($(this).children().last(), 'MPD_API_ADD_TRACK', 'plus');
                                 else if($(this).is(".song"))
-                                    appendClickableIcon($(this).children().last(), 'MPD_API_ADD_PLAY_TRACK', 'play');
+                                    appendClickableIcon($(this).children().last(), 'MPD_API_INSERT_TRACK', 'play')
+								else if($(this).is(".plist"))
+									appendClickableIcon($(this).children().last(), 'MPD_API_RM_PLAYLIST', 'trash');
                             },
                             mouseleave: function(){
                                 $(this).children().last().find("a").stop().remove();
@@ -349,10 +372,8 @@ function webSocketConnect() {
                         click: function() {
                             switch($(this).attr('class')) {
                                 case 'dir':
-                                    pagination = 0;
                                     browsepath = $(this).attr("uri");
-                                    $("#browse > a").attr("href", '#/browse/'+pagination+'/'+browsepath);
-                                    app.setLocation('#/browse/'+pagination+'/'+browsepath);
+                                    app.setLocation('#/browse/0/'+browsepath);
                                     break;
                                 case 'song':
                                     socket.send("MPD_API_ADD_TRACK," + decodeURI($(this).attr("uri")));
@@ -462,7 +483,6 @@ function webSocketConnect() {
                         socket.send('MPD_API_GET_QUEUE,'+pagination);
                     break;
                 case "song_change":
-
                     $('#album').text("");
                     $('#artist').text("");
 
@@ -476,6 +496,12 @@ function webSocketConnect() {
                     if(obj.data.artist) {
                         $('#artist').text(obj.data.artist);
                         notification += obj.data.artist + "<br />";
+                    }
+                    if(obj.data.artwork) {
+						var artworkUrl = encodeURI(obj.data.artwork);
+						$('#artwork').attr('src', artworkUrl).on('error', function() {
+							$(this).attr('src', '/img/cover.jpg');
+						});
                     }
 
                     if ($.cookie("notification") === "true")
@@ -493,6 +519,22 @@ function webSocketConnect() {
                     if(obj.data.passwort_set)
                         $('#mpd_password_set').removeClass('hide');
                     break;
+				case "mpdstats":
+					$('#stat_artists').text(obj.data.artists);
+					$('#stat_albums').text(obj.data.albums);
+					$('#stat_songs').text(obj.data.songs);
+					var update = new Date(obj.data.update * 1000);
+					$('#stat_update').text(update.toString());
+					var ttime = obj.data.ttime;
+					var days = Math.floor(ttime / 86400);
+					ttime -= days * 86400;
+					var hours = Math.floor(ttime / 3600) % 24;
+					ttime -= hours * 3600;
+					var mins = Math.floor(ttime / 60) % 60;
+					ttime -= mins * 60;
+					var secs = ttime % 60;
+					$('#stat_ttime').text(days + ' days ' + hours + ' hours ' + mins + ' mins ' + secs + ' secs');
+					break;
                 case "error":
                     $('.top-right').notify({
                         message:{text: obj.data},
@@ -571,13 +613,23 @@ var updatePlayIcon = function(state)
     if(state == 1) { // stop
         $("#play-icon").addClass("glyphicon-play");
         $('#track-icon').addClass("glyphicon-stop");
-    } else if(state == 2) { // pause
+		$('#progressbar').slider(0);
+    } else if(state == 2) { // playing
         $("#play-icon").addClass("glyphicon-pause");
         $('#track-icon').addClass("glyphicon-play");
-    } else { // play
+    } else { // paused
         $("#play-icon").addClass("glyphicon-play");
         $('#track-icon').addClass("glyphicon-pause");
     }
+}
+
+function clearPlaylist() {
+	socket.send('MPD_API_RM_ALL');
+	$('#currenttrack').text('');
+	$('#artist').text('');
+	$('#album').text('');
+	$('#counter').text('');
+	$('#artwork').attr('src', '/img/cover.jpg');
 }
 
 function updateDB() {
@@ -661,20 +713,27 @@ $('#search').submit(function () {
     return false;
 });
 
+$('.quicknav-btn').on('click', function(e) {
+	if (current_app == 'browse') {
+		var text = $(this).text();
+		if(text == 'Playlists') {
+			text = 'LST';
+		}
+		app.setLocation('#/browse/0/%5B'+text+'%5D');
+	}
+	e.preventDefault();
+});
+
 $('.page-btn').on('click', function (e) {
 
     switch ($(this).text()) {
         case "Next":
-            if (current_app == "dirble") dirble_page++;
-            else pagination += MAX_ELEMENTS_PER_PAGE;
+            pagination += MAX_ELEMENTS_PER_PAGE;
             break;
         case "Previous":
-            if (current_app == "dirble") dirble_page--
-            else {
-                pagination -= MAX_ELEMENTS_PER_PAGE;
-                if(pagination <= 0)
-                    pagination = 0;
-            }
+			pagination -= MAX_ELEMENTS_PER_PAGE;
+			if(pagination <= 0)
+				pagination = 0;
             break;
     }
 
@@ -684,9 +743,6 @@ $('.page-btn').on('click', function (e) {
             break;
         case "browse":
             app.setLocation('#/browse/'+pagination+'/'+browsepath);
-            break;
-        case "dirble":
-            app.setLocation("#/dirble/"+dirble_catid+"/"+dirble_page);
             break;
     }
     e.preventDefault();
@@ -780,157 +836,3 @@ $(document).keydown(function(e){
     e.preventDefault();
 });
 
-function dirble_load_categories() {
-
-    dirble_page = 1;
-
-    $.getJSON( "http://api.dirble.com/v2/categories?token=2e223c9909593b94fc6577361a", function( data ) {
-
-        $('#dirble_loading').addClass('hide');
-
-        data = data.sort(function(a, b) {
-            return (a.title > b.title) ? 1 : 0;
-        });
-
-        var max = data.length - data.length%2;
-
-        for(i = 0; i < max; i+=2) {
-
-            $('#dirble_left > tbody').append(
-                "<tr><td catid=\""+data[i].id+"\">"+data[i].title+"</td></tr>"
-            );
-
-            $('#dirble_right > tbody').append(
-                "<tr><td catid=\""+data[i+1].id+"\">"+data[i+1].title+"</td></tr>"
-            );
-        }
-
-        if (max != data.length) {
-            $('#dirble_left > tbody').append(
-                "<tr><td catid=\""+data[max].id+"\">"+data[max].title+"</td></tr>"
-            );
-        }
-
-        $('#dirble_left > tbody > tr > td').on({
-            click: function() {
-                dirble_selected_cat = $(this).text();
-                dirble_catid = $(this).attr("catid");
-                app.setLocation("#/dirble/"+dirble_catid+"/"+dirble_page);
-            }
-        });
-
-        $('#dirble_right > tbody > tr > td').on({
-            click: function() {
-                dirble_selected_cat = $(this).text();
-                dirble_catid = $(this).attr("catid");
-                app.setLocation("#/dirble/"+dirble_catid+"/"+dirble_page);
-            }
-        });
-    });
-}
-
-
-function dirble_load_stations() {
-
-    $.getJSON( "http://api.dirble.com/v2/category/"+dirble_catid+"/stations?page="+dirble_page+"&per_page=20&token=2e223c9909593b94fc6577361a", function( data ) {
-
-        $('#dirble_loading').addClass('hide');
-        if (data.length == 20) $('#next').removeClass('hide');
-
-        var max = data.length - data.length%2;
-
-        for(i = 0; i < max; i+=2) {
-
-            $('#dirble_left > tbody').append(
-                "<tr><td radioid=\""+data[i].id+"\">"+data[i].name+"</td></tr>"
-            );
-            $('#dirble_right > tbody').append(
-                "<tr><td radioid=\""+data[i+1].id+"\">"+data[i+1].name+"</td></tr>"
-            );
-        }
-
-        if (max != data.length) {
-            $('#dirble_left > tbody').append(
-                "<tr><td radioid=\""+data[max].id+"\">"+data[max].name+"</td></tr>"
-            );
-        }
-
-        $('#dirble_left > tbody > tr > td').on({
-            click: function() {
-                var _this = $(this);
-
-                $.getJSON( "http://api.dirble.com/v2/station/"+$(this).attr("radioid")+"?token=2e223c9909593b94fc6577361a", function( data ) {
-
-                    socket.send("MPD_API_ADD_TRACK," + data.streams[0].stream);
-                    $('.top-right').notify({
-                        message:{
-                            text: _this.text() + " added"
-                        }
-                    }).show();
-                });
-            },
-            mouseenter: function() {
-                var _this = $(this);
-
-                $(this).last().append(
-                "<a role=\"button\" class=\"pull-right btn-group-hover\">" +
-                "<span class=\"glyphicon glyphicon-play\"></span></a>").find('a').click(function(e) {
-                    e.stopPropagation();
-
-                    $.getJSON( "http://api.dirble.com/v2/station/"+_this.attr("radioid")+"?token=2e223c9909593b94fc6577361a", function( data ) {
-
-                        socket.send("MPD_API_ADD_PLAY_TRACK," + data.streams[0].stream);
-                        $('.top-right').notify({
-                            message:{
-                                text: _this.text() + " added"
-                            }
-                        }).show();
-                    });
-                }).fadeTo('fast',1);
-            },
-
-            mouseleave: function(){
-                $(this).last().find("a").stop().remove();
-            }
-        });
-
-        $('#dirble_right> tbody > tr > td').on({
-            click: function() {
-                var _this = $(this);
-
-                $.getJSON( "http://api.dirble.com/v2/station/"+$(this).attr("radioid")+"?token=2e223c9909593b94fc6577361a", function( data ) {
-
-                    socket.send("MPD_API_ADD_TRACK," + data.streams[0].stream);
-                    $('.top-right').notify({
-                        message:{
-                            text: _this.text() + " added"
-                        }
-                    }).show();
-                });
-            },
-            mouseenter: function() {
-                var _this = $(this);
-
-                $(this).last().append(
-                "<a role=\"button\" class=\"pull-right btn-group-hover\">" +
-                "<span class=\"glyphicon glyphicon-play\"></span></a>").find('a').click(function(e) {
-                    e.stopPropagation();
-
-                    $.getJSON( "http://api.dirble.com/v2/station/"+_this.attr("radioid")+"?token=2e223c9909593b94fc6577361a", function( data ) {
-
-                        socket.send("MPD_API_ADD_PLAY_TRACK," + data.streams[0].stream);
-                        $('.top-right').notify({
-                            message:{
-                                text: _this.text() + " added"
-                            }
-                        }).show();
-                    });
-                }).fadeTo('fast',1);
-            },
-
-            mouseleave: function(){
-                $(this).last().find("a").stop().remove();
-            }
-        });
-    });
-}

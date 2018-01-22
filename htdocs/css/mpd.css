@@ -1,6 +1,16 @@
 body {
   padding-top: 50px;
   padding-bottom: 50px;
+  background-color: #ddccdd;
+}
+
+.panel {
+	background-color: #ffffee;
+    box-shadow: 5px 5px 5px #888888;
+}
+
+.quicknav-btn {
+    background-color: #428bca;
 }
 
 .starter-template {
@@ -30,6 +40,17 @@ body {
 
 #search {
   margin-right: -10px;
+}
+
+.queue-track {
+  cursor: move;
+  cursor: -webkit-grab;
+}
+
+#artwork {
+    width: 100px;
+    height: 100px;
+    border: 1px solid #cccccc;
 }
 
 .btn-group-hover {
@@ -88,3 +109,16 @@ td:last-child, td:first-child {
 button {
   overflow: hidden;
 }
+
+#welcome {
+	margin: 20px;
+	padding: 5px;
+	border: 1px solid #ddccdd;
+}
+
+.stats {
+	padding: 5px;
+	display: inline-block;
+	margin: 0px;
+}
+

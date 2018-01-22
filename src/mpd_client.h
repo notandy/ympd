@@ -32,17 +32,20 @@
 
 
 #define MAX_SIZE 1024 * 100
-#define MAX_ELEMENTS_PER_PAGE 512
+#define MAX_ELEMENTS_PER_PAGE 50
 
 #define GEN_ENUM(X) X,
 #define GEN_STR(X) #X,
 #define MPD_CMDS(X) \
+	X(MPD_API_GET_STATS) \
     X(MPD_API_GET_QUEUE) \
     X(MPD_API_GET_BROWSE) \
     X(MPD_API_GET_MPDHOST) \
     X(MPD_API_ADD_TRACK) \
-    X(MPD_API_ADD_PLAY_TRACK) \
+	X(MPD_API_MOVE_TRACK) \
+    X(MPD_API_INSERT_TRACK) \
     X(MPD_API_ADD_PLAYLIST) \
+	X(MPD_API_RM_PLAYLIST) \
     X(MPD_API_PLAY_TRACK) \
     X(MPD_API_SAVE_QUEUE) \
     X(MPD_API_RM_TRACK) \
@@ -97,6 +100,14 @@ struct t_mpd {
 struct t_mpd_client_session {
     int song_id;
     unsigned queue_version;
+};
+
+struct t_meta {
+    const char *artist;
+    const char *album;
+    const char *track;
+    const char *title;
+	const char *uri;
 };
 
 void mpd_poll(struct mg_server *s);
