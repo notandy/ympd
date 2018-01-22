@@ -1,7 +1,7 @@
 /* ympd
    (c) 2013-2014 Andrew Karpow <andy@ndyk.de>
    This project's homepage is: http://www.ympd.org
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; version 2 of the License.
@@ -29,6 +29,8 @@ var dirble_selected_cat = "";
 var dirble_catid = "";
 var dirble_page = 1;
 var isTouch = Modernizr.touch ? 1 : 0;
+var hostname;
+var httpAudioStream;
 
 var app = $.sammy(function() {
 
@@ -197,8 +199,42 @@ function webSocketConnect() {
             }).show();
 
             app.run();
+
             /* emit initial request for output names */
             socket.send("MPD_API_GET_OUTPUTS");
+
+            /* This opens the HTTP audio stream
+             * I'm not sure if this is portable. Seems to work in new Chrome and FF.
+             * This also assumes the ympd server is the same as the stream.
+             *
+             * XXX This should be dynamically detected via mpd outputs. This also
+             * assumes 5443. Pasting MPD config here for convenience.
+             *
+             *
+             * audio_output {
+             *     type        "httpd"
+             *     name        "HTTP (5443)"
+             *     encoder     "lame"          # optional, vorbis or lame
+             *     port        "5443"
+             *     bind_to_address "0.0.0.0"   # optional, IPv4 or IPv6
+             * #   quality     "5.0"           # do not define if bitrate is defined
+             *     bitrate     "320"           # do not define if quality is defined
+             *     format      "44100:16:1"
+             *     max_clients "10"            # optional 0=no limit
+             * }
+             *
+             */
+            httpAudioStream = document.createElement('audio');
+            httpAudioStream.src = 'http://' + window.location.hostname + ':5443';
+            console.log('Opening audio stream: ' + httpAudioStream.src)
+
+            /* Populate the form values.
+             * Without this, e.g., mpdhost.value. does not have a value 
+             * until you enter the Settings modal. I'm not sure if this is intended.
+             *
+             * This can be removed since I'm not using it (Anthony Clark)
+             */
+            getHost();
         }
 
         socket.onmessage = function got_packet(msg) {
@@ -219,7 +255,7 @@ function webSocketConnect() {
 
                         $('#salamisandwich > tbody').append(
                             "<tr trackid=\"" + obj.data[song].id + "\"><td>" + (obj.data[song].pos + 1) + "</td>" +
-                                "<td>"+ obj.data[song].title +"</td>" + 
+                                "<td>"+ obj.data[song].title +"</td>" +
                                 "<td>"+ minutes + ":" + (seconds < 10 ? '0' : '') + seconds +
                         "</td><td></td></tr>");
                     }
@@ -302,8 +338,8 @@ function webSocketConnect() {
                                     $('#next').removeClass('hide');
                                 } else {
                                     $('#salamisandwich > tbody').append(
-                                        "<tr><td><span class=\"glyphicon glyphicon-remove\"></span></td>" + 
-                                        "<td>Too many results, please refine your search!</td>" + 
+                                        "<tr><td><span class=\"glyphicon glyphicon-remove\"></span></td>" +
+                                        "<td>Too many results, please refine your search!</td>" +
                                         "<td></td><td></td></tr>"
                                     );
                                 }
@@ -335,7 +371,7 @@ function webSocketConnect() {
                     } else {
                         $('#salamisandwich > tbody > tr').on({
                             mouseenter: function() {
-                                if($(this).is(".dir")) 
+                                if($(this).is(".dir"))
                                     appendClickableIcon($(this).children().last(), 'MPD_API_ADD_TRACK', 'plus');
                                 else if($(this).is(".song"))
                                     appendClickableIcon($(this).children().last(), 'MPD_API_ADD_PLAY_TRACK', 'play');
@@ -395,7 +431,7 @@ function webSocketConnect() {
                     $('#progressbar').slider(progress);
 
                     $('#counter')
-                    .text(elapsed_minutes + ":" + 
+                    .text(elapsed_minutes + ":" +
                         (elapsed_seconds < 10 ? '0' : '') + elapsed_seconds + " / " +
                         total_minutes + ":" + (total_seconds < 10 ? '0' : '') + total_seconds);
 
@@ -485,7 +521,7 @@ function webSocketConnect() {
                             message:{html: notification},
                             type: "info",
                         }).show();
-                        
+
                     break;
                 case "mpdhost":
                     $('#mpdhost').val(obj.data.host);
@@ -508,7 +544,7 @@ function webSocketConnect() {
             console.log("disconnected");
             $('.top-right').notify({
                 message:{text:"Connection to ympd lost, retrying in 3 seconds "},
-                type: "danger", 
+                type: "danger",
                 onClose: function () {
                     webSocketConnect();
                 }
@@ -574,9 +610,11 @@ var updatePlayIcon = function(state)
     } else if(state == 2) { // pause
         $("#play-icon").addClass("glyphicon-pause");
         $('#track-icon').addClass("glyphicon-play");
+        httpAudioStream.play()
     } else { // play
         $("#play-icon").addClass("glyphicon-play");
         $('#track-icon').addClass("glyphicon-pause");
+        httpAudioStream.pause()
     }
 }
 
@@ -588,10 +626,12 @@ function updateDB() {
 }
 
 function clickPlay() {
-    if($('#track-icon').hasClass('glyphicon-stop'))
+    if($('#track-icon').hasClass('glyphicon-stop')) {
         socket.send('MPD_API_SET_PLAY');
-    else
+    }
+    else {
         socket.send('MPD_API_SET_PAUSE');
+    }
 }
 
 function basename(path) {
@@ -618,7 +658,7 @@ $('#btnrepeat').on('click', function (e) {
 
 function toggleoutput(button, id) {
     socket.send("MPD_API_TOGGLE_OUTPUT,"+id+"," + ($(button).hasClass('active') ? 0 : 1));
-}
+ }
 
 $('#btnnotify').on('click', function (e) {
     if($.cookie("notification") === "true") {
