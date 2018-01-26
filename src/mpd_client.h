@@ -40,14 +40,18 @@
     X(MPD_API_GET_QUEUE) \
     X(MPD_API_GET_BROWSE) \
     X(MPD_API_GET_MPDHOST) \
+    X(MPD_API_GET_DIRBLEAPITOKEN) \
     X(MPD_API_ADD_TRACK) \
     X(MPD_API_ADD_PLAY_TRACK) \
     X(MPD_API_ADD_PLAYLIST) \
     X(MPD_API_PLAY_TRACK) \
     X(MPD_API_SAVE_QUEUE) \
     X(MPD_API_RM_TRACK) \
+    X(MPD_API_RM_RANGE) \
     X(MPD_API_RM_ALL) \
+    X(MPD_API_MOVE_TRACK) \
     X(MPD_API_SEARCH) \
+    X(MPD_API_SEND_MESSAGE) \
     X(MPD_API_SET_VOLUME) \
     X(MPD_API_SET_PAUSE) \
     X(MPD_API_SET_PLAY) \
@@ -93,6 +97,8 @@ struct t_mpd {
     int song_id;
     unsigned queue_version;
 } mpd;
+
+char dirble_api_token[28];
 
 struct t_mpd_client_session {
     int song_id;

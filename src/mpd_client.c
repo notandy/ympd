@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <libgen.h>
 #include <mpd/client.h>
+#include <mpd/message.h>
 
 #include "mpd_client.h"
 #include "config.h"
@@ -63,7 +64,8 @@ int callback_mpd(struct mg_connection *c)
         return MG_TRUE;
 
     if(mpd.conn_state != MPD_CONNECTED && cmd_id != MPD_API_SET_MPDHOST &&
-        cmd_id != MPD_API_GET_MPDHOST && cmd_id != MPD_API_SET_MPDPASS)
+        cmd_id != MPD_API_GET_MPDHOST && cmd_id != MPD_API_SET_MPDPASS &&
+        cmd_id != MPD_API_GET_DIRBLEAPITOKEN)
         return MG_TRUE;
 
     switch(cmd_id)
@@ -92,6 +94,18 @@ int callback_mpd(struct mg_connection *c)
         case MPD_API_RM_TRACK:
             if(sscanf(c->content, "MPD_API_RM_TRACK,%u", &uint_buf))
                 mpd_run_delete_id(mpd.conn, uint_buf);
+            break;
+        case MPD_API_RM_RANGE:
+            if(sscanf(c->content, "MPD_API_RM_RANGE,%u,%u", &uint_buf, &uint_buf_2))
+                mpd_run_delete_range(mpd.conn, uint_buf, uint_buf_2);
+            break;
+        case MPD_API_MOVE_TRACK:
+            if (sscanf(c->content, "MPD_API_MOVE_TRACK,%u,%u", &uint_buf, &uint_buf_2) == 2)
+            {
+                uint_buf -= 1;
+                uint_buf_2 -= 1;
+                mpd_run_move(mpd.conn, uint_buf, uint_buf_2);
+            }
             break;
         case MPD_API_PLAY_TRACK:
             if(sscanf(c->content, "MPD_API_PLAY_TRACK,%u", &uint_buf))
@@ -229,6 +243,27 @@ out_save_queue:
 out_search:
             free(p_charbuf);
             break;
+        case MPD_API_SEND_MESSAGE:
+            p_charbuf = strdup(c->content);
+            if(strcmp(strtok(p_charbuf, ","), "MPD_API_SEND_MESSAGE"))
+				goto out_send_message;
+
+            if((token = strtok(NULL, ",")) == NULL)
+                goto out_send_message;
+
+			free(p_charbuf);
+            p_charbuf = strdup(get_arg1(c->content));
+
+            if ( strtok(p_charbuf, ",") == NULL )
+                goto out_send_message;
+
+            if ( (token = strtok(NULL, ",")) == NULL )
+                goto out_send_message;
+
+			mpd_run_send_message(mpd.conn, p_charbuf, token);
+out_send_message:
+            free(p_charbuf);
+            break;
 #ifdef WITH_MPD_HOST_CHANGE
         /* Commands allowed when disconnected from MPD server */
         case MPD_API_SET_MPDHOST:
@@ -255,6 +290,10 @@ out_host_change:
             n = snprintf(mpd.buf, MAX_SIZE, "{\"type\":\"mpdhost\", \"data\": "
                 "{\"host\" : \"%s\", \"port\": \"%d\", \"passwort_set\": %s}"
                 "}", mpd.host, mpd.port, mpd.password ? "true" : "false");
+            break;
+        case MPD_API_GET_DIRBLEAPITOKEN:
+            n = snprintf(mpd.buf, MAX_SIZE, "{\"type\":\"dirbleapitoken\", \""
+                "data\": \"%s\"}", dirble_api_token);
             break;
         case MPD_API_SET_MPDPASS:
             p_charbuf = strdup(c->content);

@@ -56,6 +56,11 @@
             </button>
           </div>
           <div class="btn-group">
+            <button id="btnlove" type="button" class="btn btn-default" onclick="clickLove();">
+              <span class="glyphicon glyphicon-heart"></span>
+            </button>
+          </div>
+          <div class="btn-group">
             <div class="btn btn-toolbar btn-default">
               <span id="volume-icon" class="glyphicon glyphicon-volume-up"></span>
               <div id="volumeslider"></div>
@@ -99,7 +104,7 @@
           <ol id="breadcrump" class="breadcrumb">
           </ol>
 
-          <div class="col-md-12">
+          <div class="col-md-12" id="filter">
           <button id="add-all-songs" class="btn btn-primary pull-right">Add all</button>
           </div>
 
@@ -169,6 +174,21 @@
           <div id="btn-outputs-block" class="btn-group-vertical btn-block btn-group-lg">
           </div>
 
+          <div id="trashmode" class="btn-group-vertical btn-block btn-group-lg" data-toggle="radio">
+            <button id="btntrashmodeup" type="button" class="btn btn-default">
+              <span class="glyphicon glyphicon-chevron-up"></span>
+              <span class="glyphicon glyphicon-trash"></span> up &nbsp;&nbsp;&nbsp;
+            </button>
+            <button id="btntrashmodesingle" type="button" class="btn btn-default active">
+              <span class="glyphicon glyphicon-star-empty"></span>
+              <span class="glyphicon glyphicon-trash"></span> single
+            </button>
+            <button id="btntrashmodedown" type="button" class="btn btn-default">
+              <span class="glyphicon glyphicon-chevron-down"></span>
+              <span class="glyphicon glyphicon-trash"></span> down&nbsp;
+            </button>
+          </div>
+
           <div id="btn-responsive-block" class="btn-group-vertical btn-block btn-group-lg">
             <button type="button" class="btn btn-default" onclick="socket.send('MPD_API_RM_ALL');">
               <span class="glyphicon glyphicon-trash"></span> Clear queue
@@ -178,11 +198,11 @@
             </a>
           </div>
 
-  	      <div id="btn-responsive-block" class="btn-group-vertical btn-block btn-group-lg" data-toggle="buttons">
-  	        <button type="button" class="btn btn-default" id="btnnotify">
-  		     <span class="glyphicon glyphicon-comment"></span> Notifications
-  	        </button>
-  	      </div>
+            <div id="btn-responsive-block" class="btn-group-vertical btn-block btn-group-lg" data-toggle="buttons">
+              <button type="button" class="btn btn-default" id="btnnotify">
+               <span class="glyphicon glyphicon-comment"></span> Notifications
+              </button>
+            </div>
         </div>
       </div><!-- /.col-md-2 -->
     </div><!-- /.row -->
@@ -329,6 +349,7 @@
   <script src="js/bootstrap-notify.js"></script>
   <script src="js/bootstrap-slider.js"></script>
   <script src="js/sammy.js"></script>
+  <script src="js/jquery-ui-sortable.min.js"></script>
   <script src="js/mpd.js"></script>
 </body>
 </html>
