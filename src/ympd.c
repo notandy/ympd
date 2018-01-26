@@ -38,7 +38,12 @@ void bye()
     force_exit = 1;
 }
 
+char *gpass = NULL;
+
 static int server_callback(struct mg_connection *c, enum mg_event ev) {
+    int result = MG_FALSE;
+    FILE *fp = NULL;
+
     switch(ev) {
         case MG_CLOSE:
             mpd_close_handler(c);
@@ -57,7 +62,16 @@ static int server_callback(struct mg_connection *c, enum mg_event ev) {
                 return callback_http(c);
 #endif
         case MG_AUTH:
-            return MG_TRUE;
+            // no auth for websockets since mobile safari does not support it
+            if ( (gpass == NULL) || (c->is_websocket) )
+                return MG_TRUE;
+            else {
+                if ( (fp = fopen(gpass, "r")) != NULL ) {
+                    result = mg_authorize_digest(c, fp);
+                    fclose(fp);
+                }
+            }
+            return result;
         default:
             return MG_FALSE;
     }
@@ -77,12 +91,14 @@ int main(int argc, char **argv)
     mg_set_option(server, "document_root", SRC_PATH);
 #endif
 
+    mg_set_option(server, "auth_domain", "ympd");
     mpd.port = 6600;
     strcpy(mpd.host, "127.0.0.1");
 
     strcpy(dirble_api_token, "2e223c9909593b94fc6577361a");
 
     static struct option long_options[] = {
+        {"digest",       required_argument, 0, 'D'},
         {"host",         required_argument, 0, 'h'},
         {"port",         required_argument, 0, 'p'},
         {"webport",      required_argument, 0, 'w'},
@@ -94,9 +110,12 @@ int main(int argc, char **argv)
         {0,              0,                 0,  0 }
     };
 
-    while((n = getopt_long(argc, argv, "h:p:w:u:vm:",
+    while((n = getopt_long(argc, argv, "D:h:p:w:u:d:v:m",
                 long_options, &option_index)) != -1) {
         switch (n) {
+            case 'D':
+                gpass = strdup(optarg);
+                break;
             case 'h':
                 strncpy(mpd.host, optarg, sizeof(mpd.host));
                 break;
@@ -124,12 +143,14 @@ int main(int argc, char **argv)
                 break;
             default:
                 fprintf(stderr, "Usage: %s [OPTION]...\n\n"
+                        " -D, --digest <htdigest>\tpath to htdigest file for authorization\n"
+                        "                        \t(realm ympd) [no authorization]\n"
                         " -h, --host <host>\t\tconnect to mpd at host [localhost]\n"
                         " -p, --port <port>\t\tconnect to mpd at port [6600]\n"
                         " -w, --webport [ip:]<port>\tlisten interface/port for webserver [8080]\n"
                         " -u, --user <username>\t\tdrop priviliges to user after socket bind\n"
                         " -d, --dirbletoken <apitoken>\tDirble API token\n"
-                        " -V, --version\t\t\tget version\n"
+                        " -v, --version\t\t\tget version\n"
                         " -m, --mpdpass <password>\tspecifies the password to use when connecting to mpd\n"
                         " --help\t\t\t\tthis help\n"
                         , argv[0]);

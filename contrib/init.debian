@@ -25,6 +25,7 @@ MPD_HOST=localhost
 MPD_PORT=6600
 WEB_PORT=8080
 DIRBLE_API_TOKEN=2e223c9909593b94fc6577361a
+#DIGEST=--digest /path/to/htdigest
 
 
 # Exit if the package is not installed
@@ -36,7 +37,7 @@ DIRBLE_API_TOKEN=2e223c9909593b94fc6577361a
 # Load the VERBOSE setting and other rcS variables
 [ -f /etc/default/rcS ] && . /etc/default/rcS
 
-DAEMON_OPT="--user $YMPD_USER --mpdpass '$MPD_PASSWORD' --webport $WEB_PORT --host $MPD_HOST --port $MPD_PORT --dirbletoken $DIRBLE_API_TOKEN"
+DAEMON_OPT="--user $YMPD_USER --mpdpass '$MPD_PASSWORD' --webport $WEB_PORT --host $MPD_HOST --port $MPD_PORT --dirbletoken $DIRBLE_API_TOKEN $DIGEST"
 
 do_start()
 {

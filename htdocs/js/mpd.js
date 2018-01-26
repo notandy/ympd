@@ -16,6 +16,8 @@
    Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
+var TOKEN = "";
+
 var socket;
 var last_state;
 var last_outputs;
@@ -112,6 +114,9 @@ var app = $.sammy(function() {
 
 
     this.get(/\#\/dirble\/(\d+)\/(\d+)/, function() {
+        
+        if (TOKEN === "") context.redirect("#/0");
+        
         prepare();
         current_app = 'dirble';
         $('#breadcrump').removeClass('hide').empty().append("<li><a href=\"#/dirble/\">Categories</a></li><li>"+dirble_selected_cat+"</li>");
@@ -143,6 +148,9 @@ var app = $.sammy(function() {
 
 
     this.get(/\#\/dirble\//, function() {
+        
+        if (TOKEN === "") context.redirect("#/0");
+        
         prepare();
         current_app = 'dirble';
         $('#breadcrump').removeClass('hide').empty().append("<li>Categories</li>");
@@ -197,6 +205,67 @@ $(document).ready(function(){
             $('#btnnotify').addClass("active")
 
     add_filter();
+	
+    document.getElementById('player').addEventListener('stalled', function() {
+						if ( !document.getElementById('player').paused ) {
+							this.pause();
+							clickLocalPlay();
+							$('.top-right').notify({
+								message:{text:"music stream stalled - trying to recover..."},
+								type: "danger",
+								fadeOut: { enabled: true, delay: 1000 },
+							}).show();
+						}
+    });
+
+    document.getElementById('player').addEventListener('pause', function() {
+        this.src='';
+        this.removeAttribute("src");
+    	$("#localplay-icon").removeClass("glyphicon-pause").addClass("glyphicon-play");
+    });
+
+	document.getElementById('player').addEventListener('error', function failed(e) {
+		this.pause();
+		switch (e.target.error.code) {
+			case e.target.error.MEDIA_ERR_ABORTED:
+				$('.top-right').notify({
+					message:{text:"Audio playback aborted by user."},
+					type: "info",
+					fadeOut: { enabled: true, delay: 1000 },
+				}).show();
+				break;
+			case e.target.error.MEDIA_ERR_NETWORK:
+				$('.top-right').notify({
+					message:{text:"Network error while playing audio."},
+					type: "danger",
+					fadeOut: { enabled: true, delay: 1000 },
+				}).show();
+				break;
+			case e.target.error.MEDIA_ERR_DECODE:
+				$('.top-right').notify({
+					message:{text:"Audio playback aborted. Did you unplug your headphones?"},
+					type: "danger",
+					fadeOut: { enabled: true, delay: 1000 },
+				}).show();
+				break;
+			case e.target.error.MEDIA_ERR_SRC_NOT_SUPPORTED:
+				$('.top-right').notify({
+					message:{text:"Error while loading audio (server, network or format error)."},
+					type: "danger",
+					fadeOut: { enabled: true, delay: 1000 },
+				}).show();
+				break;
+			default:
+				$('.top-right').notify({
+					message:{text:"Unknown error while playing audio."},
+					type: "danger",
+					fadeOut: { enabled: true, delay: 1000 },
+				}).show();
+				break;
+		}
+	}, true);
+            
+    if (TOKEN === "") $('#dirble').addClass('hide');
 });
 
 
@@ -225,6 +294,7 @@ function webSocketConnect() {
                 return;
 
             var obj = JSON.parse(msg.data);
+            
 
             switch (obj.type) {
                 case "queue":
@@ -238,7 +308,9 @@ function webSocketConnect() {
 
                         $('#salamisandwich > tbody').append(
                             "<tr trackid=\"" + obj.data[song].id + "\"><td>" + (obj.data[song].pos + 1) + "</td>" +
-                                "<td>"+ obj.data[song].title +"</td>" + 
+                                "<td>"+ obj.data[song].title +"</td>" +
+                                "<td>"+ obj.data[song].album +"</td>" +
+                                "<td>"+ obj.data[song].artist +"</td>" + 
                                 "<td>"+ minutes + ":" + (seconds < 10 ? '0' : '') + seconds +
                         "</td><td></td></tr>");
                     }
@@ -356,9 +428,11 @@ function webSocketConnect() {
 
                                 $('#salamisandwich > tbody').append(
                                     "<tr uri=\"" + encodeURI(obj.data[item].uri) + "\" class=\"song\">" +
-                                    "<td><span class=\"glyphicon glyphicon-music\"></span></td>" +
-                                    "<td>" + obj.data[item].title +"</td>" +
-                                    "<td>"+ minutes + ":" + (seconds < 10 ? '0' : '') + seconds +
+                                    "<td><span class=\"glyphicon glyphicon-music\"></span></td>" + 
+                                    "<td>" + obj.data[item].title  + "</td>" +
+                                    "<td>" + obj.data[item].album  + "</td>" +
+                                    "<td>" + obj.data[item].artist + "</td>" + 
+                                    "<td>" + minutes + ":" + (seconds < 10 ? '0' : '') + seconds +
                                     "</td><td></td></tr>"
                                 );
                                 break;
@@ -556,6 +630,7 @@ function webSocketConnect() {
                     break;
                 case "mpdhost":
                     $('#mpdhost').val(obj.data.host);
+                    setLocalStream(obj.data.host);
                     $('#mpdport').val(obj.data.port);
                     if(obj.data.passwort_set)
                         $('#mpd_password_set').removeClass('hide');
@@ -654,12 +729,14 @@ var updatePlayIcon = function(state)
     if(state == 1) { // stop
         $("#play-icon").addClass("glyphicon-play");
         $('#track-icon').addClass("glyphicon-stop");
-    } else if(state == 2) { // pause
+		document.getElementById('player').pause();
+    } else if(state == 2) { // play
         $("#play-icon").addClass("glyphicon-pause");
         $('#track-icon').addClass("glyphicon-play");
-    } else { // play
+    } else { // pause
         $("#play-icon").addClass("glyphicon-play");
         $('#track-icon').addClass("glyphicon-pause");
+		document.getElementById('player').pause();
     }
 }
 
@@ -675,6 +752,52 @@ function clickPlay() {
         socket.send('MPD_API_SET_PLAY');
     else
         socket.send('MPD_API_SET_PAUSE');
+}
+
+function clickLocalPlay() {
+    var player = document.getElementById('player');
+    $("#localplay-icon").removeClass("glyphicon-play").removeClass("glyphicon-pause");
+	
+
+    if ( !$('#track-icon').hasClass('glyphicon-play') ) {
+		clickPlay();
+	}
+
+    if ( player.paused ) {
+        var mpdstream = $.cookie("mpdstream");
+
+        if ( mpdstream ) {
+            player.src = mpdstream;
+            console.log("playing mpd stream: " + player.src);
+            player.load();
+            player.play();
+            $("#localplay-icon").addClass("glyphicon-pause");
+        } else {
+            $("#mpdstream").change(function(){ clickLocalPlay(); $(this).unbind("change"); });
+            $("#localplay-icon").addClass("glyphicon-play");
+            getHost();
+        }
+    } else {
+        player.pause();
+    }
+}
+
+function setLocalStream(mpdhost) {
+    var mpdstream = $.cookie("mpdstream");
+
+    if ( !mpdstream ) {
+        mpdstream = "http://";
+        if ( mpdhost == "127.0.0.1" )
+            mpdstream += window.location.hostname;
+        else
+            mpdstream += mpdhost;
+        mpdstream += ":8000/";
+
+        $.cookie("mpdstream", mpdstream, { expires: 424242 });
+    }
+
+    $("#mpdstream").val(mpdstream);
+    $("#mpdstream").change();
 }
 
 function trash(tr) {
@@ -767,6 +890,7 @@ function getHost() {
 
     $('#mpdhost').keypress(onEnter);
     $('#mpdport').keypress(onEnter);
+    $('#mpdstream').keypress(onEnter);
     $('#mpd_pw').keypress(onEnter);
     $('#mpd_pw_con').keypress(onEnter);
 }
@@ -843,6 +967,7 @@ function confirmSettings() {
             socket.send('MPD_API_SET_MPDPASS,'+$('#mpd_pw').val());
     }
     socket.send('MPD_API_SET_MPDHOST,'+$('#mpdport').val()+','+$('#mpdhost').val());
+    $.cookie("mpdstream", $("#mpdstream").val(), { expires: 424242 });
     $('#settings').modal('hide');
 }
 
