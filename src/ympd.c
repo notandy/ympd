@@ -113,7 +113,8 @@ int main(int argc, char **argv)
                 run_as_user = strdup(optarg);
                 break;
             case 'm':
-                mpd.password = strdup(optarg);
+                if (strlen(optarg) > 0)
+                    mpd.password = strdup(optarg);
                 break;
             case 'v':
                 fprintf(stdout, "ympd  %d.%d.%d\n"
