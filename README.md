@@ -13,11 +13,12 @@ Dependencies
 ------------
  - libmpdclient 2: http://www.musicpd.org/libs/libmpdclient/
  - cmake 2.6: http://cmake.org/
+ - OpenSSL: https://www.openssl.org/
 
 Unix Build Instructions
 -----------------------
 
-1. install dependencies, cmake and libmpdclient are available from all major distributions.
+1. install dependencies. cmake, libmpdclient (dev), and OpenSSL (dev) are available from all major distributions.
 2. create build directory ```cd /path/to/src; mkdir build; cd build```
 3. create makefile ```cmake ..  -DCMAKE_INSTALL_PREFIX:PATH=/usr```
 4. build ```make```
@@ -28,14 +29,15 @@ Run flags
 ```
 Usage: ./ympd [OPTION]...
 
- -d, --digest <htdigest>    path to htdigest file for authorization
-                            (realm ympd) [no authorization]
- -h, --host <host>          connect to mpd at host [localhost]
- -p, --port <port>          connect to mpd at port [6600]
- -w, --webport [ip:]<port>  listen interface/port for webserver [8080]
- -u, --user <username>      drop priviliges to user after socket bind
- -V, --version              get version
- --help                     this help
+ -D, --digest <htdigest>       path to htdigest file for authorization
+                               (realm ympd) [no authorization]
+ -h, --host <host>             connect to mpd at host [localhost]
+ -p, --port <port>             connect to mpd at port [6600]
+ -w, --webport [ip:]<port>     listen interface/port for webserver [8080]
+ -d, --dirbletoken <apitoken>  Dirble API token
+ -u, --user <username>         drop priviliges to user after socket bind
+ -V, --version                 get version
+ --help                        this help
 ```
 
 SSL Support

@@ -1,6 +1,6 @@
 /* ympd
    (c) 2013-2014 Andrew Karpow <andy@ndyk.de>
-   This project's homepage is: http://www.ympd.org
+   This project's homepage is: https://www.ympd.org
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -31,6 +31,9 @@ var dirble_selected_cat = "";
 var dirble_catid = "";
 var dirble_page = 1;
 var isTouch = Modernizr.touch ? 1 : 0;
+var filter = undefined;
+var dirble_api_token = "";
+var dirble_stations = false;
 
 var app = $.sammy(function() {
 
@@ -38,6 +41,7 @@ var app = $.sammy(function() {
         current_app = 'queue';
 
         $('#breadcrump').addClass('hide');
+        $('#filter').addClass('hide');
         $('#salamisandwich').removeClass('hide').find("tr:gt(0)").remove();
         $('#dirble_panel').addClass('hide');
         socket.send('MPD_API_GET_QUEUE,'+pagination);
@@ -65,7 +69,8 @@ var app = $.sammy(function() {
         browsepath = this.params['splat'][1];
         pagination = parseInt(this.params['splat'][0]);
         current_app = 'browse';
-        $('#breadcrump').removeClass('hide').empty().append("<li><a href=\"#/browse/0/\">root</a></li>");
+        $('#breadcrump').removeClass('hide').empty().append("<li><a href=\"#/browse/0/\" onclick=\"set_filter()\">root</a></li>");
+        $('#filter').removeClass('hide');
         $('#salamisandwich').removeClass('hide').find("tr:gt(0)").remove();
         $('#dirble_panel').addClass('hide');
         socket.send('MPD_API_GET_BROWSE,'+pagination+','+(browsepath ? browsepath : "/"));
@@ -132,7 +137,13 @@ var app = $.sammy(function() {
         dirble_catid = this.params['splat'][0];
         dirble_page = this.params['splat'][1];
 
-        dirble_load_stations();
+        dirble_stations = true;
+
+        if(dirble_api_token) {
+            dirble_load_stations();
+        } else {
+            getDirbleApiToken();
+        }
     });
 
 
@@ -152,7 +163,13 @@ var app = $.sammy(function() {
         $('#panel-heading').text("Dirble");
         $('#dirble').addClass('active');
 
-        dirble_load_categories();
+        dirble_stations = false;
+
+        if(dirble_api_token) {
+            dirble_load_categories();
+        } else {
+            getDirbleApiToken();
+        }
     });
 
     this.get("/", function(context) {
@@ -186,6 +203,8 @@ $(document).ready(function(){
     else
         if ($.cookie("notification") === "true")
             $('#btnnotify').addClass("active")
+
+    add_filter();
 	
     document.getElementById('player').addEventListener('stalled', function() {
 						if ( !document.getElementById('player').paused ) {
@@ -373,20 +392,33 @@ function webSocketConnect() {
                     for (var item in obj.data) {
                         switch(obj.data[item].type) {
                             case "directory":
+                                var clazz = 'dir';
+                                if (filter !== undefined) {
+                                    var first = obj.data[item].dir[0];
+                                    if (filter === "#" && isNaN(first)) {
+                                        clazz += ' hide';
+                                    } else if (filter >= "A" && filter <= "Z" && first.toUpperCase() !== filter) {
+                                        clazz += ' hide';
+                                    } else if (filter === "||") {
+                                        clazz += ' hide';
+                                    }
+                                }
                                 $('#salamisandwich > tbody').append(
-                                    "<tr uri=\"" + encodeURI(obj.data[item].dir) + "\" class=\"dir\">" +
-                                    "<td><span class=\"glyphicon glyphicon-folder-open\"></span></td>" + 
-                                    "<td><a>" + basename(obj.data[item].dir) + "</a></td>" + 
-                                    "<td></td><td></td>" +
+                                    "<tr uri=\"" + encodeURI(obj.data[item].dir) + "\" class=\"" + clazz + "\">" +
+                                    "<td><span class=\"glyphicon glyphicon-folder-open\"></span></td>" +
+                                    "<td><a>" + basename(obj.data[item].dir) + "</a></td>" +
                                     "<td></td><td></td></tr>"
                                 );
                                 break;
                             case "playlist":
+                                var clazz = 'plist';
+                                if (filter !== "||") {
+                                    clazz += ' hide';
+                                }
                                 $('#salamisandwich > tbody').append(
-                                    "<tr uri=\"" + encodeURI(obj.data[item].plist) + "\" class=\"plist\">" +
-									"<td><span class=\"glyphicon glyphicon-list\"></span></td>" +
-									"<td><a>" + basename(obj.data[item].plist) + "</a></td>" +
-                                    "<td></td><td></td>" +
+                                    "<tr uri=\"" + encodeURI(obj.data[item].plist) + "\" class=\"" + clazz + "\">" +
+                                    "<td><span class=\"glyphicon glyphicon-list\"></span></td>" +
+                                    "<td><a>" + basename(obj.data[item].plist) + "</a></td>" +
                                     "<td></td><td></td></tr>"
                                 );
                                 break;
@@ -603,6 +635,15 @@ function webSocketConnect() {
                     if(obj.data.passwort_set)
                         $('#mpd_password_set').removeClass('hide');
                     break;
+                case "dirbleapitoken":
+                    dirble_api_token = obj.data;
+                    
+                    if(dirble_stations) {
+                        dirble_load_stations();
+                    } else {
+                        dirble_load_categories();
+                    }
+                    break;
                 case "error":
                     $('.top-right').notify({
                         message:{text: obj.data},
@@ -713,16 +754,6 @@ function clickPlay() {
         socket.send('MPD_API_SET_PAUSE');
 }
 
-function renumber_table(tableID,item) {
-    was = item.children("td").first().text();//Check if first item exists!
-    is = item.index() + 1;//maybe add pagination
-
-    if (was != is) {
-        socket.send("MPD_API_MOVE_TRACK," + was + "," + is);
-        socket.send('MPD_API_GET_QUEUE,'+pagination);
-    }
-}
-
 function clickLocalPlay() {
     var player = document.getElementById('player');
     $("#localplay-icon").removeClass("glyphicon-play").removeClass("glyphicon-pause");
@@ -780,6 +811,16 @@ function trash(tr) {
         socket.send('MPD_API_RM_RANGE,' + tr.index() + ',-1');
         tr.remove();
     };
+}
+
+function renumber_table(tableID,item) {
+    was = item.children("td").first().text();//Check if first item exists!
+    is = item.index() + 1;//maybe add pagination
+
+    if (was != is) {
+        socket.send("MPD_API_MOVE_TRACK," + was + "," + is);
+        socket.send('MPD_API_GET_QUEUE,'+pagination);
+    }
 }
 
 function basename(path) {
@@ -852,6 +893,10 @@ function getHost() {
     $('#mpdstream').keypress(onEnter);
     $('#mpd_pw').keypress(onEnter);
     $('#mpd_pw_con').keypress(onEnter);
+}
+
+function getDirbleApiToken() {
+    socket.send('MPD_API_GET_DIRBLEAPITOKEN');
 }
 
 $('#search').submit(function () {
@@ -987,7 +1032,7 @@ function dirble_load_categories() {
 
     dirble_page = 1;
 
-    $.getJSON( "http://api.dirble.com/v2/categories?token="+TOKEN, function( data ) {
+    $.getJSON( "https://api.dirble.com/v2/categories?token=" + dirble_api_token, function( data ) {
 
         $('#dirble_loading').addClass('hide');
 
@@ -1035,7 +1080,7 @@ function dirble_load_categories() {
 
 function dirble_load_stations() {
 
-    $.getJSON( "http://api.dirble.com/v2/category/"+dirble_catid+"/stations?page="+dirble_page+"&per_page=20&token="+TOKEN, function( data ) {
+    $.getJSON( "https://api.dirble.com/v2/category/"+dirble_catid+"/stations?page="+dirble_page+"&per_page=20&token=" + dirble_api_token, function( data ) {
 
         $('#dirble_loading').addClass('hide');
         if (data.length == 20) $('#next').removeClass('hide');
@@ -1062,7 +1107,7 @@ function dirble_load_stations() {
             click: function() {
                 var _this = $(this);
 
-                $.getJSON( "http://api.dirble.com/v2/station/"+$(this).attr("radioid")+"?token="+TOKEN, function( data ) {
+                $.getJSON( "https://api.dirble.com/v2/station/"+$(this).attr("radioid")+"?token=" + dirble_api_token, function( data ) {
 
                     socket.send("MPD_API_ADD_TRACK," + data.streams[0].stream);
                     $('.top-right').notify({
@@ -1080,7 +1125,7 @@ function dirble_load_stations() {
                 "<span class=\"glyphicon glyphicon-play\"></span></a>").find('a').click(function(e) {
                     e.stopPropagation();
 
-                    $.getJSON( "http://api.dirble.com/v2/station/"+_this.attr("radioid")+"?token="+TOKEN, function( data ) {
+                    $.getJSON( "https://api.dirble.com/v2/station/"+_this.attr("radioid")+"?token=" + dirble_api_token, function( data ) {
 
                         socket.send("MPD_API_ADD_PLAY_TRACK," + data.streams[0].stream);
                         $('.top-right').notify({
@@ -1101,7 +1146,7 @@ function dirble_load_stations() {
             click: function() {
                 var _this = $(this);
 
-                $.getJSON( "http://api.dirble.com/v2/station/"+$(this).attr("radioid")+"?token="+TOKEN, function( data ) {
+                $.getJSON( "https://api.dirble.com/v2/station/"+$(this).attr("radioid")+"?token=" + dirble_api_token, function( data ) {
 
                     socket.send("MPD_API_ADD_TRACK," + data.streams[0].stream);
                     $('.top-right').notify({
@@ -1119,7 +1164,7 @@ function dirble_load_stations() {
                 "<span class=\"glyphicon glyphicon-play\"></span></a>").find('a').click(function(e) {
                     e.stopPropagation();
 
-                    $.getJSON( "http://api.dirble.com/v2/station/"+_this.attr("radioid")+"?token="+TOKEN, function( data ) {
+                    $.getJSON( "https://api.dirble.com/v2/station/"+_this.attr("radioid")+"?token=" + dirble_api_token, function( data ) {
 
                         socket.send("MPD_API_ADD_PLAY_TRACK," + data.streams[0].stream);
                         $('.top-right').notify({
@@ -1136,4 +1181,57 @@ function dirble_load_stations() {
             }
         });
     });
+}
+
+function set_filter (c) {
+    filter = c;
+
+    $.each($('#salamisandwich > tbody > tr.dir'), function(i, line) {
+        var first = $(line).attr('uri')[0];
+
+        if (filter === undefined) {
+            $(line).removeClass('hide');
+        }
+
+        else if (filter === "#") {
+            if (!isNaN(first)) {
+                $(line).removeClass('hide');
+            } else {
+                $(line).addClass('hide');
+            }
+        }
+
+        else if (filter >= "A" && filter <= "Z") {
+            if (first.toUpperCase() === filter) {
+                $(line).removeClass('hide');
+            } else {
+                $(line).addClass('hide');
+            }
+        }
+
+        else if (filter === "||") {
+            $(line).addClass('hide');
+        }
+    });
+
+    $.each($('#salamisandwich > tbody > tr.plist'), function(i, line) {
+        if (filter === undefined) {
+            $(line).removeClass('hide');
+        } else if (filter === "||") {
+            $(line).removeClass('hide');
+        } else {
+            $(line).addClass('hide');
+        }
+    });
+}
+
+function add_filter () {
+    $('#filter').append('&nbsp;<a onclick="set_filter(\'#\')" href="#/browse/0/">#</a>');
+
+    for (i = 65; i <= 90; i++) {
+        var c = String.fromCharCode(i);
+        $('#filter').append('&nbsp;<a onclick="set_filter(\'' + c + '\')" href="#/browse/0/">' + c + '</a>');
+    }
+
+    $('#filter').append('&nbsp;<a onclick="set_filter(\'||\')" href="#/browse/0/" class="glyphicon glyphicon-list"></a>');
 }
