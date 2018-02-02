@@ -227,7 +227,7 @@ function webSocketConnect() {
             var obj = JSON.parse(msg.data);
 
             switch (obj.type) {
-                case "queue":
+                case 'queue':
                     if(current_app !== 'queue')
                         break;
 
@@ -238,8 +238,8 @@ function webSocketConnect() {
 
                         $('#salamisandwich > tbody').append(
                             "<tr trackid=\"" + obj.data[song].id + "\"><td>" + (obj.data[song].pos + 1) + "</td>" +
-                                "<td>"+ obj.data[song].title +"</td>" + 
-                                "<td>"+ minutes + ":" + (seconds < 10 ? '0' : '') + seconds +
+                                "<td>" + obj.data[song].artist + " [" + obj.data[song].album  + "] - " + obj.data[song].title  + "</td>" +
+                                "<td>" + minutes + ":" + (seconds < 10 ? '0' : '') + seconds +
                         "</td><td></td></tr>");
                     }
 
@@ -299,14 +299,14 @@ function webSocketConnect() {
                     };
                     
                     //Make queue table sortable
-                    $("#salamisandwich > tbody").sortable({
+                    $('#salamisandwich > tbody').sortable({
                       helper: fixHelperModified,
                       stop: function(event,ui) {renumber_table('#salamisandwich',ui.item)}
                     }).disableSelection();
                     break;
-                case "search":
+                case 'search':
                     $('#wait').modal('hide');
-                case "browse":
+                case 'browse':
                     if(current_app !== 'browse' && current_app !== 'search')
                         break;
 
@@ -319,7 +319,7 @@ function webSocketConnect() {
                     }
                     for (var item in obj.data) {
                         switch(obj.data[item].type) {
-                            case "directory":
+                            case 'directory':
                                 var clazz = 'dir';
                                 if (filter !== undefined) {
                                     var first = obj.data[item].dir[0];
@@ -338,7 +338,7 @@ function webSocketConnect() {
                                     "<td></td><td></td></tr>"
                                 );
                                 break;
-                            case "playlist":
+                            case 'playlist':
                                 var clazz = 'plist';
                                 if (filter !== "||") {
                                     clazz += ' hide';
@@ -350,19 +350,19 @@ function webSocketConnect() {
                                     "<td></td><td></td></tr>"
                                 );
                                 break;
-                            case "song":
+                            case 'song':
                                 var minutes = Math.floor(obj.data[item].duration / 60);
                                 var seconds = obj.data[item].duration - minutes * 60;
 
-                                $('#salamisandwich > tbody').append(
+				$('#salamisandwich > tbody').append(
                                     "<tr uri=\"" + encodeURI(obj.data[item].uri) + "\" class=\"song\">" +
                                     "<td><span class=\"glyphicon glyphicon-music\"></span></td>" +
-                                    "<td>" + obj.data[item].title +"</td>" +
-                                    "<td>"+ minutes + ":" + (seconds < 10 ? '0' : '') + seconds +
+                                    "<td>" + (typeof obj.data[item].artist !== 'undefined' ? obj.data[item].artist + " [" + obj.data[item].album + "] - " : '') + obj.data[item].title + "</td>" +
+                                    "<td>" + minutes + ":" + (seconds < 10 ? '0' : '') + seconds +
                                     "</td><td></td></tr>"
                                 );
                                 break;
-                            case "wrap":
+                            case 'wrap':
                                 if(current_app == 'browse') {
                                     $('#next').removeClass('hide');
                                 } else {
