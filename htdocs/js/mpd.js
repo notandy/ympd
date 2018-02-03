@@ -407,6 +407,7 @@ function webSocketConnect() {
                                     "<tr uri=\"" + encodeURI(obj.data[item].dir) + "\" class=\"" + clazz + "\">" +
                                     "<td><span class=\"glyphicon glyphicon-folder-open\"></span></td>" +
                                     "<td><a>" + basename(obj.data[item].dir) + "</a></td>" +
+                                    "<td></td><td></td>" +
                                     "<td></td><td></td></tr>"
                                 );
                                 break;
@@ -419,6 +420,7 @@ function webSocketConnect() {
                                     "<tr uri=\"" + encodeURI(obj.data[item].plist) + "\" class=\"" + clazz + "\">" +
                                     "<td><span class=\"glyphicon glyphicon-list\"></span></td>" +
                                     "<td><a>" + basename(obj.data[item].plist) + "</a></td>" +
+                                    "<td></td><td></td>" +
                                     "<td></td><td></td></tr>"
                                 );
                                 break;
@@ -443,6 +445,7 @@ function webSocketConnect() {
                                     $('#salamisandwich > tbody').append(
                                         "<tr><td><span class=\"glyphicon glyphicon-remove\"></span></td>" + 
                                         "<td>Too many results, please refine your search!</td>" + 
+                                        "<td></td><td></td>" +
                                         "<td></td><td></td></tr>"
                                     );
                                 }
