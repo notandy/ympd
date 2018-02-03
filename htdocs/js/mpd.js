@@ -395,7 +395,7 @@ function webSocketConnect() {
                                 socket.send(onClickAction + "," + decodeURI($(this).parents("tr").attr("uri")));
                             $('.top-right').notify({
                                 message:{
-                                    text: $('td:nth-child(2)', $(this).parents("tr")).text() + " added"
+                                    text: "\"" + $('td:nth-last-child(3)', $(this).parents("tr")).text() + "\" added"
                                 } }).show();
                             }).fadeTo('fast',1);
                     }
@@ -429,7 +429,7 @@ function webSocketConnect() {
                                     socket.send("MPD_API_ADD_TRACK," + decodeURI($(this).attr("uri")));
                                     $('.top-right').notify({
                                         message:{
-                                            text: $('td:nth-child(2)', this).text() + " added"
+                                            text: "\"" + $('td:nth-last-child(3)', this).text() + "\" added"
                                         }
                                     }).show();
                                     break;
@@ -437,7 +437,7 @@ function webSocketConnect() {
                                     socket.send("MPD_API_ADD_PLAYLIST," + decodeURI($(this).attr("uri")));
                                     $('.top-right').notify({
                                         message:{
-                                            text: "Playlist " + $('td:nth-child(2)', this).text() + " added"
+                                            text: "\"" + $('td:nth-last-child(3)', this).text() + "\" added"
                                         }
                                     }).show();
                                     break;
