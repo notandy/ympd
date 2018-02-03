@@ -198,11 +198,6 @@
             </a>
           </div>
 
-            <div id="btn-responsive-block" class="btn-group-vertical btn-block btn-group-lg" data-toggle="buttons">
-              <button type="button" class="btn btn-default" id="btnnotify">
-               <span class="glyphicon glyphicon-comment"></span> Notifications
-              </button>
-            </div>
         </div>
       </div><!-- /.col-md-2 -->
     </div><!-- /.row -->
@@ -223,6 +218,19 @@
           <h5>ympd uses following excellent software:</h5>
           <h6><a href="http://cesanta.com/docs.html">Mongoose</a> <small>GPLv2</small></h6>
           <h6><a href="http://www.musicpd.org/libs/libmpdclient/">libMPDClient</a> <small>BSD License</small></h6>
+	  <hr />
+          <div class="row">
+            <div class="form-group col-md-6">
+              <button type="button" class="btn btn-default btn-block" onclick="updateDB();">
+                <span class="glyphicon glyphicon-refresh"></span> Update Database
+              </button>
+            </div>
+            <div class="form-group col-md-6" data-toggle="buttons">
+              <button type="button" class="btn btn-default btn-block" id="btnnotify">
+                <span class="glyphicon glyphicon-comment"></span> Enable Notifications
+              </button>
+            </div>
+          </div>
           <hr />
           <form role="form">
             <div class="row">
@@ -251,14 +259,6 @@
                   <button type="button" class="close" aria-hidden="true">&times;</button>
                   MPD Password is set
                 </div>
-              </div>
-
-            </div>
-            <div class="row">
-              <div class="form-group col-md-12">
-                <button type="button" class="btn btn-default" onclick="updateDB();">
-                  <span class="glyphicon glyphicon-refresh"></span> Update DB
-                </button>
               </div>
             </div>
           </form>
