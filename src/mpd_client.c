@@ -480,8 +480,11 @@ char* mpd_get_artist(struct mpd_song const *song)
     char *str;
 
     str = (char *)mpd_song_get_tag(song, MPD_TAG_ARTIST, 0);
-
-    return str;
+    if (str == NULL) {
+	return "";
+    } else {
+	return str;
+    }
 }
 
 char* mpd_get_album(struct mpd_song const *song)
@@ -489,8 +492,11 @@ char* mpd_get_album(struct mpd_song const *song)
     char *str;
 
     str = (char *)mpd_song_get_tag(song, MPD_TAG_ALBUM, 0);
-
-    return str;
+    if (str == NULL) {
+	return "";
+    } else {
+	return str;
+    }
 }
 
 int mpd_put_state(char *buffer, int *current_song_id, unsigned *queue_version)

@@ -55,8 +55,13 @@ body {
   }
 }
 
-#salamisandwich td:nth-child(3), th:nth-child(3) {
+#salamisandwich td:nth-last-child(2), th:nth-last-child(2) {
   text-align: right;
+}
+
+#salamisandwich td:nth-child(2) span {
+	font-style:italic;
+	font-size:90%;
 }
 
 tbody {
