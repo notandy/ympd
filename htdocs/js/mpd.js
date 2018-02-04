@@ -227,7 +227,7 @@ function webSocketConnect() {
             var obj = JSON.parse(msg.data);
 
             switch (obj.type) {
-                case "queue":
+                case 'queue':
                     if(current_app !== 'queue')
                         break;
 
@@ -304,9 +304,9 @@ function webSocketConnect() {
                       stop: function(event,ui) {renumber_table('#salamisandwich',ui.item)}
                     }).disableSelection();
                     break;
-                case "search":
+                case 'search':
                     $('#wait').modal('hide');
-                case "browse":
+                case 'browse':
                     if(current_app !== 'browse' && current_app !== 'search')
                         break;
 
@@ -319,7 +319,7 @@ function webSocketConnect() {
                     }
                     for (var item in obj.data) {
                         switch(obj.data[item].type) {
-                            case "directory":
+                            case 'directory':
                                 var clazz = 'dir';
                                 if (filter !== undefined) {
                                     var first = obj.data[item].dir[0];
@@ -338,7 +338,7 @@ function webSocketConnect() {
                                     "<td></td><td></td></tr>"
                                 );
                                 break;
-                            case "playlist":
+                            case 'playlist':
                                 var clazz = 'plist';
                                 if (filter !== "||") {
                                     clazz += ' hide';
@@ -350,7 +350,7 @@ function webSocketConnect() {
                                     "<td></td><td></td></tr>"
                                 );
                                 break;
-                            case "song":
+                            case 'song':
                                 var minutes = Math.floor(obj.data[item].duration / 60);
                                 var seconds = obj.data[item].duration - minutes * 60;
 
@@ -362,7 +362,7 @@ function webSocketConnect() {
                                     "</td><td></td></tr>"
                                 );
                                 break;
-                            case "wrap":
+                            case 'wrap':
                                 if(current_app == 'browse') {
                                     $('#next').removeClass('hide');
                                 } else {
@@ -440,7 +440,7 @@ function webSocketConnect() {
                     });
 
                     break;
-                case "state":
+                case 'state':
                     updatePlayIcon(obj.data.state);
                     updateVolumeIcon(obj.data.volume);
 
@@ -494,7 +494,7 @@ function webSocketConnect() {
 
                     last_state = obj;
                     break;
-                case "outputnames":
+                case 'outputnames':
                     $('#btn-outputs-block button').remove();
                     if (obj.data.length > 1) {
 		        $.each(obj.data, function(id, name){
@@ -502,12 +502,12 @@ function webSocketConnect() {
                             btn.appendTo($('#btn-outputs-block'));
                         });
 		    } else {
-                        $('#btn-outputs-block').removeClass('btn-group-vertical');
+                        $('#btn-outputs-block').addClass('hide');
 		    }
                     /* remove cache, since the buttons have been recreated */
                     last_outputs = '';
                     break;
-                case "outputs":
+                case 'outputs':
                     if(JSON.stringify(obj) === JSON.stringify(last_outputs))
                         break;
                     $.each(obj.data, function(id, enabled){
@@ -518,7 +518,7 @@ function webSocketConnect() {
                     });
                     last_outputs = obj;
                     break;
-                case "disconnected":
+                case 'disconnected':
                     if($('.top-right').has('div').length == 0)
                         $('.top-right').notify({
                             message:{text:"ympd lost connection to MPD "},
@@ -526,11 +526,11 @@ function webSocketConnect() {
                             fadeOut: { enabled: true, delay: 1000 },
                         }).show();
                     break;
-                case "update_queue":
+                case 'update_queue':
                     if(current_app === 'queue')
                         socket.send('MPD_API_GET_QUEUE,'+pagination);
                     break;
-                case "song_change":
+                case 'song_change':
 
                     $('#album').text("");
                     $('#artist').text("");
@@ -558,13 +558,13 @@ function webSocketConnect() {
                         }).show();
                         
                     break;
-                case "mpdhost":
+                case 'mpdhost':
                     $('#mpdhost').val(obj.data.host);
                     $('#mpdport').val(obj.data.port);
                     if(obj.data.passwort_set)
                         $('#mpd_password_set').removeClass('hide');
                     break;
-                case "dirbleapitoken":
+                case 'dirbleapitoken':
                     dirble_api_token = obj.data;
                     
                     if(dirble_stations) {
@@ -573,7 +573,7 @@ function webSocketConnect() {
                         dirble_load_categories();
                     }
                     break;
-                case "error":
+                case 'error':
                     $('.top-right').notify({
                         message:{text: obj.data},
                         type: "danger",
