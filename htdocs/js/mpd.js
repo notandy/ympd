@@ -110,7 +110,6 @@ var app = $.sammy(function() {
         $('#panel-heading').text("Search: "+searchstr);
     });
 
-
     this.get(/\#\/dirble\/(\d+)\/(\d+)/, function() {
         prepare();
         current_app = 'dirble';
@@ -134,13 +133,8 @@ var app = $.sammy(function() {
 
         dirble_stations = true;
 
-        if(dirble_api_token) {
-            dirble_load_stations();
-        } else {
-            getDirbleApiToken();
-        }
+        if (dirble_api_token) { dirble_load_stations(); }
     });
-
 
     this.get(/\#\/dirble\//, function() {
         prepare();
@@ -157,11 +151,7 @@ var app = $.sammy(function() {
 
         dirble_stations = false;
 
-        if(dirble_api_token) {
-            dirble_load_categories();
-        } else {
-            getDirbleApiToken();
-        }
+        if (dirble_api_token) { dirble_load_categories(); }
     });
 
     this.get("/", function(context) {
@@ -199,7 +189,6 @@ $(document).ready(function(){
     add_filter();
 });
 
-
 function webSocketConnect() {
     if (typeof MozWebSocket != "undefined") {
         socket = new MozWebSocket(get_appropriate_ws_url());
@@ -217,7 +206,9 @@ function webSocketConnect() {
 
             app.run();
             /* emit initial request for output names */
-            socket.send("MPD_API_GET_OUTPUTS");
+            socket.send('MPD_API_GET_OUTPUTS');
+            /* emit initial request for dirble api token */
+            socket.send('MPD_API_GET_DIRBLEAPITOKEN');
         }
 
         socket.onmessage = function got_packet(msg) {
@@ -567,11 +558,15 @@ function webSocketConnect() {
                 case 'dirbleapitoken':
                     dirble_api_token = obj.data;
                     
-                    if(dirble_stations) {
-                        dirble_load_stations();
+		    if (dirble_api_token) {
+		        $('#dirble').removeClass('hide');
+
+                        if (dirble_stations) { dirble_load_stations();   }
+                        else {                 dirble_load_categories(); }
+
                     } else {
-                        dirble_load_categories();
-                    }
+                        $('#dirble').addClass('hide');
+		    }
                     break;
                 case 'error':
                     $('.top-right').notify({
@@ -581,9 +576,8 @@ function webSocketConnect() {
                 default:
                     break;
             }
-
-
         }
+
         socket.onclose = function(){
             console.log("disconnected");
             $('.top-right').notify({
@@ -773,10 +767,6 @@ function getHost() {
     $('#mpdport').keypress(onEnter);
     $('#mpd_pw').keypress(onEnter);
     $('#mpd_pw_con').keypress(onEnter);
-}
-
-function getDirbleApiToken() {
-    socket.send('MPD_API_GET_DIRBLEAPITOKEN');
 }
 
 $('#search').submit(function () {
