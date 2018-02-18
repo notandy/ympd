@@ -32,6 +32,9 @@ var isTouch = Modernizr.touch ? 1 : 0;
 var filter = undefined;
 var dirble_api_token = "";
 var dirble_stations = false;
+var hostname;
+var httpAudioStreamEnabled;
+var httpAudioStream;
 
 var app = $.sammy(function() {
 
@@ -170,6 +173,7 @@ var app = $.sammy(function() {
 });
 
 $(document).ready(function(){
+    checkSettings();
     webSocketConnect();
     $("#volumeslider").slider(0);
     $("#volumeslider").on('slider.newValue', function(evt,data){
@@ -199,6 +203,64 @@ $(document).ready(function(){
     add_filter();
 });
 
+function checkSettings()
+{
+    httpAudioStreamEnabled = $.cookie("httpAudioStreamEnabled");
+    if ( typeof httpAudioStreamEnabled == "undefined" ){
+        // Fall back to default value (disabled)
+        httpAudioStreamEnabled = false;
+        $.cookie("httpAudioStreamEnabled", httpAudioStreamEnabled);
+    } else if ( httpAudioStreamEnabled ){
+        var host;
+        var port;
+        
+        try // Try retrieving stream host and port from cookies, fall back to default value if undefined
+        {   
+            var src = $.cookie("httpAudioStreamSrc").split("://")[1];
+            host = src.split(":")[0];
+            port = src.split(":")[1];
+            if (typeof host == "undefined" || host.length == 0){
+                host = window.location.hostname;
+            }
+            if (typeof port == "undefined" || (port < 0 || port > 65535)){
+                port = 5443
+            }
+        } catch(err) // Fallback to default values
+        {   
+            host = window.location.hostname;
+            port = 5443;
+        }  
+        
+        if (httpAudioStreamEnabled){
+            $('#audiostreamhost').val(host);
+            $('#audiostreamport').val(port);
+        } 
+    }
+}
+
+function createHTTPAudioStream()
+{
+   /* This creates the HTTP audio stream element
+    * I'm not sure if this is portable. Seems to work in new Chrome and FF.
+    * This also assumes the ympd server is the same as the stream.
+    *
+    * The httpAudioStreamPort can be added in the settings. Ideally, 
+    * this should be autodetected.
+    */
+   
+   httpAudioStream = document.createElement('audio');
+   httpAudioStream.id = "audiostream";
+   var src = $.cookie("httpAudioStreamSrc");
+   if ( src ){
+       httpAudioStream.src = src;
+   } else { 
+       // Default values
+       httpAudioStream.src = window.location.protocol + "//" + window.location.hostname + ":5443";
+       // Save these values to a cookie
+       $.cookie("httpAudioStreamSrc", httpAudioStream.src);
+   }
+   console.log('Created audio stream: ' + httpAudioStream.src);
+}
 
 function webSocketConnect() {
     if (typeof MozWebSocket != "undefined") {
@@ -216,8 +278,20 @@ function webSocketConnect() {
             }).show();
 
             app.run();
+
             /* emit initial request for output names */
             socket.send("MPD_API_GET_OUTPUTS");
+            
+            /* add the http stream */
+            if (httpAudioStreamEnabled) { createHTTPAudioStream(); }
+            
+            /* Populate the form values.
+             * Without this, e.g., mpdhost.value. does not have a value 
+             * until you enter the Settings modal. I'm not sure if this is intended.
+             *
+             * This can be removed since I'm not using it (Anthony Clark)
+             */
+            getHost();
         }
 
         socket.onmessage = function got_packet(msg) {
@@ -238,7 +312,7 @@ function webSocketConnect() {
 
                         $('#salamisandwich > tbody').append(
                             "<tr trackid=\"" + obj.data[song].id + "\"><td>" + (obj.data[song].pos + 1) + "</td>" +
-                                "<td>"+ obj.data[song].title +"</td>" + 
+                                "<td>"+ obj.data[song].title +"</td>" +
                                 "<td>"+ minutes + ":" + (seconds < 10 ? '0' : '') + seconds +
                         "</td><td></td></tr>");
                     }
@@ -367,8 +441,8 @@ function webSocketConnect() {
                                     $('#next').removeClass('hide');
                                 } else {
                                     $('#salamisandwich > tbody').append(
-                                        "<tr><td><span class=\"glyphicon glyphicon-remove\"></span></td>" + 
-                                        "<td>Too many results, please refine your search!</td>" + 
+                                        "<tr><td><span class=\"glyphicon glyphicon-remove\"></span></td>" +
+                                        "<td>Too many results, please refine your search!</td>" +
                                         "<td></td><td></td></tr>"
                                     );
                                 }
@@ -400,7 +474,7 @@ function webSocketConnect() {
                     } else {
                         $('#salamisandwich > tbody > tr').on({
                             mouseenter: function() {
-                                if($(this).is(".dir")) 
+                                if($(this).is(".dir"))
                                     appendClickableIcon($(this).children().last(), 'MPD_API_ADD_TRACK', 'plus');
                                 else if($(this).is(".song"))
                                     appendClickableIcon($(this).children().last(), 'MPD_API_ADD_PLAY_TRACK', 'play');
@@ -460,7 +534,7 @@ function webSocketConnect() {
                     $('#progressbar').slider(progress);
 
                     $('#counter')
-                    .text(elapsed_minutes + ":" + 
+                    .text(elapsed_minutes + ":" +
                         (elapsed_seconds < 10 ? '0' : '') + elapsed_seconds + " / " +
                         total_minutes + ":" + (total_seconds < 10 ? '0' : '') + total_seconds);
 
@@ -552,7 +626,7 @@ function webSocketConnect() {
                             message:{html: notification},
                             type: "info",
                         }).show();
-                        
+
                     break;
                 case "mpdhost":
                     $('#mpdhost').val(obj.data.host);
@@ -584,7 +658,7 @@ function webSocketConnect() {
             console.log("disconnected");
             $('.top-right').notify({
                 message:{text:"Connection to ympd lost, retrying in 3 seconds "},
-                type: "danger", 
+                type: "danger",
                 onClose: function () {
                     webSocketConnect();
                 }
@@ -657,9 +731,11 @@ var updatePlayIcon = function(state)
     } else if(state == 2) { // pause
         $("#play-icon").addClass("glyphicon-pause");
         $('#track-icon').addClass("glyphicon-play");
+        if (httpAudioStreamEnabled) { httpAudioStream.play(); }
     } else { // play
         $("#play-icon").addClass("glyphicon-play");
         $('#track-icon').addClass("glyphicon-pause");
+        if (httpAudioStreamEnabled) { httpAudioStream.pause(); }
     }
 }
 
@@ -671,10 +747,12 @@ function updateDB() {
 }
 
 function clickPlay() {
-    if($('#track-icon').hasClass('glyphicon-stop'))
+    if($('#track-icon').hasClass('glyphicon-stop')) {
         socket.send('MPD_API_SET_PLAY');
-    else
+    }
+    else {
         socket.send('MPD_API_SET_PAUSE');
+    }
 }
 
 function trash(tr) {
@@ -732,7 +810,7 @@ $('#btnrepeat').on('click', function (e) {
 
 function toggleoutput(button, id) {
     socket.send("MPD_API_TOGGLE_OUTPUT,"+id+"," + ($(button).hasClass('active') ? 0 : 1));
-}
+ }
 
 $('#trashmode').children("button").on('click', function(e) {
     $('#trashmode').children("button").removeClass("active");
@@ -764,9 +842,14 @@ function getHost() {
         confirmSettings();
       }
     }
-
+    
     $('#mpdhost').keypress(onEnter);
     $('#mpdport').keypress(onEnter);
+    if (httpAudioStreamEnabled && !$('#audiostreamenabled').is(":checked")){
+        $('#audiostreamenabled').click();
+    }
+    $('#audiostreamhost').keypress(onEnter);
+    $('#audiostreamport').keypress(onEnter);
     $('#mpd_pw').keypress(onEnter);
     $('#mpd_pw_con').keypress(onEnter);
 }
@@ -782,6 +865,14 @@ $('#search').submit(function () {
         $('#wait').modal('hide');
     }, 10000);
     return false;
+});
+
+$('#audiostreamenabled').click(function(){
+    $('#audiostreamsettings').toggle();
+    if ($('#audiostreamenabled').is(":checked") && !$("#audiostreamhost").attr("value")){
+        $("#audiostreamhost").attr("placeholder", window.location.hostname);
+        $("#audiostreamport").attr("placeholder", 5443);
+    }
 });
 
 $('.page-btn').on('click', function (e) {
@@ -843,6 +934,36 @@ function confirmSettings() {
             socket.send('MPD_API_SET_MPDPASS,'+$('#mpd_pw').val());
     }
     socket.send('MPD_API_SET_MPDHOST,'+$('#mpdport').val()+','+$('#mpdhost').val());
+    
+    httpAudioStreamEnabled = $('#audiostreamenabled').is(":checked");
+    $.cookie("httpAudioStreamEnabled", httpAudioStreamEnabled);
+    if (httpAudioStreamEnabled)
+    {   
+        var host=$('#audiostreamhost').val();
+        var port=$('#audiostreamport').val();
+        
+        // Fallback to default values if there are bad values
+        if (typeof host == "undefined" || host.length == 0){
+            host = window.location.hostname;
+            console.log("[HTTP Audio Streaming] fallback to defalt host: " + host);
+        }
+        if (typeof port == "undefined" || (port < 0 || port > 65535) || port.length == 0) {
+            port=5443;
+            console.log("[HTTP Audio Streaming] fallback to default port: " + port);
+        } 
+        
+        // Set audio source
+        var audioSrc = window.location.protocol + "//" + host + ':' + port;
+        // Save streaming URL in a cookie
+        $.cookie("httpAudioStreamSrc", audioSrc);
+        // Set the streaming URL, create it if it does not exist
+        if (httpAudioStream){
+            httpAudioStream.src = audioSrc;
+        } else {
+            createHTTPAudioStream();
+        }
+    }
+    
     $('#settings').modal('hide');
 }
 
