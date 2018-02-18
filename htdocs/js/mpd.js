@@ -280,8 +280,10 @@ function webSocketConnect() {
             app.run();
 
             /* emit initial request for output names */
-            socket.send("MPD_API_GET_OUTPUTS");
-            
+            socket.send('MPD_API_GET_OUTPUTS');
+            /* emit initial request for dirble api token */
+            socket.send('MPD_API_GET_DIRBLEAPITOKEN');
+     
             /* add the http stream */
             if (httpAudioStreamEnabled) { createHTTPAudioStream(); }
             
@@ -442,8 +444,8 @@ function webSocketConnect() {
                                 } else {
                                     $('#salamisandwich > tbody').append(
                                         "<tr><td><span class=\"glyphicon glyphicon-remove\"></span></td>" +
-                                        "<td>Too many results, please refine your search!</td>" +
-                                        "<td></td><td></td></tr>"
+                                        "<td colspan=\"2\">Too many results, please refine your search!</td>" +
+                                 "<td></td><td></td></tr>"
                                     );
                                 }
                                 break;
