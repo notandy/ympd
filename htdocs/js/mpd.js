@@ -227,7 +227,7 @@ function webSocketConnect() {
             var obj = JSON.parse(msg.data);
 
             switch (obj.type) {
-                case "queue":
+                case 'queue':
                     if(current_app !== 'queue')
                         break;
 
@@ -238,8 +238,9 @@ function webSocketConnect() {
 
                         $('#salamisandwich > tbody').append(
                             "<tr trackid=\"" + obj.data[song].id + "\"><td>" + (obj.data[song].pos + 1) + "</td>" +
-                                "<td>"+ obj.data[song].title +"</td>" + 
-                                "<td>"+ minutes + ":" + (seconds < 10 ? '0' : '') + seconds +
+                                "<td>" + obj.data[song].artist + "<br /><span>" + obj.data[song].album  + "</span></td>" +
+                                "<td>" + obj.data[song].title  + "</td>" +
+                                "<td>" + minutes + ":" + (seconds < 10 ? '0' : '') + seconds +
                         "</td><td></td></tr>");
                     }
 
@@ -299,14 +300,14 @@ function webSocketConnect() {
                     };
                     
                     //Make queue table sortable
-                    $("#salamisandwich > tbody").sortable({
+                    $('#salamisandwich > tbody').sortable({
                       helper: fixHelperModified,
                       stop: function(event,ui) {renumber_table('#salamisandwich',ui.item)}
                     }).disableSelection();
                     break;
-                case "search":
+                case 'search':
                     $('#wait').modal('hide');
-                case "browse":
+                case 'browse':
                     if(current_app !== 'browse' && current_app !== 'search')
                         break;
 
@@ -319,7 +320,7 @@ function webSocketConnect() {
                     }
                     for (var item in obj.data) {
                         switch(obj.data[item].type) {
-                            case "directory":
+                            case 'directory':
                                 var clazz = 'dir';
                                 if (filter !== undefined) {
                                     var first = obj.data[item].dir[0];
@@ -334,11 +335,11 @@ function webSocketConnect() {
                                 $('#salamisandwich > tbody').append(
                                     "<tr uri=\"" + encodeURI(obj.data[item].dir) + "\" class=\"" + clazz + "\">" +
                                     "<td><span class=\"glyphicon glyphicon-folder-open\"></span></td>" +
-                                    "<td><a>" + basename(obj.data[item].dir) + "</a></td>" +
+                                    "<td colspan=\"2\"><a>" + basename(obj.data[item].dir) + "</a></td>" +
                                     "<td></td><td></td></tr>"
                                 );
                                 break;
-                            case "playlist":
+                            case 'playlist':
                                 var clazz = 'plist';
                                 if (filter !== "||") {
                                     clazz += ' hide';
@@ -346,29 +347,34 @@ function webSocketConnect() {
                                 $('#salamisandwich > tbody').append(
                                     "<tr uri=\"" + encodeURI(obj.data[item].plist) + "\" class=\"" + clazz + "\">" +
                                     "<td><span class=\"glyphicon glyphicon-list\"></span></td>" +
-                                    "<td><a>" + basename(obj.data[item].plist) + "</a></td>" +
+                                    "<td colspan=\"2\"><a>" + basename(obj.data[item].plist) + "</a></td>" +
                                     "<td></td><td></td></tr>"
                                 );
                                 break;
-                            case "song":
+                            case 'song':
                                 var minutes = Math.floor(obj.data[item].duration / 60);
                                 var seconds = obj.data[item].duration - minutes * 60;
 
-                                $('#salamisandwich > tbody').append(
+                                if (typeof obj.data[item].artist === 'undefined') {
+                                    var details = "<td colspan=\"2\">" + obj.data[item].title + "</td>";
+                                } else {
+                                    var details = "<td>" + obj.data[item].artist + "<br /><span>" + obj.data[item].album + "</span></td><td>" + obj.data[item].title + "</td>";
+                                }
+
+				$('#salamisandwich > tbody').append(
                                     "<tr uri=\"" + encodeURI(obj.data[item].uri) + "\" class=\"song\">" +
-                                    "<td><span class=\"glyphicon glyphicon-music\"></span></td>" +
-                                    "<td>" + obj.data[item].title +"</td>" +
-                                    "<td>"+ minutes + ":" + (seconds < 10 ? '0' : '') + seconds +
+                                    "<td><span class=\"glyphicon glyphicon-music\"></span></td>" + details +
+                                    "<td>" + minutes + ":" + (seconds < 10 ? '0' : '') + seconds +
                                     "</td><td></td></tr>"
                                 );
                                 break;
-                            case "wrap":
+                            case 'wrap':
                                 if(current_app == 'browse') {
                                     $('#next').removeClass('hide');
                                 } else {
                                     $('#salamisandwich > tbody').append(
-                                        "<tr><td><span class=\"glyphicon glyphicon-remove\"></span></td>" + 
-                                        "<td>Too many results, please refine your search!</td>" + 
+                                        "<tr><td><span class=\"glyphicon glyphicon-remove\"></span></td>" +
+                                        "<td colspan=\"2\">Too many results, please refine your search!</td>" +
                                         "<td></td><td></td></tr>"
                                     );
                                 }
@@ -389,7 +395,7 @@ function webSocketConnect() {
                                 socket.send(onClickAction + "," + decodeURI($(this).parents("tr").attr("uri")));
                             $('.top-right').notify({
                                 message:{
-                                    text: $('td:nth-child(2)', $(this).parents("tr")).text() + " added"
+                                    text: "\"" + $('td:nth-last-child(3)', $(this).parents("tr")).text() + "\" added"
                                 } }).show();
                             }).fadeTo('fast',1);
                     }
@@ -423,7 +429,7 @@ function webSocketConnect() {
                                     socket.send("MPD_API_ADD_TRACK," + decodeURI($(this).attr("uri")));
                                     $('.top-right').notify({
                                         message:{
-                                            text: $('td:nth-child(2)', this).text() + " added"
+                                            text: "\"" + $('td:nth-last-child(3)', this).text() + "\" added"
                                         }
                                     }).show();
                                     break;
@@ -431,7 +437,7 @@ function webSocketConnect() {
                                     socket.send("MPD_API_ADD_PLAYLIST," + decodeURI($(this).attr("uri")));
                                     $('.top-right').notify({
                                         message:{
-                                            text: "Playlist " + $('td:nth-child(2)', this).text() + " added"
+                                            text: "\"" + $('td:nth-last-child(3)', this).text() + "\" added"
                                         }
                                     }).show();
                                     break;

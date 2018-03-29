@@ -34,7 +34,7 @@
 
         <ul id="nav_links" class="nav navbar-nav">
           <li id="queue"><a href="#/">Queue</a></li>
-          <li id="browse"><a href="#/browse/0/">Browse database</a></li>
+          <li id="browse"><a href="#/browse/0/">Browse Database</a></li>
           <li id="dirble"><a href="#/dirble/">Dirble</a></li>
           <li><a href="#" data-toggle="modal" data-target="#addstream">Add Stream</a></li>
           <li><a href="#" data-toggle="modal" data-target="#settings" onclick="getHost();">Settings</a></li>
@@ -114,7 +114,7 @@
             <thead>
               <tr>
                 <th>#</th>
-                <th>Title</th>
+                <th colspan="2">Track</th>
                 <th>Duration</th>
                 <th></th>
               </tr>
@@ -191,10 +191,10 @@
 
           <div id="btn-responsive-block" class="btn-group-vertical btn-block btn-group-lg">
             <button type="button" class="btn btn-default" onclick="socket.send('MPD_API_RM_ALL');">
-              <span class="glyphicon glyphicon-trash"></span> Clear queue
+              <span class="glyphicon glyphicon-trash"></span> Clear Queue
             </button>
             <a href="#" data-toggle="modal" data-target="#savequeue" class="btn btn-default">
-              <span class="glyphicon glyphicon-save"></span> Save queue
+              <span class="glyphicon glyphicon-save"></span> Save Queue
             </a>
           </div>
 
@@ -242,7 +242,7 @@
               </div>
               <div class="form-group col-md-6">
                 <label class="control-label" for="mpd_pw_con">MPD Password (Confirmation)</label>
-                <input type="password" class="form-control" id="mpd_pw_con"  placeholder="Password confirmation"
+                <input type="password" class="form-control" id="mpd_pw_con"  placeholder="Confirmation"
                 data-placement="right" data-toggle="popover" data-content="Password does not match!"
                 data-trigger="manual" />
               </div>
