@@ -93,3 +93,9 @@ td:last-child, td:first-child {
 button {
   overflow: hidden;
 }
+
+#trashmode span:last-child {
+  display:inline-block;
+  text-align:left;
+  width:2.8em;
+}
