@@ -240,7 +240,22 @@
               </div>
               <div class="form-group col-md-3">
                 <label class="control-label" for="mpdport">MPD Port</label>
-                <input type="text" class="form-control" id="mpdport" />
+                <input type="number" class="form-control" id="mpdport" />
+              </div>
+            </div>
+            <div class="row" id="audiostreamcheckbox">
+                <div class="form-group col-md-3">
+                    <input type="checkbox" name="audiostreamenabled" id="audiostreamenabled"> HTTP Audio Stream<br>
+                </div>
+            </div >
+            <div class="row" id="audiostreamsettings" hidden>
+              <div class="form-group col-md-9">
+                <label class="control-label" for="audiostreamhost">Audio stream Host/IP</label>
+                <input type="text" class="form-control" id="audiostreamhost" />
+              </div>
+              <div class="form-group col-md-3">
+                <label class="control-label" for="audiostreamport">Stream Port</label>
+                <input type="number" class="form-control" id="audiostreamport" />
               </div>
             </div>
             <div class="row">
