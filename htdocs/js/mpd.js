@@ -262,6 +262,21 @@ function createHTTPAudioStream()
    console.log('Created audio stream: ' + httpAudioStream.src);
 }
 
+function refreshHTTPAudioStream()
+{
+    /* Refresh an existing http audio stream with current settings in cookies,
+     * get it playing too.
+    */
+    if (typeof httpAudioStream != "undefined"){
+        // Update settings
+        checkSettings();
+        httpAudioStream.load();
+    } else{
+        // Create new stream
+        createHTTPAudioStream();
+    }
+}
+
 function webSocketConnect() {
     if (typeof MozWebSocket != "undefined") {
         socket = new MozWebSocket(get_appropriate_ws_url());
@@ -751,9 +766,11 @@ function updateDB() {
 function clickPlay() {
     if($('#track-icon').hasClass('glyphicon-stop')) {
         socket.send('MPD_API_SET_PLAY');
+        refreshHTTPAudioStream();
     }
     else {
         socket.send('MPD_API_SET_PAUSE');
+        httpAudioStream.pause();
     }
 }
 
