@@ -113,7 +113,6 @@ var app = $.sammy(function() {
         $('#panel-heading').text("Search: "+searchstr);
     });
 
-
     this.get(/\#\/dirble\/(\d+)\/(\d+)/, function() {
         prepare();
         current_app = 'dirble';
@@ -137,13 +136,8 @@ var app = $.sammy(function() {
 
         dirble_stations = true;
 
-        if(dirble_api_token) {
-            dirble_load_stations();
-        } else {
-            getDirbleApiToken();
-        }
+        if (dirble_api_token) { dirble_load_stations(); }
     });
-
 
     this.get(/\#\/dirble\//, function() {
         prepare();
@@ -160,11 +154,7 @@ var app = $.sammy(function() {
 
         dirble_stations = false;
 
-        if(dirble_api_token) {
-            dirble_load_categories();
-        } else {
-            getDirbleApiToken();
-        }
+        if (dirble_api_token) { dirble_load_categories(); }
     });
 
     this.get("/", function(context) {
@@ -297,8 +287,7 @@ function webSocketConnect() {
             /* emit initial request for output names */
             socket.send('MPD_API_GET_OUTPUTS');
             /* emit initial request for dirble api token */
-            socket.send('MPD_API_GET_DIRBLEAPITOKEN');
-     
+            socket.send('MPD_API_GET_DIRBLEAPITOKEN');     
             /* add the http stream */
             if (httpAudioStreamEnabled) { createHTTPAudioStream(); }
             
@@ -318,7 +307,7 @@ function webSocketConnect() {
             var obj = JSON.parse(msg.data);
 
             switch (obj.type) {
-                case "queue":
+                case 'queue':
                     if(current_app !== 'queue')
                         break;
 
@@ -329,8 +318,9 @@ function webSocketConnect() {
 
                         $('#salamisandwich > tbody').append(
                             "<tr trackid=\"" + obj.data[song].id + "\"><td>" + (obj.data[song].pos + 1) + "</td>" +
-                                "<td>"+ obj.data[song].title +"</td>" +
-                                "<td>"+ minutes + ":" + (seconds < 10 ? '0' : '') + seconds +
+                                "<td>" + obj.data[song].artist + "<br /><span>" + obj.data[song].album  + "</span></td>" +
+                                "<td>" + obj.data[song].title  + "</td>" +
+                                "<td>" + minutes + ":" + (seconds < 10 ? '0' : '') + seconds +
                         "</td><td></td></tr>");
                     }
 
@@ -390,14 +380,14 @@ function webSocketConnect() {
                     };
                     
                     //Make queue table sortable
-                    $("#salamisandwich > tbody").sortable({
+                    $('#salamisandwich > tbody').sortable({
                       helper: fixHelperModified,
                       stop: function(event,ui) {renumber_table('#salamisandwich',ui.item)}
                     }).disableSelection();
                     break;
-                case "search":
+                case 'search':
                     $('#wait').modal('hide');
-                case "browse":
+                case 'browse':
                     if(current_app !== 'browse' && current_app !== 'search')
                         break;
 
@@ -410,7 +400,7 @@ function webSocketConnect() {
                     }
                     for (var item in obj.data) {
                         switch(obj.data[item].type) {
-                            case "directory":
+                            case 'directory':
                                 var clazz = 'dir';
                                 if (filter !== undefined) {
                                     var first = obj.data[item].dir[0];
@@ -425,11 +415,11 @@ function webSocketConnect() {
                                 $('#salamisandwich > tbody').append(
                                     "<tr uri=\"" + encodeURI(obj.data[item].dir) + "\" class=\"" + clazz + "\">" +
                                     "<td><span class=\"glyphicon glyphicon-folder-open\"></span></td>" +
-                                    "<td><a>" + basename(obj.data[item].dir) + "</a></td>" +
+                                    "<td colspan=\"2\"><a>" + basename(obj.data[item].dir) + "</a></td>" +
                                     "<td></td><td></td></tr>"
                                 );
                                 break;
-                            case "playlist":
+                            case 'playlist':
                                 var clazz = 'plist';
                                 if (filter !== "||") {
                                     clazz += ' hide';
@@ -437,30 +427,35 @@ function webSocketConnect() {
                                 $('#salamisandwich > tbody').append(
                                     "<tr uri=\"" + encodeURI(obj.data[item].plist) + "\" class=\"" + clazz + "\">" +
                                     "<td><span class=\"glyphicon glyphicon-list\"></span></td>" +
-                                    "<td><a>" + basename(obj.data[item].plist) + "</a></td>" +
+                                    "<td colspan=\"2\"><a>" + basename(obj.data[item].plist) + "</a></td>" +
                                     "<td></td><td></td></tr>"
                                 );
                                 break;
-                            case "song":
+                            case 'song':
                                 var minutes = Math.floor(obj.data[item].duration / 60);
                                 var seconds = obj.data[item].duration - minutes * 60;
 
-                                $('#salamisandwich > tbody').append(
+                                if (typeof obj.data[item].artist === 'undefined') {
+                                    var details = "<td colspan=\"2\">" + obj.data[item].title + "</td>";
+                                } else {
+                                    var details = "<td>" + obj.data[item].artist + "<br /><span>" + obj.data[item].album + "</span></td><td>" + obj.data[item].title + "</td>";
+                                }
+
+				$('#salamisandwich > tbody').append(
                                     "<tr uri=\"" + encodeURI(obj.data[item].uri) + "\" class=\"song\">" +
-                                    "<td><span class=\"glyphicon glyphicon-music\"></span></td>" +
-                                    "<td>" + obj.data[item].title +"</td>" +
-                                    "<td>"+ minutes + ":" + (seconds < 10 ? '0' : '') + seconds +
+                                    "<td><span class=\"glyphicon glyphicon-music\"></span></td>" + details +
+                                    "<td>" + minutes + ":" + (seconds < 10 ? '0' : '') + seconds +
                                     "</td><td></td></tr>"
                                 );
                                 break;
-                            case "wrap":
+                            case 'wrap':
                                 if(current_app == 'browse') {
                                     $('#next').removeClass('hide');
                                 } else {
                                     $('#salamisandwich > tbody').append(
                                         "<tr><td><span class=\"glyphicon glyphicon-remove\"></span></td>" +
                                         "<td colspan=\"2\">Too many results, please refine your search!</td>" +
-                                 "<td></td><td></td></tr>"
+                                        "<td></td><td></td></tr>"
                                     );
                                 }
                                 break;
@@ -480,7 +475,7 @@ function webSocketConnect() {
                                 socket.send(onClickAction + "," + decodeURI($(this).parents("tr").attr("uri")));
                             $('.top-right').notify({
                                 message:{
-                                    text: $('td:nth-child(2)', $(this).parents("tr")).text() + " added"
+                                    text: "\"" + $('td:nth-last-child(3)', $(this).parents("tr")).text() + "\" added"
                                 } }).show();
                             }).fadeTo('fast',1);
                     }
@@ -514,7 +509,7 @@ function webSocketConnect() {
                                     socket.send("MPD_API_ADD_TRACK," + decodeURI($(this).attr("uri")));
                                     $('.top-right').notify({
                                         message:{
-                                            text: $('td:nth-child(2)', this).text() + " added"
+                                            text: "\"" + $('td:nth-last-child(3)', this).text() + "\" added"
                                         }
                                     }).show();
                                     break;
@@ -522,7 +517,7 @@ function webSocketConnect() {
                                     socket.send("MPD_API_ADD_PLAYLIST," + decodeURI($(this).attr("uri")));
                                     $('.top-right').notify({
                                         message:{
-                                            text: "Playlist " + $('td:nth-child(2)', this).text() + " added"
+                                            text: "\"" + $('td:nth-last-child(3)', this).text() + "\" added"
                                         }
                                     }).show();
                                     break;
@@ -531,7 +526,7 @@ function webSocketConnect() {
                     });
 
                     break;
-                case "state":
+                case 'state':
                     updatePlayIcon(obj.data.state);
                     updateVolumeIcon(obj.data.volume);
 
@@ -585,16 +580,20 @@ function webSocketConnect() {
 
                     last_state = obj;
                     break;
-                case "outputnames":
+                case 'outputnames':
                     $('#btn-outputs-block button').remove();
-                    $.each(obj.data, function(id, name){
-                        var btn = $('<button id="btnoutput'+id+'" class="btn btn-default" onclick="toggleoutput(this, '+id+')"><span class="glyphicon glyphicon-volume-up"></span> '+name+'</button>');
-                        btn.appendTo($('#btn-outputs-block'));
-                    });
+                    if (obj.data.length > 1) {
+		        $.each(obj.data, function(id, name){
+                            var btn = $('<button id="btnoutput'+id+'" class="btn btn-default" onclick="toggleoutput(this, '+id+')"><span class="glyphicon glyphicon-volume-up"></span> '+name+'</button>');
+                            btn.appendTo($('#btn-outputs-block'));
+                        });
+		    } else {
+                        $('#btn-outputs-block').addClass('hide');
+		    }
                     /* remove cache, since the buttons have been recreated */
                     last_outputs = '';
                     break;
-                case "outputs":
+                case 'outputs':
                     if(JSON.stringify(obj) === JSON.stringify(last_outputs))
                         break;
                     $.each(obj.data, function(id, enabled){
@@ -605,7 +604,7 @@ function webSocketConnect() {
                     });
                     last_outputs = obj;
                     break;
-                case "disconnected":
+                case 'disconnected':
                     if($('.top-right').has('div').length == 0)
                         $('.top-right').notify({
                             message:{text:"ympd lost connection to MPD "},
@@ -613,11 +612,11 @@ function webSocketConnect() {
                             fadeOut: { enabled: true, delay: 1000 },
                         }).show();
                     break;
-                case "update_queue":
+                case 'update_queue':
                     if(current_app === 'queue')
                         socket.send('MPD_API_GET_QUEUE,'+pagination);
                     break;
-                case "song_change":
+                case 'song_change':
 
                     $('#album').text("");
                     $('#artist').text("");
@@ -645,22 +644,26 @@ function webSocketConnect() {
                         }).show();
 
                     break;
-                case "mpdhost":
+                case 'mpdhost':
                     $('#mpdhost').val(obj.data.host);
                     $('#mpdport').val(obj.data.port);
                     if(obj.data.passwort_set)
                         $('#mpd_password_set').removeClass('hide');
                     break;
-                case "dirbleapitoken":
+                case 'dirbleapitoken':
                     dirble_api_token = obj.data;
                     
-                    if(dirble_stations) {
-                        dirble_load_stations();
+		    if (dirble_api_token) {
+		        $('#dirble').removeClass('hide');
+
+                        if (dirble_stations) { dirble_load_stations();   }
+                        else {                 dirble_load_categories(); }
+
                     } else {
-                        dirble_load_categories();
-                    }
+                        $('#dirble').addClass('hide');
+		    }
                     break;
-                case "error":
+                case 'error':
                     $('.top-right').notify({
                         message:{text: obj.data},
                         type: "danger",
@@ -668,9 +671,8 @@ function webSocketConnect() {
                 default:
                     break;
             }
-
-
         }
+
         socket.onclose = function(){
             console.log("disconnected");
             $('.top-right').notify({
@@ -871,10 +873,6 @@ function getHost() {
     $('#audiostreamport').keypress(onEnter);
     $('#mpd_pw').keypress(onEnter);
     $('#mpd_pw_con').keypress(onEnter);
-}
-
-function getDirbleApiToken() {
-    socket.send('MPD_API_GET_DIRBLEAPITOKEN');
 }
 
 $('#search').submit(function () {

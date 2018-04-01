@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.6)
 
-project (ympd)
+project (ympd C)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmake/")
 set(CPACK_PACKAGE_VERSION_MAJOR "1")
 set(CPACK_PACKAGE_VERSION_MINOR "2")

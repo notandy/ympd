@@ -22,10 +22,10 @@ body {
 }
 
 #counter {
-	font-size: 24px;
-	margin-top: -6px;
-	margin-left: 10px;
-	min-width: 50px;
+  font-size: 24px;
+  margin-top: -6px;
+  margin-left: 10px;
+  min-width: 50px;
 }
 
 #search {
@@ -33,7 +33,7 @@ body {
 }
 
 .btn-group-hover {
-    opacity: 20%;
+  opacity: 20%;
 }
 
 .btn:active,
@@ -55,8 +55,13 @@ body {
   }
 }
 
-#salamisandwich td:nth-child(3), th:nth-child(3) {
+#salamisandwich td:nth-last-child(2), th:nth-last-child(2) {
   text-align: right;
+}
+
+#salamisandwich td:nth-child(2) span {
+  font-style:italic;
+  font-size:90%;
 }
 
 tbody {
@@ -87,4 +92,10 @@ td:last-child, td:first-child {
 
 button {
   overflow: hidden;
+}
+
+#trashmode span:last-child {
+  display:inline-block;
+  text-align:left;
+  width:2.8em;
 }

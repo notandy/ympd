@@ -10,7 +10,7 @@ Environment=WEB_PORT=8080
 Environment=YMPD_USER=nobody
 Environment=DIRBLE_API_TOKEN=2e223c9909593b94fc6577361a
 EnvironmentFile=/etc/default/ympd
-ExecStart=/usr/bin/ympd --user $YMPD_USER --mpdpass "$MPD_PASSWORD" --webport $WEB_PORT --host $MPD_HOST --port $MPD_PORT --dirbletoken $DIRBLE_API_TOKE
+ExecStart=/usr/bin/ympd --user $YMPD_USER --mpdpass "$MPD_PASSWORD" --webport $WEB_PORT --host $MPD_HOST --port $MPD_PORT --dirbletoken $DIRBLE_API_TOKEN
 Type=simple
 
 [Install]
