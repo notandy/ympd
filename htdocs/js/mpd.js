@@ -1,14 +1,14 @@
 /* ympd
    (c) 2013-2014 Andrew Karpow <andy@ndyk.de>
    This project's homepage is: https://www.ympd.org
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; version 2 of the License.
 
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License along
@@ -82,7 +82,7 @@ var app = $.sammy(function() {
             add_all_songs.show();
         }
 
-        $('#panel-heading').text("Browse database: "+browsepath);
+        $('#panel-heading').text("Browse Database: "+browsepath);
         var path_array = browsepath.split('/');
         var full_path = "";
         $.each(path_array, function(index, chunk) {
@@ -289,7 +289,7 @@ function webSocketConnect() {
                       });
                       return $helper;
                     };
-                    
+
                     //Make queue table sortable
                     $('#salamisandwich > tbody').sortable({
                       helper: fixHelperModified,
@@ -352,7 +352,7 @@ function webSocketConnect() {
                                     var details = "<td>" + obj.data[item].artist + "<br /><span>" + obj.data[item].album + "</span></td><td>" + obj.data[item].title + "</td>";
                                 }
 
-				$('#salamisandwich > tbody').append(
+                                $('#salamisandwich > tbody').append(
                                     "<tr uri=\"" + encodeURI(obj.data[item].uri) + "\" class=\"song\">" +
                                     "<td><span class=\"glyphicon glyphicon-music\"></span></td>" + details +
                                     "<td>" + minutes + ":" + (seconds < 10 ? '0' : '') + seconds +
@@ -494,13 +494,13 @@ function webSocketConnect() {
                 case 'outputnames':
                     $('#btn-outputs-block button').remove();
                     if (obj.data.length > 1) {
-		        $.each(obj.data, function(id, name){
+                            $.each(obj.data, function(id, name){
                             var btn = $('<button id="btnoutput'+id+'" class="btn btn-default" onclick="toggleoutput(this, '+id+')"><span class="glyphicon glyphicon-volume-up"></span> '+name+'</button>');
                             btn.appendTo($('#btn-outputs-block'));
                         });
-		    } else {
+                    } else {
                         $('#btn-outputs-block').addClass('hide');
-		    }
+                    }
                     /* remove cache, since the buttons have been recreated */
                     last_outputs = '';
                     break;
@@ -532,7 +532,7 @@ function webSocketConnect() {
                     $('#album').text("");
                     $('#artist').text("");
 
-					$('#btnlove').removeClass("active");
+                    $('#btnlove').removeClass("active");
 
                     $('#currenttrack').text(" " + obj.data.title);
                     var notification = "<strong><h4>" + obj.data.title + "</h4></strong>";
@@ -553,7 +553,7 @@ function webSocketConnect() {
                             message:{html: notification},
                             type: "info",
                         }).show();
-                        
+
                     break;
                 case 'mpdhost':
                     $('#mpdhost').val(obj.data.host);
@@ -563,16 +563,16 @@ function webSocketConnect() {
                     break;
                 case 'dirbleapitoken':
                     dirble_api_token = obj.data;
-                    
-		    if (dirble_api_token) {
-		        $('#dirble').removeClass('hide');
+
+                    if (dirble_api_token) {
+                        $('#dirble').removeClass('hide');
 
                         if (dirble_stations) { dirble_load_stations();   }
                         else {                 dirble_load_categories(); }
 
                     } else {
                         $('#dirble').addClass('hide');
-		    }
+                    }
                     break;
                 case 'error':
                     $('.top-right').notify({
@@ -608,9 +608,9 @@ function get_appropriate_ws_url()
     var separator;
 
     /*
-    /* We open the websocket encrypted if this page came on an
-    /* https:// url itself, otherwise unencrypted
-    /*/
+     * We open the websocket encrypted if this page came
+     * on a https:// url itself, otherwise unencrypted
+     */
 
     if (u.substring(0, 5) == "https") {
         pcol = "wss://";
@@ -710,10 +710,10 @@ function basename(path) {
 
 function clickLove() {
     socket.send("MPD_API_SEND_MESSAGE,mpdas," + ($('#btnlove').hasClass('active') ? "unlove" : "love"));
-	if ( $('#btnlove').hasClass('active') )
-		$('#btnlove').removeClass("active");
-	else
-		$('#btnlove').addClass("active");
+        if ( $('#btnlove').hasClass('active') )
+            $('#btnlove').removeClass("active");
+        else
+            $('#btnlove').addClass("active");
 }
 
 $('#btnrandom').on('click', function (e) {
@@ -858,7 +858,8 @@ function notificationsSupported() {
 }
 
 function songNotify(title, artist, album) {
-    /*var opt = {
+/*
+    var opt = {
         type: "list",
         title: title,
         message: title,

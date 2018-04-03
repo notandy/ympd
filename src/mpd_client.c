@@ -758,7 +758,6 @@ int mpd_search(char *buffer, char *searchstr)
     return cur - buffer;
 }
 
-
 void mpd_disconnect()
 {
     mpd.conn_state = MPD_DISCONNECT;
