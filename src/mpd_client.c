@@ -1,14 +1,14 @@
 /* ympd
    (c) 2013-2014 Andrew Karpow <andy@ndyk.de>
    This project's homepage is: http://www.ympd.org
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; version 2 of the License.
 
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License along
@@ -36,11 +36,11 @@ const char * mpd_cmd_strs[] = {
 };
 
 char * get_arg1 (char *p) {
-	return strchr(p, ',') + 1;
+    return strchr(p, ',') + 1;
 }
 
 char * get_arg2 (char *p) {
-	return get_arg1(get_arg1(p));
+    return get_arg1(get_arg1(p));
 }
 
 static inline enum mpd_cmd_ids get_cmd_id(char *cmd)
@@ -59,9 +59,6 @@ int callback_mpd(struct mg_connection *c)
     unsigned int uint_buf, uint_buf_2;
     int int_buf;
     char *p_charbuf = NULL, *token;
-
-    if(cmd_id == -1)
-        return MG_TRUE;
 
     if(mpd.conn_state != MPD_CONNECTED && cmd_id != MPD_API_SET_MPDHOST &&
         cmd_id != MPD_API_GET_MPDHOST && cmd_id != MPD_API_SET_MPDPASS &&
@@ -165,11 +162,11 @@ int callback_mpd(struct mg_connection *c)
             if((token = strtok(NULL, ",")) == NULL)
                 goto out_browse;
 
-			free(p_charbuf);
+            free(p_charbuf);
             p_charbuf = strdup(c->content);
             n = mpd_put_browse(mpd.buf, get_arg2(p_charbuf), uint_buf);
 out_browse:
-			free(p_charbuf);
+            free(p_charbuf);
             break;
         case MPD_API_ADD_TRACK:
             p_charbuf = strdup(c->content);
@@ -179,7 +176,7 @@ out_browse:
             if((token = strtok(NULL, ",")) == NULL)
                 goto out_add_track;
 
-			free(p_charbuf);
+            free(p_charbuf);
             p_charbuf = strdup(c->content);
             mpd_run_add(mpd.conn, get_arg1(p_charbuf));
 out_add_track:
@@ -193,7 +190,7 @@ out_add_track:
             if((token = strtok(NULL, ",")) == NULL)
                 goto out_play_track;
 
-			free(p_charbuf);
+            free(p_charbuf);
             p_charbuf = strdup(c->content);
             int_buf = mpd_run_add_id(mpd.conn, get_arg1(p_charbuf));
             if(int_buf != -1)
@@ -209,7 +206,7 @@ out_play_track:
             if((token = strtok(NULL, ",")) == NULL)
                 goto out_playlist;
 
-			free(p_charbuf);
+            free(p_charbuf);
             p_charbuf = strdup(c->content);
             mpd_run_load(mpd.conn, get_arg1(p_charbuf));
 out_playlist:
@@ -223,7 +220,7 @@ out_playlist:
             if((token = strtok(NULL, ",")) == NULL)
                 goto out_save_queue;
 
-			free(p_charbuf);
+            free(p_charbuf);
             p_charbuf = strdup(c->content);
             mpd_run_save(mpd.conn, get_arg1(p_charbuf));
 out_save_queue:
@@ -232,12 +229,12 @@ out_save_queue:
         case MPD_API_SEARCH:
             p_charbuf = strdup(c->content);
             if(strcmp(strtok(p_charbuf, ","), "MPD_API_SEARCH"))
-				goto out_search;
+                goto out_search;
 
             if((token = strtok(NULL, ",")) == NULL)
                 goto out_search;
 
-			free(p_charbuf);
+            free(p_charbuf);
             p_charbuf = strdup(c->content);
             n = mpd_search(mpd.buf, get_arg1(p_charbuf));
 out_search:
@@ -246,12 +243,12 @@ out_search:
         case MPD_API_SEND_MESSAGE:
             p_charbuf = strdup(c->content);
             if(strcmp(strtok(p_charbuf, ","), "MPD_API_SEND_MESSAGE"))
-				goto out_send_message;
+                goto out_send_message;
 
             if((token = strtok(NULL, ",")) == NULL)
                 goto out_send_message;
 
-			free(p_charbuf);
+            free(p_charbuf);
             p_charbuf = strdup(get_arg1(c->content));
 
             if ( strtok(p_charbuf, ",") == NULL )
@@ -260,7 +257,7 @@ out_search:
             if ( (token = strtok(NULL, ",")) == NULL )
                 goto out_send_message;
 
-			mpd_run_send_message(mpd.conn, p_charbuf, token);
+            mpd_run_send_message(mpd.conn, p_charbuf, token);
 out_send_message:
             free(p_charbuf);
             break;
@@ -481,9 +478,9 @@ char* mpd_get_artist(struct mpd_song const *song)
 
     str = (char *)mpd_song_get_tag(song, MPD_TAG_ARTIST, 0);
     if (str == NULL) {
-	return "";
+        return "";
     } else {
-	return str;
+        return str;
     }
 }
 
@@ -493,9 +490,9 @@ char* mpd_get_album(struct mpd_song const *song)
 
     str = (char *)mpd_song_get_tag(song, MPD_TAG_ALBUM, 0);
     if (str == NULL) {
-	return "";
+        return "";
     } else {
-	return str;
+        return str;
     }
 }
 
