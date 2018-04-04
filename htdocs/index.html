@@ -81,10 +81,11 @@
 
       <div class="col-md-10 col-xs-12">
         <div class="notifications top-right"></div>
-        
+
         <div class="panel panel-primary">
           <!-- Default panel contents -->
-          <div class="panel-heading"><b id="panel-heading">Queue</b></div>
+          <div class="panel-heading"><b id="panel-heading">Queue</b>
+                                     <b id="panel-heading-info" class="text pull-right"></b></div>
           <div class="panel-body">
             <h1>
               <span id="track-icon" onclick="clickPlay();" class="glyphicon glyphicon-play"></span>
@@ -218,7 +219,7 @@
           <h5>ympd uses following excellent software:</h5>
           <h6><a href="http://cesanta.com/docs.html">Mongoose</a> <small>GPLv2</small></h6>
           <h6><a href="http://www.musicpd.org/libs/libmpdclient/">libMPDClient</a> <small>BSD License</small></h6>
-	  <hr />
+          <hr />
           <div class="row">
             <div class="form-group col-md-6">
               <button type="button" class="btn btn-default btn-block" onclick="updateDB();">
@@ -296,7 +297,7 @@
       </div><!-- /.modal-content -->
     </div><!-- /.modal-dialog -->
   </div><!-- /.modal -->
-  
+
   <div class="modal fade" id="savequeue" tabindex="-1" role="dialog" aria-labelledby="savequeueLabel" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">
