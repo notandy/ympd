@@ -86,6 +86,7 @@ var app = $.sammy(function() {
         }
 
         $('#panel-heading').text("Browse Database" + (browsepath ? ': ' : '') + browsepath);
+        $('#panel-heading-info').empty();$
 
         var path_array = browsepath.split('/');
         var full_path = "";
@@ -114,7 +115,9 @@ var app = $.sammy(function() {
             $('#dirble_panel').addClass('hide');
 
             socket.send('MPD_API_SEARCH,' + search_str);
+
             $('#panel-heading').text("Search: " + search_str);
+            $('#panel-heading-info').empty();$
         } else if (current_app == null) {
             app.setLocation('/');
         }
