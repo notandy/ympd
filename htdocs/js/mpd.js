@@ -82,7 +82,8 @@ var app = $.sammy(function() {
             add_all_songs.show();
         }
 
-        $('#panel-heading').text("Browse Database: "+browsepath);
+        $('#panel-heading').text("Browse Database" + (browsepath ? ': ' : '') + browsepath);
+
         var path_array = browsepath.split('/');
         var full_path = "";
         $.each(path_array, function(index, chunk) {
@@ -309,7 +310,12 @@ function webSocketConnect() {
                     if ($('#salamisandwich > tbody').is(':ui-sortable')) {
                         $('#salamisandwich > tbody').sortable('destroy');
                     }
-                    for (var item in obj.data) {
+
+                    var obj_data = obj.data.map((x,i) => [x.srt,i]).sort();
+
+                    for (var i = 0; i < obj_data.length; i++) {
+                        var item = obj_data[i][1];
+
                         switch(obj.data[item].type) {
                             case 'directory':
                                 var clazz = 'dir';
@@ -494,8 +500,10 @@ function webSocketConnect() {
                 case 'outputnames':
                     $('#btn-outputs-block button').remove();
                     if (obj.data.length > 1) {
-                            $.each(obj.data, function(id, name){
-                            var btn = $('<button id="btnoutput'+id+'" class="btn btn-default" onclick="toggleoutput(this, '+id+')"><span class="glyphicon glyphicon-volume-up"></span> '+name+'</button>');
+                        $.each(obj.data, function(id, name){
+                            var btn = $('<button id="btnoutput' + id +
+                                            '" class="btn btn-default" onclick="toggleoutput(this, ' + id + ')">' +
+                                        '<span class="glyphicon glyphicon-volume-up"></span> ' + name + '</button>');
                             btn.appendTo($('#btn-outputs-block'));
                         });
                     } else {
