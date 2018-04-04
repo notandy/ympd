@@ -241,8 +241,8 @@ function webSocketConnect() {
 
                         $('#salamisandwich > tbody').append(
                             "<tr trackid=\"" + obj.data[song].id + "\"><td>" + (obj.data[song].pos + 1) + "</td>" +
-                                "<td>" + obj.data[song].artist + "<span>" + obj.data[song].album  + "</span></td>" +
-                                "<td>" + obj.data[song].title  + "</td>" +
+                                "<td>" + obj.data[song].artist + "<span>" + obj.data[song].album + "</span></td>" +
+                                "<td>" + obj.data[song].title + "</td>" +
                                 "<td>" + minutes + ":" + (seconds < 10 ? '0' : '') + seconds +
                         "</td><td></td></tr>");
                     }
@@ -358,15 +358,17 @@ function webSocketConnect() {
                                 var minutes = Math.floor(obj.data[item].duration / 60);
                                 var seconds = obj.data[item].duration - minutes * 60;
 
-                                if (typeof obj.data[item].artist === 'undefined') {
-                                    var details = "<td colspan=\"2\">" + obj.data[item].title + "</td>";
-                                } else {
-                                    var details = "<td>" + obj.data[item].artist + "<span>" + obj.data[item].album + "</span></td><td>" + obj.data[item].title + "</td>";
-                                }
+//                                if (typeof obj.data[item].artist === 'undefined') {
+//                                    var details = "<td colspan=\"2\">" + obj.data[item].title + "</td>";
+//                                } else {
+//                                    var details = "<td>" + obj.data[item].artist + "<span>" + obj.data[item].album + "</span></td><td>" + obj.data[item].title + "</td>";
+//                                }
 
-				$('#salamisandwich > tbody').append(
+                                $('#salamisandwich > tbody').append(
                                     "<tr uri=\"" + encodeURI(obj.data[item].uri) + "\" class=\"song\">" +
-                                    "<td><span class=\"glyphicon glyphicon-music\"></span></td>" + details +
+                                    "<td><span class=\"glyphicon glyphicon-music\"></span></td>" +
+                                    "<td>" + obj.data[song].artist + "<span>" + obj.data[song].album + "</span></td>" +
+                                    "<td>" + obj.data[song].title + "</td>" +
                                     "<td>" + minutes + ":" + (seconds < 10 ? '0' : '') + seconds +
                                     "</td><td></td></tr>"
                                 );
