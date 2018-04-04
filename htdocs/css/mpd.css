@@ -60,8 +60,10 @@ body {
 }
 
 #salamisandwich td:nth-child(2) span {
-  font-style:italic;
-  font-size:90%;
+  font-style: italic;
+  font-size: 90%;
+
+  display: block;
 }
 
 tbody {
