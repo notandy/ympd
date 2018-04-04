@@ -100,13 +100,16 @@ var app = $.sammy(function() {
     });
 
     this.get(/\#\/search\/(.*)/, function() {
-        current_app = 'search';
-        $('#salamisandwich').find("tr:gt(0)").remove();
-        $('#dirble_panel').addClass('hide');
         var search_str = this.params['splat'][0];
 
-        $('#search > div > input').val(search_str);
         if (search_str !== "") {
+            current_app = 'search';
+
+            $('#search > div > input').val(search_str);
+
+            $('#salamisandwich').find("tr:gt(0)").remove();
+            $('#dirble_panel').addClass('hide');
+
             socket.send('MPD_API_SEARCH,' + search_str);
             $('#panel-heading').text("Search: " + search_str);
         }
@@ -785,9 +788,10 @@ function getHost() {
 
 $('#search').submit(function () {
     var search_str = $('#search > div > input').val();
-    app.setLocation("#/search/" + search_str);
 
     if (search_str !== "") {
+        app.setLocation("#/search/" + search_str);
+
         $('#wait').modal('show');
         setTimeout(function() {
             $('#wait').modal('hide');
