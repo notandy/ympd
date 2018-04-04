@@ -45,6 +45,8 @@ var app = $.sammy(function() {
         socket.send('MPD_API_GET_QUEUE,'+pagination);
 
         $('#panel-heading').text("Queue");
+        $('#panel-heading-info').empty();
+
         $('#queue').addClass('active');
     }
 
@@ -121,6 +123,8 @@ var app = $.sammy(function() {
         $('#dirble_right').find("tr:gt(0)").remove();
 
         $('#panel-heading').text("Dirble");
+        $('#panel-heading-info').empty();
+
         $('#dirble').addClass('active');
 
         $('#next').addClass('hide');
@@ -147,6 +151,8 @@ var app = $.sammy(function() {
         $('#dirble_right').find("tr:gt(0)").remove();
 
         $('#panel-heading').text("Dirble");
+        $('#panel-heading-info').empty();
+
         $('#dirble').addClass('active');
 
         dirble_stations = false;
