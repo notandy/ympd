@@ -112,6 +112,8 @@ var app = $.sammy(function() {
 
             socket.send('MPD_API_SEARCH,' + search_str);
             $('#panel-heading').text("Search: " + search_str);
+        } else if (current_app == null) {
+            app.setLocation('/');
         }
     });
 
