@@ -222,6 +222,18 @@ function webSocketConnect() {
                     if(current_app !== 'queue')
                         break;
 
+                    if (obj.totalTime > 0) {
+                        var hours = Math.floor(obj.totalTime / 3600);
+                        var minutes = Math.floor(obj.totalTime / 60) - hours * 60;
+                        var seconds = obj.totalTime - hours * 3600 - minutes * 60;
+
+                        $('#panel-heading-info').text('Total: ' +
+                            (hours > 0 ? hours + '\u2009h ' + (minutes < 10 ? '0' : '') : '') +
+                            minutes + '\u2009m ' + (seconds < 10 ? '0' : '') + seconds + '\u2009s');
+                    } else {
+                        $('#panel-heading-info').empty();
+                    }
+
                     $('#salamisandwich > tbody').empty();
                     for (var song in obj.data) {
                         var minutes = Math.floor(obj.data[song].duration / 60);
