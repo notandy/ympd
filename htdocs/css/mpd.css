@@ -55,11 +55,11 @@ body {
   }
 }
 
-#salamisandwich td:nth-last-child(2), th:nth-last-child(2) {
+td:nth-last-child(2), th:nth-last-child(2) {
   text-align: right;
 }
 
-#salamisandwich td:nth-child(2) span {
+td:nth-child(2) span {
   font-style: italic;
   font-size: 90%;
 
@@ -70,7 +70,8 @@ tbody {
   cursor: pointer;
 }
 
-td:last-child, td:first-child {
+td:last-child, td:first-child,
+th:last-child, th:first-child {
   width: 30px;
 }
 
@@ -97,7 +98,7 @@ button {
 }
 
 #trashmode span:last-child {
-  display:inline-block;
-  text-align:left;
-  width:2.8em;
+  display: inline-block;
+  text-align: left;
+  width: 2.8em;
 }
