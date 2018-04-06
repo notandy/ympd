@@ -101,6 +101,7 @@ var app = $.sammy(function() {
             full_path += "/";
         });
         $('#browse').addClass('active');
+        $('#browse > a').attr('href', '#/browse/' + pagination + '/' + browsepath);
     });
 
     this.get(/\#\/search\/(.*)/, function() {
@@ -452,8 +453,8 @@ function webSocketConnect() {
                                 case 'dir':
                                     pagination = 0;
                                     browsepath = $(this).attr("uri");
-                                    $("#browse > a").attr("href", '#/browse/'+pagination+'/'+browsepath);
-                                    app.setLocation('#/browse/'+pagination+'/'+browsepath);
+                                    $("#browse > a").attr("href", '#/browse/' + pagination + '/' + browsepath);
+                                    app.setLocation('#/browse/' + pagination + '/' + browsepath);
                                     break;
                                 case 'song':
                                     socket.send("MPD_API_ADD_TRACK," + decodeURI($(this).attr("uri")));
