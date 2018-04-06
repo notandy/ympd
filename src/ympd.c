@@ -128,7 +128,7 @@ int main(int argc, char **argv)
                         " -w, --webport [ip:]<port>\tlisten interface/port for webserver [8080]\n"
                         " -u, --user <username>\t\tdrop priviliges to user after socket bind\n"
                         " -d, --dirbletoken <apitoken>\tDirble API token\n"
-                        " -V, --version\t\t\tget version\n"
+                        " -v, --version\t\t\tget version\n"
                         " -m, --mpdpass <password>\tspecifies the password to use when connecting to mpd\n"
                         " --help\t\t\t\tthis help\n"
                         , argv[0]);
