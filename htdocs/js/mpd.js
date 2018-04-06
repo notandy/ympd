@@ -311,7 +311,9 @@ function webSocketConnect() {
                         $('#salamisandwich > tbody').sortable('destroy');
                     }
 
-                    var obj_data = obj.data.map((x,i) => [x.srt,i]).sort();
+                    var obj_data = obj.data.map((x,i) => [x.srt,i]);
+                    /* Only sort if there's a non-empty string to sort after. */
+                    if (obj_data[0][0] !== '') { obj_data = obj_data.sort(); }
 
                     for (var i = 0; i < obj_data.length; i++) {
                         var item = obj_data[i][1];

@@ -461,6 +461,32 @@ void mpd_poll(struct mg_server *s)
     }
 }
 
+char* mpd_get_sort(const char *path, char *prefix)
+{
+    int i = 0, j;
+    int k = strlen(path);
+    int l = strlen(prefix);
+
+    char *str = malloc((k + l + 1) * (sizeof *str)); str[0] = '\0';
+
+    strncat(str,prefix,l);
+
+    j = l;
+    for ( ; path[i] && j < (k+l); i++) {
+        /* Filter any ".". */
+        if (path[i] == '.') { continue; }
+        /* Limit sorting to current (sub-) directory. */
+        if (path[i] == '/') {
+            str[j=l] = '\0';
+        } else {
+            str[j++] = tolower(path[i]);
+        }
+    }
+    str[j] = '\0';
+
+    return str;
+}
+
 char* mpd_get_title(struct mpd_song const *song)
 {
     char *str;
@@ -647,11 +673,9 @@ int mpd_put_browse(char *buffer, char *path, unsigned int offset)
     cur += json_emit_raw_str(cur, end  - cur, "{\"type\":\"browse\",\"data\":[ ");
 
     while((entity = mpd_recv_entity(mpd.conn)) != NULL) {
-        int i = 0, j = 0;
-        char srt[256] = "";
-        const char *dir;
+        char *srt;
+        const char *pth;
         const struct mpd_song *song;
-        const struct mpd_playlist *pl;
 
         if(offset > entity_count)
         {
@@ -684,32 +708,29 @@ int mpd_put_browse(char *buffer, char *path, unsigned int offset)
                 break;
 
             case MPD_ENTITY_TYPE_DIRECTORY:
-                dir  = mpd_directory_get_path(mpd_entity_get_directory(entity));
-
-                for (; dir[i]; i++) {
-                    /* Filter any ".". */
-                    if (dir[i] == '.') { continue; }
-                    /* Limit sorting string to current (sub-) directory. */
-                    if (dir[i] == '/') {
-                        srt[0] = '\0'; j = 0;
-                    } else {
-                        srt[j++] = tolower(dir[i]);
-                        if (j > 254) { srt[255] = '\0'; break; }
-                    }
-                }
+                pth = mpd_directory_get_path(mpd_entity_get_directory(entity));
+                srt = mpd_get_sort(pth,"");
 
                 cur += json_emit_raw_str(cur, end - cur, "{\"type\":\"directory\",\"dir\":");
-                cur += json_emit_quoted_str(cur, end - cur, dir);
+                cur += json_emit_quoted_str(cur, end - cur, pth);
                 cur += json_emit_raw_str(cur, end - cur, ",\"srt\":");
                 cur += json_emit_quoted_str(cur, end - cur, srt);
                 cur += json_emit_raw_str(cur, end - cur, "},");
+
+                free(srt);
                 break;
 
             case MPD_ENTITY_TYPE_PLAYLIST:
-                pl   = mpd_entity_get_playlist(entity);
+                pth = mpd_playlist_get_path(mpd_entity_get_playlist(entity));
+                srt = mpd_get_sort(pth,"~");
+
                 cur += json_emit_raw_str(cur, end - cur, "{\"type\":\"playlist\",\"plist\":");
-                cur += json_emit_quoted_str(cur, end - cur, mpd_playlist_get_path(pl));
-                cur += json_emit_raw_str(cur, end - cur, ",\"srt\":\"zzzzz\"},");
+                cur += json_emit_quoted_str(cur, end - cur, pth);
+                cur += json_emit_raw_str(cur, end - cur, ",\"srt\":");
+                cur += json_emit_quoted_str(cur, end - cur, srt);
+                cur += json_emit_raw_str(cur, end - cur, "},");
+
+                free(srt);
                 break;
         }
         mpd_entity_free(entity);
