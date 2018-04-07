@@ -8,7 +8,7 @@
 
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License along
@@ -385,16 +385,16 @@ function webSocketConnect() {
                                 var seconds = obj.data[item].duration - minutes * 60;
 
                                 if (obj.data[item].artist == null) {
-                                    var artist = "<td colspan=\"2\">";
+                                    var artist = " colspan=\"2\">";
                                 } else {
-                                    var artist = "<td>" + obj.data[item].artist +
+                                    var artist = ">" + obj.data[item].artist +
                                                      "<span>" + obj.data[item].album + "</span></td><td>";
                                 }
 
                                 $('#salamisandwich > tbody').append(
                                     "<tr uri=\"" + encodeURI(obj.data[item].uri) + "\" class=\"song\">" +
                                     "<td><span class=\"glyphicon glyphicon-music\"></span></td>" +
-                                    artist + obj.data[item].title + "</td>" +
+                                    "<td" + artist + obj.data[item].title + "</td>" +
                                     "<td>" + minutes + ":" + (seconds < 10 ? '0' : '') + seconds +
                                     "</td><td></td></tr>"
                                 );
@@ -537,15 +537,13 @@ function webSocketConnect() {
                 case 'outputnames':
                     $('#btn-outputs-block button').remove();
                     if (obj.data.length > 1) {
-                        $.each(obj.data, function(id, name){
-                            var btn = $('<button id="btnoutput' + id +
-                                            '" class="btn btn-default" onclick="toggleoutput(this, ' + id + ')">' +
-                                        '<span class="glyphicon glyphicon-volume-up"></span> ' + name + '</button>');
+		        $.each(obj.data, function(id, name){
+                            var btn = $('<button id="btnoutput'+id+'" class="btn btn-default" onclick="toggleoutput(this, '+id+')"><span class="glyphicon glyphicon-volume-up"></span> '+name+'</button>');
                             btn.appendTo($('#btn-outputs-block'));
                         });
-                    } else {
+		    } else {
                         $('#btn-outputs-block').addClass('hide');
-                    }
+		    }
                     /* remove cache, since the buttons have been recreated */
                     last_outputs = '';
                     break;
