@@ -194,9 +194,16 @@ $(document).ready(function(){
 
     $('#addstream').on('shown.bs.modal', function () {
         $('#streamurl').focus();
-     })
-    $('#addstream form').on('submit', function (e) {
+    })
+    $('#addstream form').on('submit', function () {
         addStream();
+    });
+
+    $('#savequeue').on('shown.bs.modal', function () {
+        $('#queuename').focus();
+    });
+    $('#savequeue form').on('submit', function () {
+        saveQueue();
     });
 
     if(!notificationsSupported())
@@ -865,16 +872,17 @@ $('.page-btn').on('click', function (e) {
 
 function addStream() {
     if($('#streamurl').val().length > 0) {
-        socket.send('MPD_API_ADD_TRACK,'+$('#streamurl').val());
+        socket.send('MPD_API_ADD_TRACK,' + $('#streamurl').val());
     }
     $('#streamurl').val("");
     $('#addstream').modal('hide');
 }
 
 function saveQueue() {
-    if($('#playlistname').val().length > 0) {
-        socket.send('MPD_API_SAVE_QUEUE,'+$('#playlistname').val());
+    if($('#queuename').val().length > 0) {
+        socket.send('MPD_API_SAVE_QUEUE,' + $('#queuename').val());
     }
+    $('#queuename').val("");
     $('#savequeue').modal('hide');
 }
 
