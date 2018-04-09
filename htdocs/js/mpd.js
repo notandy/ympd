@@ -493,14 +493,15 @@ function webSocketConnect() {
                     break;
                 case 'outputnames':
                     $('#btn-outputs-block button').remove();
-                    if (obj.data.length > 1) {
-		        $.each(obj.data, function(id, name){
-                            var btn = $('<button id="btnoutput'+id+'" class="btn btn-default" onclick="toggleoutput(this, '+id+')"><span class="glyphicon glyphicon-volume-up"></span> '+name+'</button>');
-                            btn.appendTo($('#btn-outputs-block'));
-                        });
-		    } else {
-                        $('#btn-outputs-block').addClass('hide');
-		    }
+                    var num_outputs = 0;
+                    $.each(obj.data, function(id, name){
+                        var btn = $('<button id="btnoutput' + id +
+                                        '" class="btn btn-default" onclick="toggleoutput(this, ' + id + ')">' +
+                                    '<span class="glyphicon glyphicon-volume-up"></span> ' + name + '</button>');
+                        btn.appendTo($('#btn-outputs-block'));
+                        num_outputs++;
+                    });
+                    if (num_outputs == 1) { $('#btn-outputs-block').addClass('hide'); }
                     /* remove cache, since the buttons have been recreated */
                     last_outputs = '';
                     break;
