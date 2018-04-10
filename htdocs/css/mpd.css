@@ -55,7 +55,7 @@ body {
   }
 }
 
-td:nth-last-child(2), th:nth-last-child(2) {
+#salamisandwich td:nth-last-child(2), th:nth-last-child(2) {
   text-align: right;
 }
 
