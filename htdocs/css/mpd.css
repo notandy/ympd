@@ -76,11 +76,11 @@ h1 {
   white-space: nowrap;
 }
 
-td:nth-child(3), th:nth-child(3) {
+td:nth-child(2), th:nth-child(2) {
   /* This *has* to be placed before
      any t[dh]:nth-last-child(2) for
      the override to work. */
-  width: 50%;
+  min-width: 50%;
 }
 
 td:nth-last-child(2), th:nth-last-child(2) {
@@ -95,7 +95,8 @@ td:nth-last-child(2), th:nth-last-child(2) {
   display: block;
 }
 
-td:nth-child(2), td:nth-last-child(3) {
+td:nth-child(3), td:nth-last-child(3) {
+  min-width: 25%;
   max-width: 0;
 
   overflow: hidden;
