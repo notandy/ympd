@@ -47,6 +47,8 @@ var app = $.sammy(function() {
         socket.send('MPD_API_GET_QUEUE,'+pagination);
 
         $('#panel-heading').text("Queue");
+        $('#panel-heading-info').empty();
+
         $('#queue').addClass('active');
     }
 
@@ -126,6 +128,8 @@ var app = $.sammy(function() {
         $('#dirble_right').find("tr:gt(0)").remove();
 
         $('#panel-heading').text("Dirble");
+        $('#panel-heading-info').empty();
+
         $('#dirble').addClass('active');
 
         $('#next').addClass('hide');
@@ -155,6 +159,8 @@ var app = $.sammy(function() {
         $('#dirble_right').find("tr:gt(0)").remove();
 
         $('#panel-heading').text("Dirble");
+        $('#panel-heading-info').empty();
+
         $('#dirble').addClass('active');
 
         dirble_stations = false;
@@ -292,6 +298,18 @@ function webSocketConnect() {
                     if(current_app !== 'queue')
                         break;
 
+                    if (obj.totalTime > 0) {
+                        var hours = Math.floor(obj.totalTime / 3600);
+                        var minutes = Math.floor(obj.totalTime / 60) - hours * 60;
+                        var seconds = obj.totalTime - hours * 3600 - minutes * 60;
+
+                        $('#panel-heading-info').text('Total: ' +
+                            (hours > 0 ? hours + '\u2009h ' + (minutes < 10 ? '0' : '') : '') +
+                            minutes + '\u2009m ' + (seconds < 10 ? '0' : '') + seconds + '\u2009s');
+                    } else {
+                        $('#panel-heading-info').empty();
+                    }
+
                     $('#salamisandwich > tbody').empty();
                     for (var song in obj.data) {
                         var minutes = Math.floor(obj.data[song].duration / 60);
@@ -417,13 +435,14 @@ function webSocketConnect() {
                                 var minutes = Math.floor(obj.data[item].duration / 60);
                                 var seconds = obj.data[item].duration - minutes * 60;
 
-                                if (typeof obj.data[item].artist === 'undefined') {
-                                    var details = "<td colspan=\"2\">" + obj.data[item].title + "</td>";
+                                if (obj.data[item].artist == null) {
+                                    var artist = "<td colspan=\"2\">";
                                 } else {
-                                    var details = "<td>" + obj.data[item].artist + "<br /><span>" + obj.data[item].album + "</span></td><td>" + obj.data[item].title + "</td>";
+                                    var artist = "<td>" + obj.data[item].artist +
+                                                     "<span>" + obj.data[item].album + "</span></td><td>";
                                 }
 
-				$('#salamisandwich > tbody').append(
+                                $('#salamisandwich > tbody').append(
                                     "<tr uri=\"" + encodeURI(obj.data[item].uri) + "\" class=\"song\">" +
                                     "<td><span class=\"glyphicon glyphicon-music\"></span></td>" + 
                                     "<td>" + obj.data[item].title  + "</td>" +
