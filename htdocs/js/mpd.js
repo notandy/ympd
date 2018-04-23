@@ -317,9 +317,9 @@ function webSocketConnect() {
 
                         $('#salamisandwich > tbody').append(
                             "<tr trackid=\"" + obj.data[song].id + "\"><td>" + (obj.data[song].pos + 1) + "</td>" +
-                                "<td>"+ obj.data[song].title +"</td>" +
-                                "<td>"+ obj.data[song].album +"</td>" +
                                 "<td>"+ obj.data[song].artist +"</td>" + 
+                                "<td>"+ obj.data[song].album +"</td>" +
+                                "<td>"+ obj.data[song].title +"</td>" +
                                 "<td>"+ minutes + ":" + (seconds < 10 ? '0' : '') + seconds +
                         "</td><td></td></tr>");
                     }
@@ -445,9 +445,9 @@ function webSocketConnect() {
                                 $('#salamisandwich > tbody').append(
                                     "<tr uri=\"" + encodeURI(obj.data[item].uri) + "\" class=\"song\">" +
                                     "<td><span class=\"glyphicon glyphicon-music\"></span></td>" + 
-                                    "<td>" + obj.data[item].title  + "</td>" +
-                                    "<td>" + obj.data[item].album  + "</td>" +
                                     "<td>" + obj.data[item].artist + "</td>" + 
+                                    "<td>" + obj.data[item].album  + "</td>" +
+                                    "<td>" + obj.data[item].title  + "</td>" +
                                     "<td>" + minutes + ":" + (seconds < 10 ? '0' : '') + seconds +
                                     "</td><td></td></tr>"
                                 );
@@ -586,7 +586,7 @@ function webSocketConnect() {
                     break;
                 case 'outputnames':
                     $('#btn-outputs-block button').remove();
-                    if (obj.data.length > 1) {
+                    if ( Object.keys(obj.data).length ) {
 		        $.each(obj.data, function(id, name){
                             var btn = $('<button id="btnoutput'+id+'" class="btn btn-default" onclick="toggleoutput(this, '+id+')"><span class="glyphicon glyphicon-volume-up"></span> '+name+'</button>');
                             btn.appendTo($('#btn-outputs-block'));
@@ -630,13 +630,13 @@ function webSocketConnect() {
                     $('#currenttrack').text(" " + obj.data.title);
                     var notification = "<strong><h4>" + obj.data.title + "</h4></strong>";
 
-                    if(obj.data.album) {
-                        $('#album').text(obj.data.album);
-                        notification += obj.data.album + "<br />";
-                    }
                     if(obj.data.artist) {
                         $('#artist').text(obj.data.artist);
                         notification += obj.data.artist + "<br />";
+                    }
+                    if(obj.data.album) {
+                        $('#album').text(obj.data.album);
+                        notification += obj.data.album + "<br />";
                     }
 
                     if ($.cookie("notification") === "true")
