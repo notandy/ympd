@@ -1083,9 +1083,11 @@ function set_filter (c) {
     	$('#salamisandwich > tbody > tr.song').addClass('hide');
     	$('#salamisandwich > tbody > tr.plist').removeClass('hide');
     } else {
-    	$('#salamisandwich > tbody > tr.plist').addClass('hide');
-		$.each($('#salamisandwich > tbody > tr.dir'), function(i, line) {
+		$.each($('#salamisandwich > tbody > tr'), function(i, line) {
 			var first = basename($(line).attr('uri'))[0];
+			if ( $(line).hasClass('song') ) {
+				first = $(line).children().eq(1).text()[0];
+			}
 
 			if (filter === "num") {
 				if (!isNaN(first)) {
