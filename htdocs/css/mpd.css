@@ -21,6 +21,10 @@ body {
   margin-top: 2px;
 }
 
+#breadcrump > li > a{
+  cursor: pointer;
+}
+
 #counter {
   font-size: 24px;
   margin-top: -6px;
@@ -98,4 +102,12 @@ button {
   display:inline-block;
   text-align:left;
   width:2.8em;
+}
+
+#filter > a.active {
+  font-weight: bold;
+  pointer-events: none;
+  cursor: default;
+  text-decoration: none;
+  color: black;
 }
