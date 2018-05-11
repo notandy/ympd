@@ -43,6 +43,7 @@ file(GLOB RESOURCES
     htdocs/css/*.css
     htdocs/fonts/*
     htdocs/index.html
+    htdocs/player.html
 )
 
 set(SOURCES

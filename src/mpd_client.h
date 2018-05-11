@@ -84,8 +84,10 @@ enum mpd_conn_states {
 
 struct t_mpd {
     int port;
+	int local_port;
     char host[128];
     char *password;
+	char *gpass;
 
     struct mpd_connection *conn;
     enum mpd_conn_states conn_state;
