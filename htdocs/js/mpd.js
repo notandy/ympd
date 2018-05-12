@@ -1243,7 +1243,7 @@ function set_filter (c) {
 		$.each($('#salamisandwich > tbody > tr'), function(i, line) {
 			var first = basename($(line).attr('uri'))[0];
 			if ( $(line).hasClass('song') ) {
-				first = $(line).children().eq(1).text()[0];
+				first = $(line).children().eq(3).text()[0];
 			}
 
 			if (filter === "num") {
