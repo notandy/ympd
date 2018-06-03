@@ -68,7 +68,7 @@ var app = $.sammy(function() {
         pagination = parseInt(this.params['splat'][0]);
         current_app = 'browse';
         $('#breadcrump').removeClass('hide').empty().append("<li><a uri=\"\" onclick=\"set_filter('')\">root</a></li>");
-        $('#filter').removeClass('hide');
+		add_filter();
         $('#salamisandwich').removeClass('hide').find("tr:gt(0)").remove();
         $('#dirble_panel').addClass('hide');
         socket.send('MPD_API_GET_BROWSE,'+pagination+','+(browsepath ? browsepath : "/"));
@@ -185,8 +185,6 @@ $(document).ready(function(){
     else
         if ($.cookie("notification") === "true")
             $('#btnnotify').addClass("active")
-
-    add_filter();
 });
 
 function webSocketConnect() {
@@ -314,7 +312,7 @@ function webSocketConnect() {
                             case 'directory':
                                 var clazz = 'dir';
                                 if (filter !== "") {
-                                    var first = obj.data[item].dir[0];
+                                    var first = basename(obj.data[item].dir)[0];
                                     if (filter === "num" && isNaN(first)) {
                                         clazz += ' hide';
                                     } else if (filter >= "A" && filter <= "Z" && first.toUpperCase() !== filter) {
@@ -1107,6 +1105,7 @@ function set_filter (c) {
 }
 
 function add_filter () {
+	$('#filter').empty();
     $('#filter').append('&nbsp;<a onclick="set_filter(\'\')" href="#/browse/'+pagination+'/'+browsepath+'">All</a>');
     $('#filter').append('&nbsp;<a id="fnum" onclick="set_filter(\'num\')" href="#/browse/'+pagination+'/'+browsepath+'">#</a>');
 
@@ -1116,4 +1115,6 @@ function add_filter () {
     }
 
     $('#filter').append('&nbsp;<a id="fplist" onclick="set_filter(\'plist\')" href="#/browse/'+pagination+'/'+browsepath+'" class="glyphicon glyphicon-list"></a>');
+	$('#f' + filter).addClass('active');
+    $('#filter').removeClass('hide');
 }
