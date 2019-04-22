@@ -3,7 +3,7 @@ Description=ympd server daemon
 Requires=network.target local-fs.target
 
 [Service]
-User=ympd
+User=nobody
 DynamicUser=yes
 MountAPIVFS=yes
 RemoveIPC=yes
