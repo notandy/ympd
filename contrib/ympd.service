@@ -3,6 +3,26 @@ Description=ympd server daemon
 Requires=network.target local-fs.target
 
 [Service]
+User=nobody
+DynamicUser=yes
+MountAPIVFS=yes
+RemoveIPC=yes
+CapabilityBoundingSet=
+LockPersonality=yes
+PrivateUsers=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+NoNewPrivileges=yes
+MemoryDenyWriteExecute=yes
+RestrictRealtime=yes
+RestrictNamespaces=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+ProtectHome=yes
+
 Environment=MPD_HOST=localhost
 Environment=MPD_PORT=6600
 Environment=MPD_PASSWORD=
@@ -12,7 +32,7 @@ Environment=DIRBLE_API_TOKEN=2e223c9909593b94fc6577361a
 Environment=DIGEST=
 Environment=LOCALPORT=
 EnvironmentFile=/etc/default/ympd
-ExecStart=/usr/bin/ympd --user $YMPD_USER --webport $WEB_PORT --host $MPD_HOST --port $MPD_PORT --dirbletoken $DIRBLE_API_TOKEN $DIGEST $LOCALPORT
+ExecStart=/usr/bin/ympd --user $USER --webport $WEB_PORT --host $MPD_HOST --port $MPD_PORT --dirbletoken $DIRBLE_API_TOKEN $DIGEST $LOCALPORT
 Type=simple
 
 [Install]
