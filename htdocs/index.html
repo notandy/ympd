@@ -34,7 +34,7 @@
 
         <ul id="nav_links" class="nav navbar-nav">
           <li id="queue"><a href="#/">Queue</a></li>
-          <li id="browse"><a href="#/browse/0/">Browse Database</a></li>
+          <li id="browse"><a href="#/browse/0/">Browse</a></li>
           <li id="dirble"><a href="#/dirble/">Dirble</a></li>
           <li><a href="#" data-toggle="modal" data-target="#addstream">Add Stream</a></li>
           <li><a href="#" data-toggle="modal" data-target="#settings" onclick="getHost();">Settings</a></li>
@@ -60,13 +60,25 @@
               <span class="glyphicon glyphicon-heart"></span>
             </button>
           </div>
+<!--          
           <div class="btn-group">
             <div class="btn btn-toolbar btn-default">
               <span id="volume-icon" class="glyphicon glyphicon-volume-up"></span>
               <div id="volumeslider"></div>
             </div>
           </div>
-        </div>
+-->
+           <div class="btn-group" role="group">
+            <audio id="player" preload="none"></audio>
+            <button type="button" class="btn btn-default" onclick="clickLocalPlay()">
+              <span id="localplay-icon" class="glyphicon glyphicon-play"></span>
+            </button>
+            <button type="button" class="btn btn-default" onclick="window.open('/player.html');">
+              <span id="localplay-icon" class="glyphicon glyphicon-new-window"></span>
+            </button>
+          </div>
+       </div>
+          
         <form id="search" class="navbar-form navbar-right" role="search">
           <div class="form-group">
             <input type="text" class="form-control" placeholder="Search">
@@ -81,18 +93,19 @@
 
       <div class="col-md-10 col-xs-12">
         <div class="notifications top-right"></div>
-        
+
         <div class="panel panel-primary">
           <!-- Default panel contents -->
-          <div class="panel-heading"><b id="panel-heading">Queue</b></div>
+          <div class="panel-heading"><b id="panel-heading">Queue</b>
+                                     <b id="panel-heading-info" class="text pull-right"></b></div>
           <div class="panel-body">
             <h1>
               <span id="track-icon" onclick="clickPlay();" class="glyphicon glyphicon-play"></span>
               <span id="currenttrack"></span>
             </h1>
             <h4>
-              <span id="album" class="text"></span>
-              <span id="artist" class="text pull-right"></span>
+              <span id="artist" class="text"></span>
+              <span id="album" class="text pull-right"></span>
             </h4>
             <p id="counter" class="text pull-right">&nbsp;&nbsp;</p>
 
@@ -114,8 +127,10 @@
             <thead>
               <tr>
                 <th>#</th>
-                <th colspan="2">Track</th>
-                <th>Duration</th>
+                <th>Artist</th>
+                <th>Album</th>
+                <th>Title</th>
+                <th>Length</th>
                 <th></th>
               </tr>
             </thead>
@@ -218,7 +233,7 @@
           <h5>ympd uses following excellent software:</h5>
           <h6><a href="http://cesanta.com/docs.html">Mongoose</a> <small>GPLv2</small></h6>
           <h6><a href="http://www.musicpd.org/libs/libmpdclient/">libMPDClient</a> <small>BSD License</small></h6>
-	  <hr />
+          <hr />
           <div class="row">
             <div class="form-group col-md-6">
               <button type="button" class="btn btn-default btn-block" onclick="updateDB();">
@@ -261,6 +276,19 @@
                 </div>
               </div>
             </div>
+            <div class="row">
+              <div class="form-group col-md-12">
+                <label class="control-label" for="mpdstream">MPD Stream URL</label>
+                <input type="text" class="form-control" id="mpdstream" />
+              </div>
+            </div>
+            <div class="row">
+              <div class="form-group col-md-12">
+                <button type="button" class="btn btn-default" onclick="updateDB();">
+                  <span class="glyphicon glyphicon-refresh"></span> Update DB
+                </button>
+              </div>
+            </div>
           </form>
         </div>
         <div class="modal-footer">
@@ -296,7 +324,7 @@
       </div><!-- /.modal-content -->
     </div><!-- /.modal-dialog -->
   </div><!-- /.modal -->
-  
+
   <div class="modal fade" id="savequeue" tabindex="-1" role="dialog" aria-labelledby="savequeueLabel" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">

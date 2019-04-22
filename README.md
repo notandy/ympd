@@ -29,6 +29,8 @@ Run flags
 ```
 Usage: ./ympd [OPTION]...
 
+ -D, --digest <htdigest>       path to htdigest file for authorization
+                               (realm ympd) [no authorization]
  -h, --host <host>             connect to mpd at host [localhost]
  -p, --port <port>             connect to mpd at port [6600]
  -w, --webport [ip:]<port>     listen interface/port for webserver [8080]
@@ -51,6 +53,12 @@ To run ympd with SSL support:
 ```
 # ./ympd -w "ssl://8081:/path/to/ssl.pem"
 ```
+
+Dirble support
+--------------
+
+1. Get an API-key from http://dirble.com
+2. Add the key at ```var TOKEN = "";```, in ```mpd.js```.
 
 Copyright
 ---------

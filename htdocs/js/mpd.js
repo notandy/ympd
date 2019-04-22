@@ -16,12 +16,14 @@
    Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
+var TOKEN = "";
+
 var socket;
 var last_state;
 var last_outputs;
 var current_app;
 var pagination = 0;
-var browsepath;
+var browsepath = "";
 var lastSongTitle = "";
 var current_song = new Object();
 var MAX_ELEMENTS_PER_PAGE = 512;
@@ -29,7 +31,7 @@ var dirble_selected_cat = "";
 var dirble_catid = "";
 var dirble_page = 1;
 var isTouch = Modernizr.touch ? 1 : 0;
-var filter = undefined;
+var filter = "";
 var dirble_api_token = "";
 var dirble_stations = false;
 
@@ -45,6 +47,8 @@ var app = $.sammy(function() {
         socket.send('MPD_API_GET_QUEUE,'+pagination);
 
         $('#panel-heading').text("Queue");
+        $('#panel-heading-info').empty();
+
         $('#queue').addClass('active');
     }
 
@@ -67,8 +71,8 @@ var app = $.sammy(function() {
         browsepath = this.params['splat'][1];
         pagination = parseInt(this.params['splat'][0]);
         current_app = 'browse';
-        $('#breadcrump').removeClass('hide').empty().append("<li><a href=\"#/browse/0/\" onclick=\"set_filter()\">root</a></li>");
-        $('#filter').removeClass('hide');
+        $('#breadcrump').removeClass('hide').empty().append("<li><a uri=\"\" onclick=\"set_filter('')\">root</a></li>");
+		add_filter();
         $('#salamisandwich').removeClass('hide').find("tr:gt(0)").remove();
         $('#dirble_panel').addClass('hide');
         socket.send('MPD_API_GET_BROWSE,'+pagination+','+(browsepath ? browsepath : "/"));
@@ -92,7 +96,7 @@ var app = $.sammy(function() {
             }
 
             full_path = full_path + chunk;
-            $('#breadcrump').append("<li><a href=\"#/browse/0/" + full_path + "\">"+chunk+"</a></li>");
+            $('#breadcrump').append("<li><a uri=\"" + full_path + "\">"+chunk+"</a></li>");
             full_path += "/";
         });
         $('#browse').addClass('active');
@@ -111,6 +115,9 @@ var app = $.sammy(function() {
     });
 
     this.get(/\#\/dirble\/(\d+)\/(\d+)/, function() {
+        
+        if (TOKEN === "") context.redirect("#/0");
+        
         prepare();
         current_app = 'dirble';
         $('#breadcrump').removeClass('hide').empty().append("<li><a href=\"#/dirble/\">Categories</a></li><li>"+dirble_selected_cat+"</li>");
@@ -121,6 +128,8 @@ var app = $.sammy(function() {
         $('#dirble_right').find("tr:gt(0)").remove();
 
         $('#panel-heading').text("Dirble");
+        $('#panel-heading-info').empty();
+
         $('#dirble').addClass('active');
 
         $('#next').addClass('hide');
@@ -137,6 +146,9 @@ var app = $.sammy(function() {
     });
 
     this.get(/\#\/dirble\//, function() {
+        
+        if (TOKEN === "") context.redirect("#/0");
+        
         prepare();
         current_app = 'dirble';
         $('#breadcrump').removeClass('hide').empty().append("<li>Categories</li>");
@@ -147,6 +159,8 @@ var app = $.sammy(function() {
         $('#dirble_right').find("tr:gt(0)").remove();
 
         $('#panel-heading').text("Dirble");
+        $('#panel-heading-info').empty();
+
         $('#dirble').addClass('active');
 
         dirble_stations = false;
@@ -186,7 +200,66 @@ $(document).ready(function(){
         if ($.cookie("notification") === "true")
             $('#btnnotify').addClass("active")
 
-    add_filter();
+    document.getElementById('player').addEventListener('stalled', function() {
+						if ( !document.getElementById('player').paused ) {
+							this.pause();
+							clickLocalPlay();
+							$('.top-right').notify({
+								message:{text:"music stream stalled - trying to recover..."},
+								type: "danger",
+								fadeOut: { enabled: true, delay: 1000 },
+							}).show();
+						}
+    });
+
+    document.getElementById('player').addEventListener('pause', function() {
+        this.src='';
+        this.removeAttribute("src");
+    	$("#localplay-icon").removeClass("glyphicon-pause").addClass("glyphicon-play");
+    });
+
+	document.getElementById('player').addEventListener('error', function failed(e) {
+		this.pause();
+		switch (e.target.error.code) {
+			case e.target.error.MEDIA_ERR_ABORTED:
+				$('.top-right').notify({
+					message:{text:"Audio playback aborted by user."},
+					type: "info",
+					fadeOut: { enabled: true, delay: 1000 },
+				}).show();
+				break;
+			case e.target.error.MEDIA_ERR_NETWORK:
+				$('.top-right').notify({
+					message:{text:"Network error while playing audio."},
+					type: "danger",
+					fadeOut: { enabled: true, delay: 1000 },
+				}).show();
+				break;
+			case e.target.error.MEDIA_ERR_DECODE:
+				$('.top-right').notify({
+					message:{text:"Audio playback aborted. Did you unplug your headphones?"},
+					type: "danger",
+					fadeOut: { enabled: true, delay: 1000 },
+				}).show();
+				break;
+			case e.target.error.MEDIA_ERR_SRC_NOT_SUPPORTED:
+				$('.top-right').notify({
+					message:{text:"Error while loading audio (server, network or format error)."},
+					type: "danger",
+					fadeOut: { enabled: true, delay: 1000 },
+				}).show();
+				break;
+			default:
+				$('.top-right').notify({
+					message:{text:"Unknown error while playing audio."},
+					type: "danger",
+					fadeOut: { enabled: true, delay: 1000 },
+				}).show();
+				break;
+		}
+	}, true);
+            
+    if (TOKEN === "") $('#dirble').addClass('hide');
 });
 
 function webSocketConnect() {
@@ -216,11 +289,24 @@ function webSocketConnect() {
                 return;
 
             var obj = JSON.parse(msg.data);
+            
 
             switch (obj.type) {
                 case 'queue':
                     if(current_app !== 'queue')
                         break;
+
+                    if (obj.totalTime > 0) {
+                        var hours = Math.floor(obj.totalTime / 3600);
+                        var minutes = Math.floor(obj.totalTime / 60) - hours * 60;
+                        var seconds = obj.totalTime - hours * 3600 - minutes * 60;
+
+                        $('#panel-heading-info').text('Total: ' +
+                            (hours > 0 ? hours + '\u2009h ' + (minutes < 10 ? '0' : '') : '') +
+                            minutes + '\u2009m ' + (seconds < 10 ? '0' : '') + seconds + '\u2009s');
+                    } else {
+                        $('#panel-heading-info').empty();
+                    }
 
                     $('#salamisandwich > tbody').empty();
                     for (var song in obj.data) {
@@ -229,9 +315,10 @@ function webSocketConnect() {
 
                         $('#salamisandwich > tbody').append(
                             "<tr trackid=\"" + obj.data[song].id + "\"><td>" + (obj.data[song].pos + 1) + "</td>" +
-                                "<td>" + obj.data[song].artist + "<br /><span>" + obj.data[song].album  + "</span></td>" +
-                                "<td>" + obj.data[song].title  + "</td>" +
-                                "<td>" + minutes + ":" + (seconds < 10 ? '0' : '') + seconds +
+                                "<td>"+ obj.data[song].artist +"</td>" + 
+                                "<td>"+ obj.data[song].album +"</td>" +
+                                "<td>"+ obj.data[song].title +"</td>" +
+                                "<td>"+ minutes + ":" + (seconds < 10 ? '0' : '') + seconds +
                         "</td><td></td></tr>");
                     }
 
@@ -313,32 +400,32 @@ function webSocketConnect() {
                         switch(obj.data[item].type) {
                             case 'directory':
                                 var clazz = 'dir';
-                                if (filter !== undefined) {
-                                    var first = obj.data[item].dir[0];
-                                    if (filter === "#" && isNaN(first)) {
+                                if (filter !== "") {
+                                    var first = basename(obj.data[item].dir)[0];
+                                    if (filter === "num" && isNaN(first)) {
                                         clazz += ' hide';
                                     } else if (filter >= "A" && filter <= "Z" && first.toUpperCase() !== filter) {
                                         clazz += ' hide';
-                                    } else if (filter === "||") {
+                                    } else if (filter === "plist") {
                                         clazz += ' hide';
                                     }
                                 }
                                 $('#salamisandwich > tbody').append(
                                     "<tr uri=\"" + encodeURI(obj.data[item].dir) + "\" class=\"" + clazz + "\">" +
                                     "<td><span class=\"glyphicon glyphicon-folder-open\"></span></td>" +
-                                    "<td colspan=\"2\"><a>" + basename(obj.data[item].dir) + "</a></td>" +
+                                    "<td colspan=\"3\"><a>" + basename(obj.data[item].dir) + "</a></td>" +
                                     "<td></td><td></td></tr>"
                                 );
                                 break;
                             case 'playlist':
                                 var clazz = 'plist';
-                                if (filter !== "||") {
+                                if ( (filter !== "") && (filter !== "plist") ) {
                                     clazz += ' hide';
                                 }
                                 $('#salamisandwich > tbody').append(
                                     "<tr uri=\"" + encodeURI(obj.data[item].plist) + "\" class=\"" + clazz + "\">" +
                                     "<td><span class=\"glyphicon glyphicon-list\"></span></td>" +
-                                    "<td colspan=\"2\"><a>" + basename(obj.data[item].plist) + "</a></td>" +
+                                    "<td colspan=\"3\"><a>" + basename(obj.data[item].plist) + "</a></td>" +
                                     "<td></td><td></td></tr>"
                                 );
                                 break;
@@ -346,15 +433,19 @@ function webSocketConnect() {
                                 var minutes = Math.floor(obj.data[item].duration / 60);
                                 var seconds = obj.data[item].duration - minutes * 60;
 
-                                if (typeof obj.data[item].artist === 'undefined') {
-                                    var details = "<td colspan=\"2\">" + obj.data[item].title + "</td>";
+                                if (obj.data[item].artist == null) {
+                                    var artist = "<td colspan=\"2\">";
                                 } else {
-                                    var details = "<td>" + obj.data[item].artist + "<br /><span>" + obj.data[item].album + "</span></td><td>" + obj.data[item].title + "</td>";
+                                    var artist = "<td>" + obj.data[item].artist +
+                                                     "<span>" + obj.data[item].album + "</span></td><td>";
                                 }
 
-				$('#salamisandwich > tbody').append(
+                                $('#salamisandwich > tbody').append(
                                     "<tr uri=\"" + encodeURI(obj.data[item].uri) + "\" class=\"song\">" +
-                                    "<td><span class=\"glyphicon glyphicon-music\"></span></td>" + details +
+                                    "<td><span class=\"glyphicon glyphicon-music\"></span></td>" + 
+                                    "<td>" + obj.data[item].artist + "</td>" + 
+                                    "<td>" + obj.data[item].album  + "</td>" +
+                                    "<td>" + obj.data[item].title  + "</td>" +
                                     "<td>" + minutes + ":" + (seconds < 10 ? '0' : '') + seconds +
                                     "</td><td></td></tr>"
                                 );
@@ -365,7 +456,7 @@ function webSocketConnect() {
                                 } else {
                                     $('#salamisandwich > tbody').append(
                                         "<tr><td><span class=\"glyphicon glyphicon-remove\"></span></td>" +
-                                        "<td colspan=\"2\">Too many results, please refine your search!</td>" +
+                                        "<td colspan=\"3\">Too many results, please refine your search!</td>" +
                                         "<td></td><td></td></tr>"
                                     );
                                 }
@@ -414,7 +505,9 @@ function webSocketConnect() {
                                     pagination = 0;
                                     browsepath = $(this).attr("uri");
                                     $("#browse > a").attr("href", '#/browse/'+pagination+'/'+browsepath);
+									$('#filter > a').attr("href", '#/browse/'+pagination+'/'+browsepath);
                                     app.setLocation('#/browse/'+pagination+'/'+browsepath);
+									set_filter('');
                                     break;
                                 case 'song':
                                     socket.send("MPD_API_ADD_TRACK," + decodeURI($(this).attr("uri")));
@@ -435,6 +528,17 @@ function webSocketConnect() {
                             }
                         }
                     });
+
+					$('#breadcrump > li > a').on({
+						click: function() {
+							pagination = 0;
+							browsepath = $(this).attr("uri");
+							$("#browse > a").attr("href", '#/browse/'+pagination+'/'+browsepath);
+							$('#filter > a').attr("href", '#/browse/'+pagination+'/'+browsepath);
+							app.setLocation('#/browse/'+pagination+'/'+browsepath);
+							set_filter('');
+						}
+					});
 
                     break;
                 case 'state':
@@ -493,7 +597,7 @@ function webSocketConnect() {
                     break;
                 case 'outputnames':
                     $('#btn-outputs-block button').remove();
-                    if (obj.data.length > 1) {
+                    if ( Object.keys(obj.data).length ) {
 		        $.each(obj.data, function(id, name){
                             var btn = $('<button id="btnoutput'+id+'" class="btn btn-default" onclick="toggleoutput(this, '+id+')"><span class="glyphicon glyphicon-volume-up"></span> '+name+'</button>');
                             btn.appendTo($('#btn-outputs-block'));
@@ -528,7 +632,7 @@ function webSocketConnect() {
                         socket.send('MPD_API_GET_QUEUE,'+pagination);
                     break;
                 case 'song_change':
-
+                    updatePageTitle(obj.data);
                     $('#album').text("");
                     $('#artist').text("");
 
@@ -537,13 +641,13 @@ function webSocketConnect() {
                     $('#currenttrack').text(" " + obj.data.title);
                     var notification = "<strong><h4>" + obj.data.title + "</h4></strong>";
 
-                    if(obj.data.album) {
-                        $('#album').text(obj.data.album);
-                        notification += obj.data.album + "<br />";
-                    }
                     if(obj.data.artist) {
                         $('#artist').text(obj.data.artist);
                         notification += obj.data.artist + "<br />";
+                    }
+                    if(obj.data.album) {
+                        $('#album').text(obj.data.album);
+                        notification += obj.data.album + "<br />";
                     }
 
                     if ($.cookie("notification") === "true")
@@ -552,11 +656,11 @@ function webSocketConnect() {
                         $('.top-right').notify({
                             message:{html: notification},
                             type: "info",
-                        }).show();
-                        
+                        }).show();        
                     break;
                 case 'mpdhost':
                     $('#mpdhost').val(obj.data.host);
+                    setLocalStream(obj.data.host);
                     $('#mpdport').val(obj.data.port);
                     if(obj.data.passwort_set)
                         $('#mpd_password_set').removeClass('hide');
@@ -658,12 +762,28 @@ var updatePlayIcon = function(state)
     if(state == 1) { // stop
         $("#play-icon").addClass("glyphicon-play");
         $('#track-icon').addClass("glyphicon-stop");
-    } else if(state == 2) { // pause
+		document.getElementById('player').pause();
+    } else if(state == 2) { // play
         $("#play-icon").addClass("glyphicon-pause");
         $('#track-icon').addClass("glyphicon-play");
-    } else { // play
+    } else { // pause
         $("#play-icon").addClass("glyphicon-play");
         $('#track-icon').addClass("glyphicon-pause");
+		document.getElementById('player').pause();
+    }
+}
+
+var updatePageTitle = function(songInfo) {
+    if(!songInfo || (!songInfo.artist && !songInfo.title)) {
+        document.title = 'ympd';
+        return;
+    }
+    if(songInfo.artist) {
+        if(songInfo.title) {
+            document.title = songInfo.artist + ' - ' + songInfo.title;
+        }
+    } else {
+        document.title = songInfo.title;
     }
 }
 
@@ -679,6 +799,52 @@ function clickPlay() {
         socket.send('MPD_API_SET_PLAY');
     else
         socket.send('MPD_API_SET_PAUSE');
+}
+
+function clickLocalPlay() {
+    var player = document.getElementById('player');
+    $("#localplay-icon").removeClass("glyphicon-play").removeClass("glyphicon-pause");
+	
+
+    if ( !$('#track-icon').hasClass('glyphicon-play') ) {
+		clickPlay();
+	}
+
+    if ( player.paused ) {
+        var mpdstream = $.cookie("mpdstream");
+
+        if ( mpdstream ) {
+            player.src = mpdstream;
+            console.log("playing mpd stream: " + player.src);
+            player.load();
+            player.play();
+            $("#localplay-icon").addClass("glyphicon-pause");
+        } else {
+            $("#mpdstream").change(function(){ clickLocalPlay(); $(this).unbind("change"); });
+            $("#localplay-icon").addClass("glyphicon-play");
+            getHost();
+        }
+    } else {
+        player.pause();
+    }
+}
+
+function setLocalStream(mpdhost) {
+    var mpdstream = $.cookie("mpdstream");
+
+    if ( !mpdstream ) {
+        mpdstream = "http://";
+        if ( mpdhost == "127.0.0.1" )
+            mpdstream += window.location.hostname;
+        else
+            mpdstream += mpdhost;
+        mpdstream += ":8000/";
+
+        $.cookie("mpdstream", mpdstream, { expires: 424242 });
+    }
+
+    $("#mpdstream").val(mpdstream);
+    $("#mpdstream").change();
 }
 
 function trash(tr) {
@@ -771,6 +937,7 @@ function getHost() {
 
     $('#mpdhost').keypress(onEnter);
     $('#mpdport').keypress(onEnter);
+    $('#mpdstream').keypress(onEnter);
     $('#mpd_pw').keypress(onEnter);
     $('#mpd_pw_con').keypress(onEnter);
 }
@@ -843,6 +1010,7 @@ function confirmSettings() {
             socket.send('MPD_API_SET_MPDPASS,'+$('#mpd_pw').val());
     }
     socket.send('MPD_API_SET_MPDHOST,'+$('#mpdport').val()+','+$('#mpdhost').val());
+    $.cookie("mpdstream", $("#mpdstream").val(), { expires: 424242 });
     $('#settings').modal('hide');
 }
 
@@ -1060,53 +1228,50 @@ function dirble_load_stations() {
 
 function set_filter (c) {
     filter = c;
+	$('#filter > a').removeClass('active');
+	$('#f' + c).addClass('active');
 
-    $.each($('#salamisandwich > tbody > tr.dir'), function(i, line) {
-        var first = $(line).attr('uri')[0];
+    if (filter === "") {
+    	$('#salamisandwich > tbody > tr').removeClass('hide');
+	} else if (filter === "plist") {
+    	$('#salamisandwich > tbody > tr.dir').addClass('hide');
+    	$('#salamisandwich > tbody > tr.song').addClass('hide');
+    	$('#salamisandwich > tbody > tr.plist').removeClass('hide');
+    } else {
+		$.each($('#salamisandwich > tbody > tr'), function(i, line) {
+			var first = basename($(line).attr('uri'))[0];
+			if ( $(line).hasClass('song') ) {
+				first = $(line).children().eq(3).text()[0];
+			}
 
-        if (filter === undefined) {
-            $(line).removeClass('hide');
-        }
-
-        else if (filter === "#") {
-            if (!isNaN(first)) {
-                $(line).removeClass('hide');
-            } else {
-                $(line).addClass('hide');
-            }
-        }
-
-        else if (filter >= "A" && filter <= "Z") {
-            if (first.toUpperCase() === filter) {
-                $(line).removeClass('hide');
-            } else {
-                $(line).addClass('hide');
-            }
-        }
-
-        else if (filter === "||") {
-            $(line).addClass('hide');
-        }
-    });
-
-    $.each($('#salamisandwich > tbody > tr.plist'), function(i, line) {
-        if (filter === undefined) {
-            $(line).removeClass('hide');
-        } else if (filter === "||") {
-            $(line).removeClass('hide');
-        } else {
-            $(line).addClass('hide');
-        }
-    });
+			if (filter === "num") {
+				if (!isNaN(first)) {
+					$(line).removeClass('hide');
+				} else {
+					$(line).addClass('hide');
+				}
+			} else if (filter >= "A" && filter <= "Z") {
+				if (first.toUpperCase() === filter) {
+					$(line).removeClass('hide');
+				} else {
+					$(line).addClass('hide');
+				}
+			}
+		});
+	}
 }
 
 function add_filter () {
-    $('#filter').append('&nbsp;<a onclick="set_filter(\'#\')" href="#/browse/0/">#</a>');
+	$('#filter').empty();
+    $('#filter').append('&nbsp;<a onclick="set_filter(\'\')" href="#/browse/'+pagination+'/'+browsepath+'">All</a>');
+    $('#filter').append('&nbsp;<a id="fnum" onclick="set_filter(\'num\')" href="#/browse/'+pagination+'/'+browsepath+'">#</a>');
 
     for (i = 65; i <= 90; i++) {
         var c = String.fromCharCode(i);
-        $('#filter').append('&nbsp;<a onclick="set_filter(\'' + c + '\')" href="#/browse/0/">' + c + '</a>');
+        $('#filter').append('&nbsp;<a id="f' + c + '" onclick="set_filter(\'' + c + '\');" href="#/browse/' + pagination + '/' + browsepath + '">' + c + '</a>');
     }
 
-    $('#filter').append('&nbsp;<a onclick="set_filter(\'||\')" href="#/browse/0/" class="glyphicon glyphicon-list"></a>');
+    $('#filter').append('&nbsp;<a id="fplist" onclick="set_filter(\'plist\')" href="#/browse/'+pagination+'/'+browsepath+'" class="glyphicon glyphicon-list"></a>');
+	$('#f' + filter).addClass('active');
+    $('#filter').removeClass('hide');
 }
