@@ -30,6 +30,8 @@
 
 /* forward declaration */
 static int mpd_notify_callback(struct mg_connection *c, enum mg_event ev);
+char dirble_api_token[28];
+struct t_mpd mpd;
 
 const char * mpd_cmd_strs[] = {
     MPD_CMDS(GEN_STR)
