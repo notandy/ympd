@@ -96,9 +96,11 @@ struct t_mpd {
 
     int song_id;
     unsigned queue_version;
-} mpd;
+};
 
-char dirble_api_token[28];
+extern struct t_mpd mpd;
+
+extern char dirble_api_token[28];
 
 struct t_mpd_client_session {
     int song_id;
