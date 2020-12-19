@@ -3497,7 +3497,7 @@ static int scan_directory(struct connection *conn, const char *dir,
     }
     mg_snprintf(path, sizeof(path), "%s%c%s", dir, '/', dp->d_name);
 
-    // Resize the array if nesessary
+    // Resize the array if necessary
     if (arr_ind >= arr_size) {
       if ((p = (struct dir_entry *)
            NS_REALLOC(*arr, (inc + arr_size) * sizeof(**arr))) != NULL) {
