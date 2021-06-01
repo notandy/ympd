@@ -40,7 +40,18 @@
           <li><a href="#" data-toggle="modal" data-target="#settings" onclick="getHost();">Settings</a></li>
         </ul>
 
-        <div class="btn-toolbar navbar-btn navbar-right" role="toolbar">
+        <form id="search" class="navbar-form navbar-right" role="search">
+          <div class="form-group">
+            <input type="text" class="form-control" placeholder="Search">
+          </div>
+        </form>
+      </div><!--/.nav-collapse -->
+    </div>
+  </div>
+
+  <div class="container starter-template">
+    <div class="row">
+        <div class="btn-toolbar navbar-btn navbar-right col-md-12 col-xs-12" role="toolbar">
           <div class="btn-group">
             <button type="button" class="btn btn-default" onclick="socket.send('MPD_API_SET_PREV');">
               <span class="glyphicon glyphicon-backward"></span>
@@ -67,16 +78,8 @@
             </div>
           </div>
         </div>
-        <form id="search" class="navbar-form navbar-right" role="search">
-          <div class="form-group">
-            <input type="text" class="form-control" placeholder="Search">
-          </div>
-        </form>
-      </div><!--/.nav-collapse -->
-    </div>
-  </div>
+    </div><!-- /.row -->
 
-  <div class="container starter-template">
     <div class="row">
 
       <div class="col-md-10 col-xs-12">
